@@ -1,0 +1,30 @@
+{
+  "name": "@easylayer/logger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "clear": "yarn run clear:dist && yarn run clear:node_modules",
+    "clear:node_modules": "rimraf node_modules",
+    "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
+    "build": "tsc --build ./tsconfig.build.json",
+    "test:unit": "jest --maxWorkers=50% -c ./jest.config.unit.js",
+    "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
+    "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "author": "Yaroslav Pavliuk",
+  "license": "",
+  "packageManager": "yarn@3.6.0",
+  "dependencies": {
+    "@nestjs/common": "10.2.10",
+    "bunyan": "1.8.15"
+  },
+  "devDependencies": {
+    "@types/bunyan": "1.8.11",
+    "@types/node": "20.10.4",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
+  }
+}

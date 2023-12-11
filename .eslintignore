@@ -1,0 +1,4 @@
+node_modules/
+.eslintrc.base.js
+dist/
+docs/*

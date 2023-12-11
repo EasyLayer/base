@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "composite": true
+  },
+  "references": [],
+  "include": ["src"],
+  "exclude": ["node_modules"],
+}

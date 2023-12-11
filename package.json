@@ -1,0 +1,55 @@
+{
+  "name": "base",
+  "version": "0.0.0",
+  "description": "",
+  "author": "Yaroslav Pavliuk",
+  "license": "",
+  "private": true,
+  "packageManager": "yarn@3.6.0",
+  "bugs": {
+    "url": "https://github.com/easylayer/base/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/easylayer/base.git"
+  },
+  "workspaces": {
+    "packages": [
+      "apps/quickstart",
+      "packages/*",
+      "packages/*/*"
+    ]
+  },
+  "scripts": {
+    "clear": "lerna run clear:dist && lerna run clear:node_modules && rimraf node_modules && yarn cache clean",
+    "clear:node_modules": "lerna run clear:node_modules && rimraf node_modules",
+    "clear:dist": "lerna run clear:dist",
+    "build:packages": "lerna run build --ignore quickstart",
+    "start:dev": "lerna run start:dev",
+    "test:unit": "lerna run test:unit",
+    "lint": "lerna run lint",
+    "lint:fix": "lerna run lint:fix",
+    "pre-commit": "lerna run lint",
+    "pre-push": "lerna run test:unit",
+    "commit": "cz"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "18.4.3",
+    "@commitlint/config-conventional": "18.4.3",
+    "@tsconfig/node18": "18.2.2",
+    "@typescript-eslint/eslint-plugin": "6.13.2",
+    "@typescript-eslint/parser": "6.13.2",
+    "commitizen": "4.3.0",
+    "cz-conventional-changelog": "3.3.0",
+    "eslint": "8.55.0",
+    "eslint-config-prettier": "9.1.0",
+    "eslint-plugin-prettier": "5.0.1",
+    "husky": "8.0.3",
+    "lerna": "8.0.0",
+    "prettier": "3.1.1",
+    "rimraf": "5.0.5"
+  },
+  "devEngines": {
+    "node": ">=18.x"
+  }
+}
