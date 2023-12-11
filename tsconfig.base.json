@@ -7,10 +7,11 @@
     "esModuleInterop": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "strict": true
-  },
-  "paths": {
-    "@easylayer/logger": ["packages/common/logger/index"],
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@easylayer/logger": ["packages/common/logger/index"],
+    }
   }
 }
 
