@@ -11,6 +11,7 @@
     "baseUrl": ".",
     "paths": {
       "@easylayer/logger": ["packages/common/logger/index"],
+      "@easylayer/core": ["packages/common/core/index"],
     }
   }
 }
