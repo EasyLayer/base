@@ -1,9 +1,9 @@
 import { NestFactory } from '@nestjs/core';
+import { CoreModule } from '@easylayer/core';
 import { NestLogger } from '@easylayer/logger';
-import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create(CoreModule.forRoot({}), {
     logger: new NestLogger(),
   });
 

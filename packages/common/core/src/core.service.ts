@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppLogger } from '@easylayer/logger';
 
 @Injectable()
-export class AppService {
+export class CoreService {
   constructor(private readonly log: AppLogger) {}
 
   public test() {
