@@ -1,5 +1,3 @@
-import { logger } from './app-logger.service';
-
 interface MemoryUsage {
   [key: string]: string;
 }
@@ -52,13 +50,13 @@ export function RuntimeTracker({
 
         const message = `${context} - Execution time: ${time} ms`;
         if (errorOccurred) {
-          logger.error(`${message} - An error occurred`, logArgs);
+          console.error(`${message} - An error occurred`, logArgs);
         } else if (errorThresholdMs && time > errorThresholdMs) {
-          logger.error(message, logArgs);
+          console.error(message, logArgs);
         } else if (warningThresholdMs && time > warningThresholdMs) {
-          logger.warn(message, logArgs);
+          console.warn(message, logArgs);
         } else {
-          logger.debug(message, logArgs);
+          console.debug(message, logArgs);
         }
       }
     };

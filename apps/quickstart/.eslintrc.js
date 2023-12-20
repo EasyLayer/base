@@ -1,3 +1,5 @@
+const baseConfig = require('@easylayer/utils/eslints/base.config');
+
 module.exports = {
-    extends: '../../.eslintrc.base.js'
+    ...baseConfig
 };

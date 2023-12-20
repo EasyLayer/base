@@ -1,13 +1,12 @@
 {
-  "extends": "../../../tsconfig.base.json",
+  "extends": "@easylayer/utils/tsconfigs/base.config.json",
   "compilerOptions": {
     "rootDir": "src",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "composite": true
+    "emitDecoratorMetadata": true
   },
   "references": [
-    {"path": "../logger/tsconfig.json"}
+    {"path": "../logger/tsconfig.build.json"}
   ],
   "include": ["src"],
   "exclude": ["node_modules"],

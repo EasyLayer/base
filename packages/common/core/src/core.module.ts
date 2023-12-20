@@ -5,6 +5,7 @@ import { LoggerModule } from '@easylayer/logger';
 import { CoreService } from './core.service';
 
 export interface CoreModuleOptions {
+  appName?: string;
   wallets?: any[];
   parsers?: any[];
   exchanges?: any[];
@@ -16,10 +17,13 @@ export interface CoreModuleOptions {
 export class CoreModule implements OnModuleInit {
   constructor(private moduleRef: ModuleRef) {}
 
-  static forRoot({}: CoreModuleOptions): DynamicModule {
+  static forRoot({ appName }: CoreModuleOptions): DynamicModule {
     return {
       module: CoreModule,
-      imports: [ConfigModule.forRoot({ isGlobal: true }), LoggerModule.forRoot({ componentName: 'CoreModule' })],
+      imports: [
+        ConfigModule.forRoot({ isGlobal: true }),
+        LoggerModule.forRoot({ name: appName, componentName: 'CoreModule' }),
+      ],
       controllers: [],
       providers: [CoreService],
       exports: [],

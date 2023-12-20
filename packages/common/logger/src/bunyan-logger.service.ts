@@ -20,7 +20,8 @@ export class BunyanStream {
 export function createLogger(name: string): bunyan {
   const options: LoggerOptions = {
     name,
-    level: 'info',
+    // TODO: check it
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     streams: [
       {
         type: 'raw',

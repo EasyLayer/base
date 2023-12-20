@@ -7,18 +7,19 @@
   "scripts": {
     "clear": "yarn run clear:dist && yarn run clear:node_modules",
     "clear:node_modules": "rimraf node_modules",
-    "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
-    "build": "tsc --build ./tsconfig.build.json",
+    "clear:dist": "rimraf dist",
+    "build": "tsc -b ./tsconfig.build.json",
     "test:unit": "jest --maxWorkers=50% -c ./jest.config.unit.js",
     "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier -с .prettierrc.js --write \"src/**/*.ts\""
   },
   "author": "Yaroslav Pavliuk",
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
     "@easylayer/logger": "1.0.0",
+    "@easylayer/utils": "1.0.0",
     "@nestjs/common": "10.2.10",
     "@nestjs/config": "3.1.1",
     "@nestjs/core": "10.2.10",
