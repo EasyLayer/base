@@ -1,10 +1,9 @@
 import { trackUsage } from './scripts/usage';
 import { checkInstallPath } from './scripts';
-import createQuickStartApp from './create-quickstart-app';
+import { createQuickStartApp } from './create-quickstart-app';
+import { Scope } from './interfaces';
 
-import type { Scope } from './interfaces';
-
-export default async (scope: Scope) => {
+export const setup = async (scope: Scope) => {
   // check rootPath is empty
   checkInstallPath(scope.rootPath);
 

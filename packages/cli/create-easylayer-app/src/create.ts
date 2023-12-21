@@ -9,21 +9,6 @@ import { CommandOptions } from './interfaces';
 
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
 
-const command = new commander.Command(packageJson.name);
-
-command
-  .version(packageJson.version)
-  .arguments('[directory]')
-  .option('--no-run', 'Do not start the application after it is created')
-  .option('--debug', 'Display debug logs')
-  .option('--quickstart', 'Quickstart installation type app creation')
-  .option('--plugins <plugins>', 'Specify plugins to install', parsePlugins)
-  .description('create a new application')
-  .action((directory, programArgs) => {
-    create(directory, programArgs);
-  })
-  .parse(process.argv);
-
 const create = async (appName: string, programArgs: CommandOptions) => {
   if (appName) {
     await checkInstallPath(resolve(appName));
@@ -41,7 +26,7 @@ const create = async (appName: string, programArgs: CommandOptions) => {
   const directory = prompt.directory || appName;
   await checkInstallPath(resolve(directory));
 
-  const easyLayerDependencies = [...dependencies, ...(plugins || prompt.plugins || [])];
+  const easyLayerDependencies = [...dependencies, ...(plugins || prompt.plugins)];
 
   // Setup Sentry.io url
   const sentryDsn = 'https://a6167fb1304fcbce44884f9213cb9abe@o4506386985648128.ingest.sentry.io/4506386992136192';
@@ -62,3 +47,18 @@ const generateApp = (projectName: string, options: GeneraeOptions) => {
     }
   });
 };
+
+const command = new commander.Command(packageJson.name);
+
+command
+  .version(packageJson.version)
+  .arguments('[directory]')
+  .option('--no-run', 'Do not start the application after it is created')
+  .option('--debug', 'Display debug logs')
+  .option('--quickstart', 'Quickstart installation type app creation')
+  .option('--plugins <plugins>', 'Specify plugins to install', parsePlugins)
+  .description('create a new application')
+  .action((directory, programArgs) => {
+    create(directory, programArgs);
+  })
+  .parse(process.argv);

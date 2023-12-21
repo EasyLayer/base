@@ -32,7 +32,22 @@ export const promptUser = async (appName: string, options: CommandOptions, hasPl
       name: 'plugins',
       message: 'Select the plugins you want to install',
       when: !hasPlugins,
-      choices: getAllPluginsChoices(),
+      choices: [
+        ...getAllPluginsChoices(),
+        // Add a separator
+        new inquirer.Separator(),
+        {
+          name: 'No plugins (install without any plugins)',
+          value: 'no-plugins',
+        },
+      ],
+      filter: (answers) => {
+        // If 'no-plugins' is selected, return an empty array
+        if (answers.includes('no-plugins')) {
+          return [];
+        }
+        return answers;
+      },
     },
   ]);
 };

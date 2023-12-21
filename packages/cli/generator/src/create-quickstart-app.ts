@@ -1,15 +1,15 @@
 import execa from 'execa';
 import { trackUsage, captureStderr } from './scripts';
-import createApp from './create';
+import { createApp } from './create';
 import { Scope } from './interfaces';
 
-export default async (scope: Scope) => {
+export const createQuickStartApp = async (scope: Scope) => {
   console.log('Creating a quickstart app.');
   await trackUsage('didChooseQuickstart', scope);
 
   await createApp(scope);
 
-  if (scope.runApp !== true) return;
+  if (scope.noRun === true) return;
 
   console.log(`Running your application.`);
 

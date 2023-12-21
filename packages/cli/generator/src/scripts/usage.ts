@@ -51,7 +51,7 @@ const getProperties = (scope: Scope) => {
   };
   const groupProperties = {
     version: scope.appVersion,
-    noRun: (scope.runApp !== true).toString(),
+    noRun: scope.noRun,
     appUuid: scope.uuid,
   };
 

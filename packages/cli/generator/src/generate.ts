@@ -6,7 +6,7 @@ import * as sentry from '@sentry/node';
 import { v4 as uuidv4 } from 'uuid';
 
 import { checkRequirements, captureException } from './scripts';
-import setup from './setup';
+import { setup } from './setup';
 import { Scope, GeneraeOptions } from './interfaces';
 
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
@@ -25,7 +25,7 @@ export const generate = (projectDirectory: string, options: Partial<GeneraeOptio
     uuid: uuidv4(),
     rootPath,
     // disable run app after creation
-    runApp: options.run !== undefined,
+    noRun: options.noRun !== false,
     // use package version as appVersion;
     appVersion: packageJson.version,
     debug: options.debug !== undefined,

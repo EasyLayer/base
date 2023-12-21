@@ -1,5 +1,5 @@
 export interface GeneraeOptions {
-  run?: boolean;
+  noRun?: boolean;
   debug?: boolean;
   // Sentry.io dsn string
   sentryDsn?: string;
@@ -12,7 +12,7 @@ export interface Scope {
   easyLayerDependencies: string[];
   uuid: string;
   name: string;
-  runApp?: boolean;
+  noRun?: boolean;
   debug?: boolean;
 }
 

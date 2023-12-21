@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "src",
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "composite": true
   },
   "references": [
     {"path": "../logger/tsconfig.json"}

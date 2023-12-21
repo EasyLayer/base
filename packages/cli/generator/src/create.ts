@@ -9,7 +9,8 @@ import { Scope } from './interfaces';
 import { isStderrError } from './errors';
 import { packageJSON } from './utils/package.json';
 
-export default async (scope: Scope) => {
+// TODO: split this large function into smaller and easily testable ones
+export const createApp = async (scope: Scope) => {
   console.log(`Creating the new application at ${chalk.green(scope.rootPath)}.`);
   console.log('Creating files.');
 
@@ -173,25 +174,37 @@ const addEasyLayerDependencies = ({ rootPath, easyLayerDependencies }: Scope) =>
   });
 };
 
+// Function to create .env and env.example files
+// based on the env.example files found in @easylayer packages
 const createEnvFiles = async ({ rootPath }: Scope) => {
   const easyLayerDir = join(rootPath, 'node_modules', '@easylayer');
   const envVariables = new Set();
 
-  const packages = await fse.readdir(easyLayerDir);
+  // Check if the @easylayer directory exists
+  if (await fse.pathExists(easyLayerDir)) {
+    const packages = await fse.readdir(easyLayerDir);
 
-  for (const pkg of packages) {
-    const envExamplePath = join(easyLayerDir, pkg, 'env.example');
-    if (await fse.pathExists(envExamplePath)) {
-      const content = await fse.readFile(envExamplePath, 'utf8');
-      content.split('\n').forEach((line) => {
-        if (line && !line.startsWith('#')) {
-          envVariables.add(line.split('=')[0] + '=');
-        }
-      });
+    // Loop through each package in the @easylayer directory
+    for (const pkg of packages) {
+      const envExamplePath = join(easyLayerDir, pkg, 'env.example');
+
+      // Check if the env.example file exists
+      if (await fse.pathExists(envExamplePath)) {
+        const content = await fse.readFile(envExamplePath, 'utf8');
+
+        content.split('\n').forEach((line) => {
+          // If the line is not empty and not a comment, add it to the envVariables set
+          if (line && !line.startsWith('#')) {
+            envVariables.add(line.split('=')[0] + '=');
+          }
+        });
+      }
     }
   }
 
+  // Convert the set of environment variables to a string
   const envContent = Array.from(envVariables).join('\n');
+
   await fse.writeFile(join(rootPath, '.env'), envContent);
   await fse.writeFile(join(rootPath, 'env.example'), envContent);
 };
