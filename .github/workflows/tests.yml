@@ -2,9 +2,9 @@ name: Tests Workflow
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master, development ]
+    branches: [master, development]
     paths-ignore:
       - 'docs/**'
       - '**.mdx?'
@@ -18,46 +18,21 @@ permissions:
   actions: read
 
 jobs:
-  install:
-    name: 'install (node: 18)'
+  all-in-one:
+    name: 'All-in-one (node: 18)'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 18
       - name: Monorepo install
-        uses: ./.github/actions/yarn-nm-install
-
-  build:
-    name: 'build (node: 18)'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
+        run: ./.github/actions/yarn-nm-install
       - name: Monorepo build
-        uses: ./.github/actions/run-build
-
-  lint:
-    name: 'lint (node: 18)'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Run lint
-        run: yarn lint
-
-  unit:
-    name: 'units (node: 18)'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Run tests
-        run: yarn test:unit
+        run: ./.github/actions/run-build
+      - name: Monorepo lint
+        run: ./.github/actions/run-lints
+      - name: Monorepo tests
+        run: ./.github/actions/run-unit-tests
