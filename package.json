@@ -24,7 +24,7 @@
     "clear": "lerna run clear:dist && lerna run clear:node_modules && rimraf node_modules && yarn cache clean",
     "clear:node_modules": "lerna run clear:node_modules && rimraf node_modules",
     "clear:dist": "lerna run clear:dist",
-    "build:packages": "yarn cache clean && lerna run build --ignore quickstart",
+    "build:packages": "lerna run build --ignore quickstart",
     "start:dev": "lerna run start:dev",
     "test:unit": "lerna run test:unit",
     "lint": "lerna run lint",

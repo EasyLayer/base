@@ -1,0 +1,54 @@
+name: Tests Workflow
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master, development ]
+    paths-ignore:
+      - 'docs/**'
+      - '**.mdx?'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  install:
+    name: 'install (node: 18)'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Monorepo install
+        uses: ./.github/actions/yarn-nm-install
+
+  build:
+    name: 'build (node: 18)'
+    needs: [install]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Monorepo build
+        uses: ./.github/actions/run-build
+
+  lint:
+    name: 'lint (node: 18)'
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run lint
+        run: yarn lint
+
+  unit:
+    name: 'units (node: 18)'
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run tests
+        run: yarn test:unit
