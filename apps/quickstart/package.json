@@ -1,0 +1,32 @@
+{
+  "name": "quickstart",
+  "private": true,
+  "version": "1.0.0",
+  "description": "EasyLayer start app",
+  "scripts": {
+    "start:dev": "ts-node src/main.ts",
+    "build": "tsc -p ./tsconfig.build.json",
+    "start": "node src/main.ts",
+    "clear": "yarn clear cache && rimraf dist && rimraf node_module",
+    "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
+    "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "devDependencies": {
+    "@easylayer/utils": "1.0.0",
+    "@types/node": "20.10.4",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
+  },
+  "author": {
+    "name": "developer"
+  },
+  "easylayer": {
+    "uuid": "a2903462-4cbe-4a2f-9852-bf89714b5b13"
+  },
+  "engines": {
+    "node": ">=18.0.0 <=20.x.x",
+    "npm": ">=8.0.0"
+  },
+  "license": ""
+}
