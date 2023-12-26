@@ -15,7 +15,7 @@
   },
   "workspaces": {
     "packages": [
-      "apps/quickstart",
+      "apps/*",
       "packages/*",
       "packages/*/*"
     ]

@@ -8329,7 +8329,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "quickstart@workspace:apps/quickstart"
   dependencies:
+    "@easylayer/utils": 1.0.0
     "@types/node": 20.10.4
+    eslint: 8.55.0
     ts-node: 10.9.2
     typescript: 5.3.3
   languageName: unknown

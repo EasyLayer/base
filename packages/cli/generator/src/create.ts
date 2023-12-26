@@ -186,7 +186,7 @@ const createEnvFiles = async ({ rootPath }: Scope) => {
 
     // Loop through each package in the @easylayer directory
     for (const pkg of packages) {
-      const envExamplePath = join(easyLayerDir, pkg, 'env.example');
+      const envExamplePath = join(easyLayerDir, pkg, '.env.example');
 
       // Check if the env.example file exists
       if (await fse.pathExists(envExamplePath)) {
