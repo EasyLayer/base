@@ -1,12 +1,5 @@
-import { NestFactory } from '@nestjs/core';
-import { CoreModule } from '@easylayer/core';
-import { NestLogger } from '@easylayer/logger';
+import { bootstrap } from '@easylayer/base';
 
-async function bootstrap() {
-  const app = await NestFactory.create(CoreModule.forRoot({}), {
-    logger: new NestLogger(),
-  });
 
-  await app.listen(3000);
-}
-bootstrap();
+bootstrap({appName: 'quickstart', plugins: []})
+  .catch(error => console.error(error));
