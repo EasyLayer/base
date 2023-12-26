@@ -29,10 +29,10 @@ jobs:
         with:
           node-version: 18
       - name: Monorepo install
-        run: ./.github/actions/yarn-nm-install
+        uses: ./.github/actions/yarn-nm-install
       - name: Monorepo build
-        run: ./.github/actions/run-build
+        uses: ./.github/actions/run-build
       - name: Monorepo lint
-        run: ./.github/actions/run-lints
+        uses: ./.github/actions/run-lints
       - name: Monorepo tests
-        run: ./.github/actions/run-unit-tests
+        uses: ./.github/actions/run-unit-tests
