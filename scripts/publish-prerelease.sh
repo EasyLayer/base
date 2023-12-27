@@ -26,7 +26,8 @@ echo "Publishing packages with tag: $suffix"
 echo "Committing version changes and pushing to development branch"
 git config user.name "github-actions"
 git config user.email "github-actions@github.com"
-git add **/package.json yarn.lock lerna.json
+git add apps/*/package.json packages/*/*/package.json yarn.lock lerna.json
+git status
 git commit -m "prerelease: $tagName"
 git push origin HEAD
 
