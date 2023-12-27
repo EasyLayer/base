@@ -18,17 +18,20 @@ echo "Setting package versions to: $publishVersion"
 echo "Updating yarn.lock file"
 yarn install
 
+# Add changes to Git
+echo "Committing version changes"
+git config user.name "github-actions"
+git config user.email "github-actions@github.com"
+git add **/package.json yarn.lock lerna.json
+git status
+git commit -m "prerelease: $tagName"
+
 # Publish packages with the $publishVersion and the suffix as a tag
 echo "Publishing packages with tag: $suffix"
 ./node_modules/.bin/lerna publish from-package --no-private --dist-tag $suffix --yes --no-git-tag-version --force-publish
 
-# Add changes to Git and push to the development branch
-echo "Committing version changes and pushing to development branch"
-git config user.name "github-actions"
-git config user.email "github-actions@github.com"
-git add apps/*/package.json packages/*/*/package.json yarn.lock lerna.json
-git status
-git commit -m "prerelease: $tagName"
+# Push to the Git branch
+echo "Pushing to development branch"
 git push origin HEAD
 
 # Create and push a Git tag
