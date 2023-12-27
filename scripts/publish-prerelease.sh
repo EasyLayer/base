@@ -24,6 +24,8 @@ echo "Publishing packages with version: $publishVersion and suffix: $suffix"
 
 # Add changes to Git and push to the development branch
 echo "Committing version changes and pushing to development branch"
+git config user.name "github-actions"
+git config user.email "github-actions@github.com"
 git add **/package.json yarn.lock
 git commit -m "prerelease: $tagName"
 git push origin HEAD
