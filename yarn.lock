@@ -623,9 +623,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@easylayer/base@workspace:packages/common/base"
   dependencies:
-    "@easylayer/core": 1.0.0
-    "@easylayer/logger": 1.0.0
-    "@easylayer/utils": 1.0.0
+    "@easylayer/core": ^0.0.1-experimental.3
+    "@easylayer/logger": ^0.0.1-experimental.3
+    "@easylayer/utils": ^0.0.1-experimental.3
     "@nestjs/common": 10.2.10
     "@nestjs/config": 3.1.1
     "@nestjs/core": 10.2.10
@@ -641,12 +641,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/core@1.0.0, @easylayer/core@workspace:packages/common/core":
+"@easylayer/core@^0.0.1-experimental.3, @easylayer/core@workspace:packages/common/core":
   version: 0.0.0-use.local
   resolution: "@easylayer/core@workspace:packages/common/core"
   dependencies:
-    "@easylayer/logger": 1.0.0
-    "@easylayer/utils": 1.0.0
+    "@easylayer/logger": ^0.0.1-experimental.3
+    "@easylayer/utils": ^0.0.1-experimental.3
     "@nestjs/common": 10.2.10
     "@nestjs/config": 3.1.1
     "@nestjs/core": 10.2.10
@@ -662,11 +662,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/generator@1.0.0, @easylayer/generator@workspace:packages/cli/generator":
+"@easylayer/generator@^0.0.1-experimental.3, @easylayer/generator@workspace:packages/cli/generator":
   version: 0.0.0-use.local
   resolution: "@easylayer/generator@workspace:packages/cli/generator"
   dependencies:
-    "@easylayer/utils": 1.0.0
+    "@easylayer/utils": ^0.0.1-experimental.3
     "@sentry/node": 7.86.0
     "@types/fs-extra": 11.0.4
     "@types/lodash": 4.14.202
@@ -684,11 +684,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/logger@1.0.0, @easylayer/logger@workspace:packages/common/logger":
+"@easylayer/logger@^0.0.1-experimental.3, @easylayer/logger@workspace:packages/common/logger":
   version: 0.0.0-use.local
   resolution: "@easylayer/logger@workspace:packages/common/logger"
   dependencies:
-    "@easylayer/utils": 1.0.0
+    "@easylayer/utils": ^0.0.1-experimental.3
     "@nestjs/common": 10.2.10
     "@nestjs/testing": 10.2.10
     "@types/bunyan": 1.8.11
@@ -702,7 +702,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/utils@1.0.0, @easylayer/utils@workspace:packages/common/utils":
+"@easylayer/utils@^0.0.1-experimental.3, @easylayer/utils@workspace:packages/common/utils":
   version: 0.0.0-use.local
   resolution: "@easylayer/utils@workspace:packages/common/utils"
   dependencies:
@@ -3533,8 +3533,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "create-easylayer-app@workspace:packages/cli/create-easylayer-app"
   dependencies:
-    "@easylayer/generator": 1.0.0
-    "@easylayer/utils": 1.0.0
+    "@easylayer/generator": ^0.0.1-experimental.3
+    "@easylayer/utils": ^0.0.1-experimental.3
     "@types/inquirer": 8.1.0
     "@types/node": 20.10.4
     commander: 11.1.0
@@ -8173,7 +8173,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "quickstart@workspace:apps/quickstart"
   dependencies:
-    "@easylayer/utils": 1.0.0
+    "@easylayer/utils": ^0.0.1-experimental.3
     "@types/node": 20.10.4
     ts-node: 10.9.2
     typescript: 5.3.3
