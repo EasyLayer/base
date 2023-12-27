@@ -1,6 +1,6 @@
 {
   "name": "create-easylayer-app",
-  "version": "1.0.0",
+  "version": "0.0.1-experimental.4",
   "description": "",
   "main": "",
   "bin": "./bin/index.js",
@@ -23,8 +23,8 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "@easylayer/generator": "1.0.0",
-    "@easylayer/utils": "1.0.0",
+    "@easylayer/generator": "0.0.1-experimental.4",
+    "@easylayer/utils": "0.0.1-experimental.4",
     "commander": "11.1.0",
     "inquirer": "8.2.5"
   },

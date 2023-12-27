@@ -1,6 +1,6 @@
 {
   "name": "@easylayer/logger",
-  "version": "1.0.0",
+  "version": "0.0.1-experimental.4",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,7 @@
     "bunyan": "1.8.15"
   },
   "devDependencies": {
-    "@easylayer/utils": "1.0.0",
+    "@easylayer/utils": "0.0.1-experimental.4",
     "@nestjs/testing": "10.2.10",
     "@types/bunyan": "1.8.11",
     "@types/jest": "29.5.11",

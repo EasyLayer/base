@@ -1,7 +1,7 @@
 {
   "name": "quickstart",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.1-experimental.4",
   "description": "EasyLayer start app",
   "scripts": {
     "start:dev": "ts-node src/main.ts",
@@ -13,7 +13,7 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {
-    "@easylayer/utils": "1.0.0",
+    "@easylayer/utils": "0.0.1-experimental.4",
     "@types/node": "20.10.4",
     "ts-node": "10.9.2",
     "typescript": "5.3.3"
