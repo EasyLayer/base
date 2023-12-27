@@ -8,6 +8,7 @@
     "clear": "yarn run clear:dist && yarn run clear:node_modules",
     "clear:node_modules": "rimraf node_modules",
     "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
+    "prepublishOnly": "yarn clear:dist && yarn build",
     "build": "tsc -b ./tsconfig.build.json",
     "test:unit": "jest --maxWorkers=50% -c ./jest.config.unit.js",
     "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
