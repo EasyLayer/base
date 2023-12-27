@@ -1,0 +1,43 @@
+{
+  "name": "@easylayer/generator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "resources"
+  ],
+  "scripts": {
+    "clear": "yarn run clear:dist && yarn run clear:node_modules",
+    "clear:node_modules": "rimraf node_modules",
+    "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
+    "prepublishOnly": "yarn clear:dist && yarn build",
+    "build": "tsc -b tsconfig.build.json",
+    "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
+    "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "format": "prettier -с .prettierrc.js --write \"src/**/*.ts\""
+  },
+  "author": "Yaroslav Pavliuk",
+  "license": "",
+  "packageManager": "yarn@3.6.0",
+  "dependencies": {
+    "@easylayer/utils": "1.0.0",
+    "@sentry/node": "7.86.0",
+    "chalk": "4.1.2",
+    "execa": "5.1.1",
+    "fs-extra": "11.2.0",
+    "lodash": "4.17.21",
+    "ora": "5.4.1",
+    "semver": "7.5.4",
+    "uuid": "9.0.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "11.0.4",
+    "@types/lodash": "4.14.202",
+    "@types/node": "20.10.4",
+    "@types/uuid": "9.0.7",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
+  }
+}

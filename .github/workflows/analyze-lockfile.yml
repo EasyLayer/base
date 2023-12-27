@@ -1,0 +1,23 @@
+name: Analyze Lockfile Workflow
+
+on:
+  push:
+    branches: [ master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Analyze Lockfile Dependencies
+        uses: ./.github/actions/security/lockfile
+        with:
+          path: 'yarn.lock'
+          type: 'yarn'
+          allowedHosts: 'registry.npmjs.org registry.yarnpkg.com'
+          allowedURLs: ''

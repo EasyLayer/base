@@ -2,12 +2,12 @@ import * as bunyan from 'bunyan';
 import { LoggerOptions, nameFromLevel, safeCycles } from 'bunyan';
 export { LoggerOptions };
 
-class BunyanStream {
-  write(logMessage: any) {
+export class BunyanStream {
+  write(logMessage: any): void {
     const updatedLog = {
       ...logMessage,
       time: logMessage.time ? logMessage.time.toISOString() : new Date().toISOString(),
-      level: nameFromLevel[logMessage.level] || 'INFO',
+      level: nameFromLevel[logMessage.level] || 'info',
       // Removing "hostname" from the log
       hostname: undefined,
     };
@@ -20,7 +20,8 @@ class BunyanStream {
 export function createLogger(name: string): bunyan {
   const options: LoggerOptions = {
     name,
-    level: 'info',
+    // TODO: check it
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     streams: [
       {
         type: 'raw',

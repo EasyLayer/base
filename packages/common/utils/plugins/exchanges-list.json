@@ -1,0 +1,6 @@
+{
+    "binance_exchange": {
+        "version": "1.0.0",
+        "name":  "@easylayer/binance-exchange"
+    }
+}

@@ -15,7 +15,7 @@
   },
   "workspaces": {
     "packages": [
-      "apps/quickstart",
+      "apps/*",
       "packages/*",
       "packages/*/*"
     ]
@@ -29,6 +29,7 @@
     "test:unit": "lerna run test:unit",
     "lint": "lerna run lint",
     "lint:fix": "lerna run lint:fix",
+    "postinstall": "husky install",
     "pre-commit": "lerna run lint",
     "pre-push": "lerna run test:unit",
     "commit": "cz"
@@ -36,20 +37,14 @@
   "devDependencies": {
     "@commitlint/cli": "18.4.3",
     "@commitlint/config-conventional": "18.4.3",
-    "@tsconfig/node18": "18.2.2",
-    "@typescript-eslint/eslint-plugin": "6.13.2",
-    "@typescript-eslint/parser": "6.13.2",
     "commitizen": "4.3.0",
     "cz-conventional-changelog": "3.3.0",
-    "eslint": "8.55.0",
-    "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-prettier": "5.0.1",
     "husky": "8.0.3",
     "lerna": "8.0.0",
-    "prettier": "3.1.1",
     "rimraf": "5.0.5"
   },
   "devEngines": {
-    "node": ">=18.x"
+    "node": ">=18.0.0 <=20.x.x",
+    "npm": ">=8.0.0"
   }
 }

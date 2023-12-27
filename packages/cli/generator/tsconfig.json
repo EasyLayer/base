@@ -1,0 +1,9 @@
+{
+  "extends": "@easylayer/utils/tsconfigs/base.config.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "composite": true,
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
+}

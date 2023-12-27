@@ -45,4 +45,11 @@ export class AppLogger implements IAppLogger {
   }
 }
 
-export const logger = new AppLogger(createLogger('app'));
+let singletonLogger: IAppLogger | null = null;
+
+export const logger = (name = 'app') => {
+  if (!singletonLogger) {
+    singletonLogger = new AppLogger(createLogger(name));
+  }
+  return singletonLogger;
+};

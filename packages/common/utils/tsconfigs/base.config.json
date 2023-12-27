@@ -2,16 +2,14 @@
   "$schema": "http://json.schemastore.org/tsconfig",
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
+    
     "declaration": true,
     "declarationMap": true,
-    "esModuleInterop": true,
     "sourceMap": true,
-    "resolveJsonModule": true,
-    "strict": true
-  },
-  "paths": {
-    "@easylayer/logger": ["packages/common/logger/index"],
-  }
-}
 
-  
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+
+    "noImplicitThis": true
+  },
+}
