@@ -12,7 +12,7 @@ tagName="v$publishVersion"
 
 # Update package versions (e.g., 0.0.1-beta.0)
 echo "Setting package versions to: $publishVersion"
-./node_modules/.bin/lerna version $publishVersion --no-private --exact --yes --no-git-tag-version --no-push --force-publish=*
+./node_modules/.bin/lerna version $publishVersion --exact --yes --no-git-tag-version --no-push --force-publish=*
 
 # Install dependencies to update Yarn.lock
 echo "Updating yarn.lock file"
