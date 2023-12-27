@@ -10,23 +10,23 @@ increment=$INCREMENT
 publishVersion="$baseVersion-$suffix.$increment"
 tagName="v$publishVersion"
 
-# Update package base versions (e.g., 0.0.1)
-echo "Setting package versions to: $baseVersion"
-./node_modules/.bin/lerna version $baseVersion --exact --yes --no-git-tag-version --no-push
+# Update package versions (e.g., 0.0.1-beta.0)
+echo "Setting package versions to: $publishVersion"
+./node_modules/.bin/lerna version $publishVersion --no-private --exact --yes --no-git-tag-version --no-push --force-publish=*
 
 # Install dependencies to update Yarn.lock
 echo "Updating yarn.lock file"
 yarn install
 
 # Publish packages with the $publishVersion and the suffix as a tag
-echo "Publishing packages with version: $publishVersion and suffix: $suffix"
-./node_modules/.bin/lerna publish $publishVersion --dist-tag $suffix --yes --no-git-tag-version --force-publish
+echo "Publishing packages with tag: $suffix"
+./node_modules/.bin/lerna publish from-package --no-private --dist-tag $suffix --yes --no-git-tag-version --force-publish
 
 # Add changes to Git and push to the development branch
 echo "Committing version changes and pushing to development branch"
 git config user.name "github-actions"
 git config user.email "github-actions@github.com"
-git add **/package.json yarn.lock  lerna.json
+git add **/package.json yarn.lock lerna.json
 git commit -m "prerelease: $tagName"
 git push origin HEAD
 
