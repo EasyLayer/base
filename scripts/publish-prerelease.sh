@@ -9,7 +9,6 @@ suffix=$SUFFIX
 increment=$INCREMENT
 publishVersion="$baseVersion-$suffix.$increment"
 tagName="v$publishVersion"
-tokent=$PRERELEASE_WORKFLOW_PAT
 
 # Update package versions (e.g., 0.0.1-beta.0)
 echo "Setting package versions to: $publishVersion"
@@ -31,11 +30,11 @@ git commit -m "Prerelease: $tagName"
 echo "Publishing packages with tag: $suffix"
 ./node_modules/.bin/lerna publish from-package --no-private --dist-tag $suffix --yes --no-git-tag-version --force-publish
 
-# Push to the Git branch using PAT
+# Push to the Git branch
 echo "Pushing to head branch"
-git push https://$tokent@github.com/$GITHUB_REPOSITORY HEAD
+git push origin HEAD
 
-# Push the Git tag using PAT
-echo "Pushing tag $tagName to development branch"
+# Create and push a Git tag
 git tag $tagName
-git push origin $tagName https://$tokent@github.com/$GITHUB_REPOSITORY
+echo "Pushing tag $tagName"
+git push origin $tagName
