@@ -5,8 +5,8 @@
   "main": "",
   "bin": "./bin/index.js",
   "files": [
-    "./dist",
-    "./bin"
+    "dist",
+    "bin"
   ],
   "scripts": {
     "clear": "yarn run clear:dist && yarn run clear:node_modules",

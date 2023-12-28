@@ -4,6 +4,9 @@
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "clear": "yarn run clear:dist && yarn run clear:node_modules",
     "clear:node_modules": "rimraf node_modules",
