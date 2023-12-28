@@ -1,23 +1,12 @@
-name: 'Publish Prerelease'
+name: 'Create Draft Release'
 
 on:
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Base version number (e.g., 1.0.0)'
-        required: true
-      suffix:
-        description: 'Version suffix for prerelease (e.g., alpha, beta)'
-        required: true
-        default: 'experimental'
-      increment:
-        description: 'Prerelease increment (e.g., 0, 1, 2)'
-        required: true
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/development'
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v2
       - name: Setup Node.js
@@ -34,11 +23,8 @@ jobs:
           type: 'yarn'
           allowedHosts: 'https://registry.npmjs.org'
           allowedURLs: ''
-      - name: Publish Prerelease Packages
-        run: bash ./scripts/publish-prerelease.sh
+      - name: Create Draft Release Packages
+        run: bash ./scripts/create-draft-release.sh
         env:
-          BASE_VERSION: ${{ github.event.inputs.version }}
-          SUFFIX: ${{ github.event.inputs.suffix }}
-          INCREMENT: ${{ github.event.inputs.increment }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
