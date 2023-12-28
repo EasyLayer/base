@@ -23,8 +23,20 @@ jobs:
           type: 'yarn'
           allowedHosts: 'https://registry.npmjs.org'
           allowedURLs: ''
-      - name: Create Draft Release Packages
-        run: bash ./scripts/create-draft-release.sh
+      - name: Publish Release Packages
+        id: publish_release_packages
+        run: bash ./scripts/publish-release.sh
+      - name: Create Draft Release
+        id: create_draft_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ steps.publish_release_packages.outputs.tag }}
+          release_name: Release ${{ steps.publish_release_packages.outputs.tag }}
+          draft: true
+          body: |
+            Changes in this Release:
+            - First change
+            - Second change
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
