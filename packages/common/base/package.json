@@ -1,6 +1,6 @@
 {
   "name": "@easylayer/base",
-  "version": "0.0.1-experimental.8",
+  "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,9 +23,9 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "@easylayer/core": "0.0.1-experimental.8",
-    "@easylayer/logger": "0.0.1-experimental.8",
-    "@easylayer/utils": "0.0.1-experimental.8",
+    "@easylayer/core": "0.0.1",
+    "@easylayer/logger": "0.0.1",
+    "@easylayer/utils": "0.0.1",
     "@nestjs/common": "10.2.10",
     "@nestjs/config": "3.1.1",
     "@nestjs/core": "10.2.10",
