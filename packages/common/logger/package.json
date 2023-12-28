@@ -1,9 +1,12 @@
 {
   "name": "@easylayer/logger",
-  "version": "1.0.0",
+  "version": "0.0.1-experimental.8",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "clear": "yarn run clear:dist && yarn run clear:node_modules",
     "clear:node_modules": "rimraf node_modules",
@@ -23,7 +26,7 @@
     "bunyan": "1.8.15"
   },
   "devDependencies": {
-    "@easylayer/utils": "1.0.0",
+    "@easylayer/utils": "0.0.1-experimental.8",
     "@nestjs/testing": "10.2.10",
     "@types/bunyan": "1.8.11",
     "@types/jest": "29.5.11",
@@ -32,5 +35,9 @@
     "ts-jest": "29.1.1",
     "ts-node": "10.9.2",
     "typescript": "5.3.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

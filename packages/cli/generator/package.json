@@ -1,6 +1,6 @@
 {
   "name": "@easylayer/generator",
-  "version": "1.0.0",
+  "version": "0.0.1-experimental.8",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,7 +22,7 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "@easylayer/utils": "1.0.0",
+    "@easylayer/utils": "0.0.1-experimental.8",
     "@sentry/node": "7.86.0",
     "chalk": "4.1.2",
     "execa": "5.1.1",
@@ -39,5 +39,9 @@
     "@types/uuid": "9.0.7",
     "ts-node": "10.9.2",
     "typescript": "5.3.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
