@@ -42,3 +42,4 @@ jobs:
           INCREMENT: ${{ github.event.inputs.increment }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.PRERELEASE_WORKFLOW_PAT }}
+          HUSKY: '0' # By default do not run HUSKY install
