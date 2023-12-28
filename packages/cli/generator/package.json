@@ -1,6 +1,6 @@
 {
   "name": "@easylayer/generator",
-  "version": "0.0.1-experimental.5",
+  "version": "0.0.1-experimental.8",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -22,7 +22,7 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "@easylayer/utils": "0.0.1-experimental.5",
+    "@easylayer/utils": "0.0.1-experimental.8",
     "@sentry/node": "7.86.0",
     "chalk": "4.1.2",
     "execa": "5.1.1",
