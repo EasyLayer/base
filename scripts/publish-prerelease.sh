@@ -24,14 +24,14 @@ git config user.name "github-actions"
 git config user.email "github-actions@github.com"
 git add **/package.json yarn.lock lerna.json
 git status
-git commit -m "prerelease: $tagName"
+git commit -m "Prerelease: $tagName"
 
-# Publish packages with the $publishVersion and the suffix as a tag
+# Publish packages with the suffix as a tag
 echo "Publishing packages with tag: $suffix"
 ./node_modules/.bin/lerna publish from-package --no-private --dist-tag $suffix --yes --no-git-tag-version --force-publish
 
 # Push to the Git branch
-echo "Pushing to development branch"
+echo "Pushing to head branch"
 git push origin HEAD
 
 # Create and push a Git tag
