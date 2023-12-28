@@ -26,6 +26,10 @@ jobs:
       - name: Publish Release Packages
         id: publish_release_packages
         run: bash ./scripts/publish-release.sh
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HUSKY: '0' # By default do not run HUSKY install
       - name: Create Draft Release
         id: create_draft_release
         uses: actions/create-release@v1
@@ -38,6 +42,4 @@ jobs:
             - First change
             - Second change
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HUSKY: '0' # By default do not run HUSKY install
