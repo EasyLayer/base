@@ -17,3 +17,6 @@ git config user.name "github-actions"
 git config user.email "github-actions@github.com"
 git tag $tagName
 git push origin $tagName
+
+# Output the tag name for later use in the workflow
+echo "::set-output name=tag::$tagName"
