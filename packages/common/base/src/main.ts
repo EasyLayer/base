@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { CoreModule } from '@easylayer/core';
 import { NestLogger } from '@easylayer/logger';
+import { CoreModule } from './core.module';
 
 export interface BootstrapOptions {
   appName?: string;
