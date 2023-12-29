@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import commander from 'commander';
 import { checkInstallPath, generate, GeneraeOptions } from '@easylayer/generator';
 import { promptUser } from './utils/prompt-user';
@@ -35,6 +35,7 @@ const create = async (appName: string, programArgs: CommandOptions) => {
     ...restProgramArgs,
     easyLayerDependencies,
     sentryDsn,
+    resourcesPath: join(__dirname, '../resources'),
   };
 
   return generateApp(directory, generateAppOptions);
