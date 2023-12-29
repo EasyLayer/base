@@ -1,7 +1,7 @@
 {
   "name": "quickstart",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.2-experimental.0",
   "description": "EasyLayer start app",
   "scripts": {
     "start:dev": "ts-node src/main.ts",
@@ -13,7 +13,7 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {
-    "@easylayer/utils": "0.0.1",
+    "@easylayer/utils": "0.0.2-experimental.0",
     "@tsconfig/node18": "18.2.2",
     "@types/node": "20.10.4",
     "@typescript-eslint/eslint-plugin": "6.13.2",
