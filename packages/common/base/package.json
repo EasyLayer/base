@@ -23,7 +23,6 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "@easylayer/core": "0.0.1",
     "@easylayer/logger": "0.0.1",
     "@easylayer/utils": "0.0.1",
     "@nestjs/common": "10.2.10",
