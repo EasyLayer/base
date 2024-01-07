@@ -13,6 +13,7 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
+    "@easylayer/base": "0.0.2-experimental.0",
     "@easylayer/plugin-bitcoin-parser": "0.0.2-experimental.0",
     "@easylayer/plugin-bitcoin-wallet": "0.0.2-experimental.0"
   },
