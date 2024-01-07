@@ -12,6 +12,10 @@
     "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\""
   },
+  "dependencies": {
+    "@easylayer/plugin-bitcoin-parser": "0.0.2-experimental.0",
+    "@easylayer/plugin-bitcoin-wallet": "0.0.2-experimental.0"
+  },
   "devDependencies": {
     "@easylayer/utils": "0.0.2-experimental.0",
     "@tsconfig/node18": "18.2.2",
