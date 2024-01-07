@@ -6,9 +6,6 @@
     "emitDecoratorMetadata": true,
     "composite": true
   },
-  "references": [
-    {"path": "../logger/tsconfig.json"}
-  ],
   "include": ["src"],
   "exclude": ["node_modules"],
 }

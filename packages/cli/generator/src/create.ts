@@ -178,6 +178,8 @@ const addEasyLayerDependencies = ({ rootPath, easyLayerDependencies }: Scope) =>
 // Function to create .env and env.example files
 // based on the env.example files found in @easylayer packages
 const createEnvFiles = async ({ rootPath }: Scope) => {
+  // TODO: the prefix of the names of the packages
+  // must be taken with a variable "easyLayerDependencies"
   const easyLayerDir = join(rootPath, 'node_modules', '@easylayer');
   const envVariables = new Set();
 

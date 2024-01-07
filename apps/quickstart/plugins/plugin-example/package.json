@@ -1,0 +1,10 @@
+{
+  "name": "plugin-example",
+  "version": "1.0.0",
+  "description": "EasyLayer Plugin Example",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
+  

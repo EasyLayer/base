@@ -6,10 +6,7 @@ import { CoreService } from './core.service';
 
 export interface CoreModuleOptions {
   appName?: string;
-  wallets?: any[];
-  parsers?: any[];
-  exchanges?: any[];
-  plugins?: any[];
+  plugins: DynamicModule[];
   //...
 }
 
@@ -17,12 +14,13 @@ export interface CoreModuleOptions {
 export class CoreModule implements OnModuleInit {
   constructor(private moduleRef: ModuleRef) {}
 
-  static forRoot({ appName }: CoreModuleOptions): DynamicModule {
+  static forRoot({ appName, plugins }: CoreModuleOptions): DynamicModule {
     return {
       module: CoreModule,
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         LoggerModule.forRoot({ name: appName, componentName: 'CoreModule' }),
+        ...plugins,
       ],
       controllers: [],
       providers: [CoreService],
