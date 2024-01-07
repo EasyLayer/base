@@ -1,7 +1,16 @@
 import path from 'node:path';
 import fs from 'fs-extra';
-import semver from 'semver';
-import { PackageInfo, PackageJson } from './utils.interfaces';
+
+export interface PackageJson {
+  name: string;
+  version: string;
+  [key: string]: any;
+}
+
+export interface PackageInfo {
+  path: string;
+  packageJson: PackageJson;
+}
 
 const isDirectory = async (source: string) => (await fs.lstat(source)).isDirectory();
 
@@ -25,26 +34,6 @@ export const getDirectories = async (source: string): Promise<string[]> => {
 
 const isValidPackageJson = (packageJson: any): packageJson is PackageJson => {
   return packageJson && typeof packageJson.name === 'string' && typeof packageJson.version === 'string';
-};
-
-const knownVulnerablePackages: Record<string, string> = {
-  'example-package': '>=1.0.0 <2.0.0',
-};
-
-// This is an example of where and how we could potentially check the security of plugin packages
-export const isPackageJsonSafe = (packageJson: PackageJson): boolean => {
-  if (packageJson.dependencies) {
-    for (const [pkg, version] of Object.entries(packageJson.dependencies)) {
-      if (knownVulnerablePackages.hasOwnProperty(pkg)) {
-        const versionStr = String(version);
-        if (semver.satisfies(versionStr, knownVulnerablePackages[pkg])) {
-          console.warn(`Vulnerable package detected: ${pkg}@${version}`);
-          return false;
-        }
-      }
-    }
-  }
-  return true;
 };
 
 export const findPackagesByPattern = async (basePath: string, namePattern: RegExp): Promise<PackageInfo[]> => {
@@ -80,5 +69,5 @@ export const findPackagesByPattern = async (basePath: string, namePattern: RegEx
     }
   }
 
-  return packages.filter((pkg) => isPackageJsonSafe(pkg.packageJson));
+  return packages;
 };

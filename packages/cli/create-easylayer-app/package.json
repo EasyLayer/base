@@ -7,13 +7,15 @@
   "files": [
     "dist",
     "bin",
-    "resources"
+    "resources",
+    "plugin-list.json"
   ],
   "scripts": {
     "clear": "yarn run clear:dist && yarn run clear:node_modules",
     "clear:node_modules": "rimraf node_modules",
     "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
-    "prepublishOnly": "yarn clear:dist && yarn build",
+    "prepublishOnly": "yarn clear:dist && yarn build && yarn update-plugins-list",
+    "update-plugins-list": "node dist/scripts/update-plugins-list.js",
     "create-quickstart-app": "node bin/index.js --quickstart",
     "build": "tsc -b tsconfig.build.json",
     "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
@@ -25,11 +27,12 @@
   "packageManager": "yarn@3.6.0",
   "dependencies": {
     "@easylayer/generator": "0.0.2-experimental.0",
-    "@easylayer/utils": "0.0.2-experimental.0",
     "commander": "11.1.0",
+    "fs-extra": "11.2.0",
     "inquirer": "8.2.5"
   },
   "devDependencies": {
+    "@easylayer/utils": "0.0.2-experimental.0",
     "@types/inquirer": "8.1.0",
     "@types/node": "20.10.4",
     "ts-node": "10.9.2",

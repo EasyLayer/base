@@ -1,0 +1,15 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "out": "./docs",
+    "entryPoints": [
+        "packages/*",
+        "packages/*/*"
+    ],
+    "exclude": [
+        "packages/cli/**"
+    ],
+    "name": "EasyLayer Base Documentation",
+    "entryPointStrategy": "packages",
+    "includeVersion": true,
+    "readme": "none"
+}

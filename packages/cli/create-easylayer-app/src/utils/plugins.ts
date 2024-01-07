@@ -1,16 +1,12 @@
-// TODO: Think about how to store plugin lists, in one file or in several?
-import walletsPlugins from '@easylayer/utils/plugins/wallets-list.json';
-import exchangesPlugins from '@easylayer/utils/plugins/parsers-list.json';
-import parsersPlugins from '@easylayer/utils/plugins/exchanges-list.json';
-import { AvailablePlugins } from '../interfaces';
+import { resolve } from 'node:path';
+import { readFileSync } from 'fs-extra';
+import { AvailablePlugins, PluginInfo } from '../interfaces';
 
-const availablePlugins: AvailablePlugins = {
-  ...walletsPlugins,
-  ...exchangesPlugins,
-  ...parsersPlugins,
-};
-
-const availablePluginNames = Object.values(availablePlugins).map((plugin) => plugin.name);
+const availablePlugins: AvailablePlugins = JSON.parse(
+  readFileSync(resolve(__dirname, '../../plugins-list.json'), 'utf8')
+);
+console.log('availablePlugins\n', availablePlugins);
+const availablePluginNames = Object.values(availablePlugins).map((plugin: PluginInfo) => plugin.name);
 
 export const parsePlugins = (value: string) => {
   return value.split(',').map((plugin) => plugin.trim());
@@ -24,17 +20,13 @@ export const validatePlugins = (plugins: string[]) => {
   }
 };
 
-export const formatPluginsChoices = (plugins: any) => {
-  return Object.values(plugins).map((plugin: any) => ({
-    name: plugin.name + ' (' + plugin.version + ')',
+export const formatPluginsChoices = (plugins: AvailablePlugins) => {
+  return Object.values(plugins).map((plugin) => ({
+    name: `${plugin.name} (${plugin.version})`,
     value: plugin.name,
   }));
 };
 
 export const getAllPluginsChoices = () => {
-  return [
-    ...formatPluginsChoices(walletsPlugins),
-    ...formatPluginsChoices(exchangesPlugins),
-    ...formatPluginsChoices(parsersPlugins),
-  ];
+  return formatPluginsChoices(availablePlugins);
 };
