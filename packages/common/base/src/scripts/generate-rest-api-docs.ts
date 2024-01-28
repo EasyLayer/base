@@ -16,13 +16,8 @@ const createSafeName = (name: string) => {
   return name.replace('@easylayer/', '');
 };
 
-const generateDoc = async ({ title, name, version, outputPath, plugins = [] }: GenerateDocOptions) => {
-  const rootModule = CoreModule.forRoot({
-    appName: 'Documentation',
-    plugins,
-  });
-
-  const app = await NestFactory.create(rootModule, { logger: false });
+const generateDoc = async ({ title, name, version, outputPath, module }: GenerateDocOptions) => {
+  const app = await NestFactory.create(module, { logger: false });
 
   const config = new DocumentBuilder()
     .setTitle(title)
@@ -44,13 +39,17 @@ const generateDoc = async ({ title, name, version, outputPath, plugins = [] }: G
 };
 
 const generateAPIDocs = async (outputPath: string) => {
+  const rootModule = CoreModule.forRoot({
+    plugins: [],
+  });
+
   // Generating documentation for the base controllers
   await generateDoc({
     title: 'Base',
     name: packageJson.name,
     version: packageJson.version,
     outputPath,
-    plugins: [],
+    module: rootModule,
   });
 
   // Plugin Search
@@ -67,7 +66,7 @@ const generateAPIDocs = async (outputPath: string) => {
         name: plugin.name,
         version: plugin.version,
         outputPath,
-        plugins: [module],
+        module,
       });
     }
   }
