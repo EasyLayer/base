@@ -1,3 +1,7 @@
+/* 
+  documentation tags: 0a870b70-4c9a-4e64-a9b1-d5eb61a025ab
+*/
+
 import { resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import { INestApplication } from '@nestjs/common';
@@ -30,5 +34,6 @@ export const setupSwaggerServer = (app: INestApplication, documentOptions: Docum
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('api-docs', app, document, {
     swaggerOptions: { defaultModelsExpandDepth: defaultModelsExpandDepth || 3 },
+    explorer: true,
   });
 };

@@ -1,4 +1,7 @@
-export interface CommandOptions {
+export interface GenerateDocOptions {
   title: string;
-  description: string;
+  name: string;
+  version: string;
+  outputPath: string;
+  plugins: any;
 }

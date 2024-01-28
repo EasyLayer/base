@@ -1,0 +1,87 @@
+/* 
+  documentation tags: 9e6d397d-1a38-42fe-869b-447e1e0276b3
+*/
+import { resolve } from 'node:path';
+import { writeFileSync, readFileSync, ensureDirSync, pathExists } from 'fs-extra';
+import commander from 'commander';
+import { NestFactory } from '@nestjs/core';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { CoreModule } from '../core.module';
+import { importAndInitializePlugin, findCustomPlugins } from '../utils';
+import { GenerateDocOptions } from './interface';
+
+const packageJson = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8'));
+
+const createSafeName = (name: string) => {
+  return name.replace('@easylayer/', '');
+};
+
+const generateDoc = async ({ title, name, version, outputPath, plugins = [] }: GenerateDocOptions) => {
+  const rootModule = CoreModule.forRoot({
+    appName: 'Documentation',
+    plugins,
+  });
+
+  const app = await NestFactory.create(rootModule, { logger: false });
+
+  const config = new DocumentBuilder()
+    .setTitle(title)
+    .setDescription('')
+    .setVersion(version)
+    // .addTag(safeName)
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+
+  const safeName = createSafeName(name);
+
+  // Using the updated name for the file path
+  const docsPath = resolve(outputPath, 'api-docs', `${safeName}_${version}.json`);
+
+  ensureDirSync(resolve(outputPath, 'api-docs'));
+  writeFileSync(docsPath, JSON.stringify(document, null, 2));
+  console.log(`Documentation for ${name} generated at ${docsPath}!`);
+};
+
+const generateAPIDocs = async (outputPath: string) => {
+  // Generating documentation for the base controllers
+  await generateDoc({
+    title: 'Base',
+    name: packageJson.name,
+    version: packageJson.version,
+    outputPath,
+    plugins: [],
+  });
+
+  // Plugin Search
+  const customPluginsPath = resolve(__dirname, '../../../../plugins');
+  const plugins = await findCustomPlugins(customPluginsPath);
+
+  for (const plugin of plugins) {
+    if (await pathExists(plugin.path)) {
+      // Importing the one plugin and generating documentation
+      const module = await importAndInitializePlugin(plugin);
+
+      await generateDoc({
+        title: 'API',
+        name: plugin.name,
+        version: plugin.version,
+        outputPath,
+        plugins: [module],
+      });
+    }
+  }
+
+  process.exit(0);
+};
+
+const command = new commander.Command(packageJson.name);
+
+command
+  .version(packageJson.version)
+  .argument('[outputPath]', 'Output path for generated documentation', '.')
+  .description('generate swagger docs files for all apis')
+  .action((directory) => {
+    generateAPIDocs(directory);
+  })
+  .parse(process.argv);

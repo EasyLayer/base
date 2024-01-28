@@ -9,5 +9,5 @@ export const resolveCustomPluginsPath = (basePath: string): string => {
 // Return path to index.js
 export const findCustomPlugins = async (customPluginsPath: string): Promise<PluginInfo[]> => {
   const packages = await findPackagesByPattern(customPluginsPath, /^plugin-/);
-  return packages.map((pkg) => ({ path: pkg.path, name: pkg.packageJson.name }));
+  return packages.map((pkg) => ({ path: pkg.path, name: pkg.packageJson.name, version: pkg.packageJson.version }));
 };
