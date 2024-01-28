@@ -1,6 +1,7 @@
 export interface PluginInfo {
   path: string;
-  name?: string;
+  name: string;
+  version: string;
 }
 
 export interface PackageJson {

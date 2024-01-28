@@ -35,7 +35,7 @@
     "pre-push": "lerna run test:unit",
     "commit": "cz",
     "generate-source-docs": "typedoc",
-    "generate-api-docs": "lerna run generate-api-docs"
+    "generate-api-docs": "lerna run generate-api-docs --"
   },
   "devDependencies": {
     "@commitlint/cli": "18.4.3",

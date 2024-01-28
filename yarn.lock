@@ -690,6 +690,7 @@ __metadata:
   dependencies:
     "@easylayer/utils": 0.0.2-experimental.0
     "@nestjs/common": 10.2.10
+    "@nestjs/swagger": 7.1.17
     "@nestjs/testing": 10.2.10
     "@types/jest": 29.5.11
     "@types/node": 20.10.4
@@ -709,6 +710,7 @@ __metadata:
   dependencies:
     "@easylayer/utils": 0.0.2-experimental.0
     "@nestjs/common": 10.2.10
+    "@nestjs/swagger": 7.1.17
     "@nestjs/testing": 10.2.10
     "@types/jest": 29.5.11
     "@types/node": 20.10.4

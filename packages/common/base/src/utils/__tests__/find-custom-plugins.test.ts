@@ -8,8 +8,8 @@ jest.mock('../packages-utils', () => ({
 describe('findCustomPlugins', () => {
   it('returns information about plugins', async () => {
     const mockPackages = [
-      { path: 'path/to/plugin1', packageJson: { name: 'plugin1' } },
-      { path: 'path/to/plugin2', packageJson: { name: 'plugin2' } },
+      { path: 'path/to/plugin1', packageJson: { name: 'plugin1', version: 'v0.0.1' } },
+      { path: 'path/to/plugin2', packageJson: { name: 'plugin2', version: 'v0.0.2' } },
     ];
 
     (findPackagesByPattern as jest.Mock).mockResolvedValue(mockPackages);
@@ -17,8 +17,8 @@ describe('findCustomPlugins', () => {
 
     expect(findPackagesByPattern).toHaveBeenCalledWith('path/to/custom/plugins', /^plugin-/);
     expect(plugins).toEqual([
-      { path: 'path/to/plugin1', name: 'plugin1' },
-      { path: 'path/to/plugin2', name: 'plugin2' },
+      { path: 'path/to/plugin1', name: 'plugin1', version: 'v0.0.1' },
+      { path: 'path/to/plugin2', name: 'plugin2', version: 'v0.0.2' },
     ]);
   });
 

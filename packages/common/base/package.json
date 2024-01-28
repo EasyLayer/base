@@ -19,7 +19,7 @@
     "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
     "format": "prettier -с .prettierrc.js --write \"src/**/*.ts\"",
-    "generate-api-docs": "node dist/scripts/generate-api-docs.js"
+    "generate-api-docs": "node dist/scripts/generate-rest-api-docs.js"
   },
   "author": "Yaroslav Pavliuk",
   "license": "",
