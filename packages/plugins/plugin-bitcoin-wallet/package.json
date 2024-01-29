@@ -1,6 +1,6 @@
 {
   "name": "@easylayer/plugin-bitcoin-wallet",
-  "version": "0.0.2-experimental.0",
+  "version": "0.0.2-experimental.1",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,7 +30,7 @@
     "class-validator": "0.14.0"
   },
   "devDependencies": {
-    "@easylayer/utils": "0.0.2-experimental.0",
+    "@easylayer/utils": "0.0.2-experimental.1",
     "@nestjs/testing": "10.2.10",
     "@types/jest": "29.5.11",
     "@types/node": "20.10.4",

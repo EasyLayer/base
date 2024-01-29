@@ -1,7 +1,7 @@
 {
   "name": "quickstart",
   "private": true,
-  "version": "0.0.2-experimental.0",
+  "version": "0.0.2-experimental.1",
   "description": "EasyLayer start app",
   "scripts": {
     "start:dev": "ts-node src/main.ts",
@@ -13,12 +13,12 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "dependencies": {
-    "@easylayer/base": "0.0.2-experimental.0",
-    "@easylayer/plugin-bitcoin-parser": "0.0.2-experimental.0",
-    "@easylayer/plugin-bitcoin-wallet": "0.0.2-experimental.0"
+    "@easylayer/base": "0.0.2-experimental.1",
+    "@easylayer/plugin-bitcoin-parser": "0.0.2-experimental.1",
+    "@easylayer/plugin-bitcoin-wallet": "0.0.2-experimental.1"
   },
   "devDependencies": {
-    "@easylayer/utils": "0.0.2-experimental.0",
+    "@easylayer/utils": "0.0.2-experimental.1",
     "@tsconfig/node18": "18.2.2",
     "@types/node": "20.10.4",
     "@typescript-eslint/eslint-plugin": "6.13.2",
