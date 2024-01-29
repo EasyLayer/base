@@ -1,0 +1,11 @@
+{
+  "extends": "@easylayer/utils/tsconfigs/base.config.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "composite": true
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"],
+}

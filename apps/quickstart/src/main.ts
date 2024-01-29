@@ -1,3 +1,3 @@
 import { bootstrap } from '@easylayer/base';
 
-bootstrap({ appName: 'quickstart', plugins: [] }).catch((error) => console.error(error));
+bootstrap({ appName: 'quickstart' }).catch((error) => console.error(error));

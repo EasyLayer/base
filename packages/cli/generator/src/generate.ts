@@ -11,7 +11,7 @@ import { Scope, GeneraeOptions } from './interfaces';
 
 const packageJson = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
 
-export const generate = (projectDirectory: string, options: Partial<GeneraeOptions>) => {
+export const generate = (projectDirectory: string, options: GeneraeOptions) => {
   sentry.init({
     dsn: options.sentryDsn,
   });
@@ -29,7 +29,8 @@ export const generate = (projectDirectory: string, options: Partial<GeneraeOptio
     // use package version as appVersion;
     appVersion: packageJson.version,
     debug: options.debug !== undefined,
-    easyLayerDependencies: options.easyLayerDependencies || [],
+    easyLayerDependencies: options.easyLayerDependencies,
+    resourcesPath: options.resourcesPath,
   };
 
   sentry.configureScope(function configureScope(sentryScope) {

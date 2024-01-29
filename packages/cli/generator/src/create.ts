@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import execa from 'execa';
 import ora from 'ora';
 import _ from 'lodash';
-import { stopProcess, trackUsage, captureStderr } from './scripts';
+import { stopProcess, trackUsage, captureStderr, checkResourcesPath } from './scripts';
 import { Scope } from './interfaces';
 import { isStderrError } from './errors';
 import { packageJSON } from './utils/package.json';
@@ -14,19 +14,20 @@ export const createApp = async (scope: Scope) => {
   console.log(`Creating the new application at ${chalk.green(scope.rootPath)}.`);
   console.log('Creating files.');
 
-  const { rootPath } = scope;
-  const resources = join(__dirname, '../resources');
+  const { rootPath, resourcesPath } = scope;
 
   try {
+    await checkResourcesPath(resourcesPath);
+
     // copy folders & files
-    await fse.copy(join(resources, 'folders'), rootPath);
+    await fse.copy(join(resourcesPath, 'folders'), rootPath);
 
     const copyTypescriptFilesFromSubDirectory = (subDirectory: string) => {
-      const files = fse.readdirSync(join(resources, 'json', subDirectory));
+      const files = fse.readdirSync(join(resourcesPath, 'json', subDirectory));
 
       return Promise.all(
         files.map((file) => {
-          const src = join(resources, 'json', subDirectory, file);
+          const src = join(resourcesPath, 'json', subDirectory, file);
           const dest = join(rootPath, file);
           return fse.copy(src, dest);
         })
@@ -37,11 +38,11 @@ export const createApp = async (scope: Scope) => {
     copyTypescriptFilesFromSubDirectory('typescript');
 
     const copyCommonFilesWithDot = () => {
-      const files = fse.readdirSync(join(resources, 'common'));
+      const files = fse.readdirSync(join(resourcesPath, 'common'));
 
       return Promise.all(
         files.map((file) => {
-          const src = join(resources, 'common', file);
+          const src = join(resourcesPath, 'common', file);
           // Add dot
           const dest = join(rootPath, `.${file}`);
           return fse.copy(src, dest);
@@ -177,6 +178,8 @@ const addEasyLayerDependencies = ({ rootPath, easyLayerDependencies }: Scope) =>
 // Function to create .env and env.example files
 // based on the env.example files found in @easylayer packages
 const createEnvFiles = async ({ rootPath }: Scope) => {
+  // TODO: the prefix of the names of the packages
+  // must be taken with a variable "easyLayerDependencies"
   const easyLayerDir = join(rootPath, 'node_modules', '@easylayer');
   const envVariables = new Set();
 
