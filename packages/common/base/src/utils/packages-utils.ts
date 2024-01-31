@@ -1,4 +1,4 @@
-import path from 'node:path';
+import { join, basename, dirname } from 'node:path';
 import fs from 'fs-extra';
 import semver from 'semver';
 import { PackageInfo, PackageJson } from './utils.interfaces';
@@ -10,7 +10,7 @@ export const getDirectories = async (source: string): Promise<string[]> => {
     const dirs = await fs.readdir(source);
     return Promise.all(
       dirs.map(async (name) => {
-        const dirPath = path.join(source, name);
+        const dirPath = join(source, name);
         if (await isDirectory(dirPath)) {
           return dirPath;
         }
@@ -52,11 +52,11 @@ export const findPackagesByPattern = async (basePath: string, namePattern: RegEx
 
   const pluginDirs = await getDirectories(basePath);
   for (const dir of pluginDirs) {
-    if (namePattern.test(path.basename(dir))) {
+    if (namePattern.test(basename(dir))) {
       try {
-        const pluginIndexFilePath = path.join(dir, 'index.js');
-        const pluginDistIndexFilePath = path.join(dir, 'dist', 'index.js');
-        const packageJsonPath = path.join(dir, 'package.json');
+        const pluginIndexFilePath = join(dir, 'index.js');
+        const pluginDistIndexFilePath = join(dir, 'dist', 'index.js');
+        const packageJsonPath = join(dir, 'package.json');
 
         // Checking if "index.js" exists in the plugin root
         const pluginExists = await fs.pathExists(pluginIndexFilePath);
@@ -68,8 +68,8 @@ export const findPackagesByPattern = async (basePath: string, namePattern: RegEx
         if ((pluginExists || pluginDistExists) && packageJsonExists) {
           const packageJson = await fs.readJson(packageJsonPath);
           if (isValidPackageJson(packageJson)) {
-            const pluginPath = pluginExists ? pluginIndexFilePath : pluginDistIndexFilePath;
-            packages.push({ path: pluginPath, packageJson });
+            const pluginFolderPath = pluginExists ? dirname(pluginIndexFilePath) : dirname(pluginDistIndexFilePath);
+            packages.push({ path: pluginFolderPath, packageJson });
           }
         } else {
           console.log(`Folder ${dir} does not contain required files.`);

@@ -10,10 +10,6 @@ export interface PluginInfo {
   name: string;
 }
 
-export interface AvailablePlugins {
-  [key: string]: PluginInfo;
-}
-
 export interface Answers {
   directory: string;
   quick: boolean;

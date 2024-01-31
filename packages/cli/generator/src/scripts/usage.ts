@@ -62,10 +62,10 @@ const getProperties = (scope: Scope) => {
 };
 
 const trackEvent = async (event: string, payload: Record<string, unknown>) => {
-  if (process.env.NODE_ENV === 'test') {
+  if (process.env.NODE_ENV === 'development') {
     return;
   }
-  return;
+
   try {
     sentry.captureMessage(event, {
       level: 'info',
@@ -82,7 +82,6 @@ export const trackUsage = async (event: string, scope: Scope) => {
   const properties = getProperties(scope);
 
   try {
-    console.debug(event, '\n');
     return await trackEvent(event, properties);
   } catch (err) {
     // ignore errors

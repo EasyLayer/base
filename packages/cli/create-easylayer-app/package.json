@@ -15,9 +15,8 @@
     "clear:node_modules": "rimraf node_modules",
     "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
     "prepublishOnly": "yarn clear:dist && yarn build",
-    "update-plugins-list": "node dist/scripts/update-plugins-list.js",
     "create-quickstart-app": "node bin/index.js --quickstart",
-    "build": "tsc -b tsconfig.build.json && yarn update-plugins-list",
+    "build": "tsc -b tsconfig.build.json",
     "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
     "format": "prettier -с .prettierrc.js --write \"src/**/*.ts\""
@@ -27,13 +26,15 @@
   "packageManager": "yarn@3.6.0",
   "dependencies": {
     "@easylayer/generator": "0.0.2-experimental.1",
+    "axios": "1.6.7",
     "commander": "11.1.0",
     "fs-extra": "11.2.0",
-    "inquirer": "8.2.5"
+    "inquirer": "9.2.13"
   },
   "devDependencies": {
     "@easylayer/utils": "0.0.2-experimental.1",
-    "@types/inquirer": "8.1.0",
+    "@types/axios": "0.14.0",
+    "@types/inquirer": "9.0.7",
     "@types/node": "20.10.4",
     "ts-node": "10.9.2",
     "typescript": "5.3.3"

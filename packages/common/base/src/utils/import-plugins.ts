@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { DynamicModule } from '@nestjs/common';
 import { findEasylayerPlugins, resolveNodeModulesPath } from './find-easylayer-plugins';
 import { findCustomPlugins, resolveCustomPluginsPath } from './find-custom-plugins';
@@ -23,13 +24,15 @@ export const importPlugins = async (basePath: string): Promise<DynamicModule[]> 
 };
 
 export const importAndInitializePlugin = async (pluginInfo: PluginInfo): Promise<DynamicModule> => {
+  const pluginIndexPath = join(pluginInfo.path, 'index.js');
+
   // Import the default export of one plugin
-  const { default: importedModule } = await import(pluginInfo.path);
+  const { default: importedModule } = await import(pluginIndexPath);
 
   // Plugin must export main module as default
   const importedPlugin = importedModule.default;
   if (!importedPlugin) {
-    throw new Error(`The plugin ${pluginInfo.path} must be exported as default`);
+    throw new Error(`The plugin ${pluginIndexPath} must be exported as default`);
   }
 
   if (importedPlugin && typeof importedPlugin.register === 'function') {
@@ -37,10 +40,10 @@ export const importAndInitializePlugin = async (pluginInfo: PluginInfo): Promise
     if (isDynamicModule(dynamicModule)) {
       return dynamicModule;
     } else {
-      throw new Error(`Method register() must return DynamicModule, plugin ${pluginInfo.path}`);
+      throw new Error(`Method register() must return DynamicModule, plugin ${pluginIndexPath}`);
     }
   } else {
-    throw new Error(`The plugin ${pluginInfo.path} must have a static method register()`);
+    throw new Error(`The plugin ${pluginIndexPath} must have a static method register()`);
   }
 };
 

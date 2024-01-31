@@ -1,32 +1,36 @@
-import { resolve } from 'node:path';
-import { readFileSync } from 'fs-extra';
-import { AvailablePlugins, PluginInfo } from '../interfaces';
+import axios from 'axios';
+import { PluginInfo } from '../interfaces';
 
-const availablePlugins: AvailablePlugins = JSON.parse(
-  readFileSync(resolve(__dirname, '../../plugins-list.json'), 'utf8')
-);
-console.log('availablePlugins\n', availablePlugins);
-const availablePluginNames = Object.values(availablePlugins).map((plugin: PluginInfo) => plugin.name);
+const fetchNpmPluginsList = async (scope: string): Promise<PluginInfo[]> => {
+  try {
+    const response = await axios.get(`https://registry.npmjs.org/-/v1/search?text=${scope}&size=100`);
+    return response.data.objects
+      .map((pkg: any) => ({
+        name: pkg.package.name,
+        version: pkg.package.version,
+      }))
+      .filter((plugin: PluginInfo) => plugin.name.startsWith('@easylayer/plugin-'));
+  } catch (error) {
+    console.error(`Error fetching plugins list: ${error}`);
+    return [];
+  }
+};
+
+export const getAllPluginsChoices = async () => {
+  return fetchNpmPluginsList('easylayer');
+};
 
 export const parsePlugins = (value: string) => {
   return value.split(',').map((plugin) => plugin.trim());
 };
 
-export const validatePlugins = (plugins: string[]) => {
+export const validatePlugins = async (plugins: string[]) => {
+  const availablePlugins = await fetchNpmPluginsList('easylayer');
+  const availablePluginNames = availablePlugins.map((plugin) => plugin.name);
+
   const invalidPlugins = plugins.filter((pluginName) => !availablePluginNames.includes(pluginName));
 
   if (invalidPlugins.length > 0) {
     throw new Error(`Invalid plugins specified: ${invalidPlugins.join(', ')}`);
   }
-};
-
-export const formatPluginsChoices = (plugins: AvailablePlugins) => {
-  return Object.values(plugins).map((plugin) => ({
-    name: `${plugin.name} (${plugin.version})`,
-    value: plugin.name,
-  }));
-};
-
-export const getAllPluginsChoices = () => {
-  return formatPluginsChoices(availablePlugins);
 };

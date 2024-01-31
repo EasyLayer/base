@@ -17,17 +17,16 @@ const create = async (appName: string, programArgs: CommandOptions) => {
   const { plugins, ...restProgramArgs } = programArgs;
 
   if (plugins) {
+    // Check plugins from User
     validatePlugins(plugins);
   }
 
-  const hasPlugins = !!programArgs.plugins;
-
+  const hasPlugins = !!plugins;
   const prompt = await promptUser(appName, programArgs, hasPlugins);
   const directory = prompt.directory || appName;
   await checkInstallPath(resolve(directory));
 
   const easyLayerDependencies = [...dependencies, ...(plugins || prompt.plugins)];
-
   // Setup Sentry.io url
   const sentryDsn = 'https://a6167fb1304fcbce44884f9213cb9abe@o4506386985648128.ingest.sentry.io/4506386992136192';
 
@@ -54,9 +53,9 @@ const command = new commander.Command(packageJson.name);
 command
   .version(packageJson.version)
   .arguments('[directory]')
-  .option('--no-run', 'Do not start the application after it is created')
-  .option('--debug', 'Display debug logs')
-  .option('--quickstart', 'Quickstart installation type app creation')
+  .option('--no-run', 'Do not start the application after it is created', false)
+  .option('--debug', 'Display debug logs', false)
+  .option('--quickstart', 'Quickstart installation type app creation', false)
   .option('--plugins <plugins>', 'Specify plugins to install', parsePlugins)
   .description('create a new application')
   .action((directory, programArgs) => {

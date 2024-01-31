@@ -78,47 +78,15 @@ export const createApp = async (scope: Scope) => {
 
   await trackUsage('willInstallAppDependencies', scope);
 
-  const installPrefix = chalk.yellow('Installing dependencies:');
-  const loader = ora(installPrefix).start();
+  await runCommandWithLogging('yarnpkg', ['install'], scope.rootPath, 'Installing package dependencies...');
 
-  const logInstall = (chunk = '') => {
-    loader.text = `${installPrefix} ${chunk.toString().split('\n').join(' ')}`;
-  };
-
-  try {
-    // Install dependencies in package.json file
-    const installingRunner = installPackageDependencies(scope);
-    installingRunner.stdout?.on('data', logInstall);
-    installingRunner.stderr?.on('data', logInstall);
-    await installingRunner;
-
-    if (scope.easyLayerDependencies.length > 0) {
-      // Add easylayer dependencies (current versions)
-      const addingRunner = addEasyLayerDependencies(scope);
-      addingRunner.stdout?.on('data', logInstall);
-      addingRunner.stderr?.on('data', logInstall);
-      await addingRunner;
-    }
-
-    loader.stop();
-    console.log(`Dependencies installed ${chalk.green('successfully')}.`);
-
-    await trackUsage('didInstallAppDependencies', scope);
-  } catch (error) {
-    console.debug(error);
-    const stderr = isStderrError(error) ? error.stderr : '';
-
-    loader.stop();
-
-    console.error(`${chalk.red('Error')} while installing dependencies:`);
-    console.error(stderr);
-
-    await captureStderr('didNotInstallAppDependencies', error);
-
-    stopProcess();
-
-    await fse.remove(scope.rootPath);
-    throw error;
+  if (scope.easyLayerDependencies.length > 0) {
+    await runCommandWithLogging(
+      'yarnpkg',
+      ['add', ...scope.easyLayerDependencies],
+      scope.rootPath,
+      'Adding EasyLayer dependencies...'
+    );
   }
 
   await trackUsage('willCreateEnvFiles', scope);
@@ -152,31 +120,46 @@ export const createApp = async (scope: Scope) => {
   console.log(`  ${cmd} start:dev`);
   console.log('  Start the app in development mode.');
   console.log();
-  console.log(`  ${cmd} start`);
-  console.log('  Start the app');
-  console.log();
 };
 
-const installPackageDependencies = ({ rootPath }: Scope) => {
-  const installArguments = ['install'];
+const runCommandWithLogging = async (command: string, args: string[], rootPath: string, description: string) => {
+  const loader = ora(description).start();
 
-  return execa('yarnpkg', installArguments, {
+  const process = execa(command, args, {
     cwd: rootPath,
     stdin: 'ignore',
+    shell: true,
   });
+
+  process.stdout?.on('data', (data) => (loader.text = `stdout: ${data.toString()}`));
+  process.stderr?.on('data', (data) => (loader.text = `stderr: ${data.toString()}`));
+
+  try {
+    await process;
+    loader.succeed('Command completed successfully');
+  } catch (error) {
+    const stderr = isStderrError(error) ? error.stderr : '';
+
+    loader.fail('Command failed');
+
+    console.error(`${chalk.red('Error')} while installing dependencies:`);
+    console.error(stderr);
+
+    await captureStderr('didNotInstallAppDependencies', error);
+
+    stopProcess();
+
+    await fse.remove(rootPath);
+
+    // Resend the error for further processing
+    throw error;
+  } finally {
+    loader.stop();
+  }
 };
 
-const addEasyLayerDependencies = ({ rootPath, easyLayerDependencies }: Scope) => {
-  const addingArguments = ['add', ...easyLayerDependencies];
-
-  return execa('yarnpkg', addingArguments, {
-    cwd: rootPath,
-    stdin: 'ignore',
-  });
-};
-
-// Function to create .env and env.example files
-// based on the env.example files found in @easylayer packages
+// Function to create .env and .env.example files
+// based on the .env.example files found in @easylayer packages
 const createEnvFiles = async ({ rootPath }: Scope) => {
   // TODO: the prefix of the names of the packages
   // must be taken with a variable "easyLayerDependencies"
@@ -191,14 +174,22 @@ const createEnvFiles = async ({ rootPath }: Scope) => {
     for (const pkg of packages) {
       const envExamplePath = join(easyLayerDir, pkg, '.env.example');
 
-      // Check if the env.example file exists
+      // Check if the .env.example file exists
       if (await fse.pathExists(envExamplePath)) {
         const content = await fse.readFile(envExamplePath, 'utf8');
 
         content.split('\n').forEach((line) => {
           // If the line is not empty and not a comment, add it to the envVariables set
+          // if (line && !line.startsWith('#')) {
+          //   envVariables.add(line.split('=')[0] + '=');
+          // }
           if (line && !line.startsWith('#')) {
-            envVariables.add(line.split('=')[0] + '=');
+            const parts = line.split('=');
+            if (parts.length === 2) {
+              const name = parts[0];
+              const value = parts[1];
+              envVariables.add(`${name}=${value}`);
+            }
           }
         });
       }
@@ -209,5 +200,5 @@ const createEnvFiles = async ({ rootPath }: Scope) => {
   const envContent = Array.from(envVariables).join('\n');
 
   await fse.writeFile(join(rootPath, '.env'), envContent);
-  await fse.writeFile(join(rootPath, 'env.example'), envContent);
+  await fse.writeFile(join(rootPath, '.env.example'), envContent);
 };

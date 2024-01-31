@@ -137,6 +137,8 @@ $RECYCLE.BIN/
 *.out
 *.pid
 
+apps/*
+!apps/example-app
 
 ############################
 # Secrets
@@ -150,3 +152,4 @@ $RECYCLE.BIN/
 
 docs
 api-docs
+config-docs
