@@ -1,8 +1,10 @@
 import { DynamicModule, Module, OnModuleInit } from '@nestjs/common';
+import { transformAndValidateSync } from 'class-transformer-validator';
 import { ModuleRef } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from '@easylayer/logger';
 import { CoreService } from './core.service';
+import { AppConfig, appEnvs, DbConfig, dbEnvs } from './config';
 
 export interface CoreModuleOptions {
   appName?: string;
@@ -23,7 +25,17 @@ export class CoreModule implements OnModuleInit {
         ...plugins,
       ],
       controllers: [],
-      providers: [CoreService],
+      providers: [
+        CoreService,
+        {
+          provide: AppConfig,
+          useValue: transformAndValidateSync(AppConfig, appEnvs),
+        },
+        {
+          provide: DbConfig,
+          useValue: transformAndValidateSync(DbConfig, dbEnvs),
+        },
+      ],
       exports: [],
     };
   }

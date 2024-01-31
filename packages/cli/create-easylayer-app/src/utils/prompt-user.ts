@@ -1,9 +1,14 @@
-import inquirer from 'inquirer';
 import { getAllPluginsChoices } from './plugins';
 import { CommandOptions, Answers } from '../interfaces';
 
-export const promptUser = async (appName: string, options: CommandOptions, hasPlugins: boolean) => {
-  return inquirer.prompt<Answers>([
+const promptUser = async (appName: string, options: CommandOptions, hasPlugins: boolean): Promise<Answers> => {
+  const inquirer = await import('inquirer');
+  // Access prompt via default
+  const { prompt, Separator } = inquirer.default;
+
+  const pluginsChoices = await getAllPluginsChoices();
+
+  return prompt([
     {
       type: 'input',
       default: 'my-easylayer-app',
@@ -33,13 +38,19 @@ export const promptUser = async (appName: string, options: CommandOptions, hasPl
       message: 'Select the plugins you want to install',
       when: !hasPlugins,
       choices: [
-        ...getAllPluginsChoices(),
         // Add a separator
-        new inquirer.Separator(),
+        new Separator(),
         {
           name: 'No plugins (install without any plugins)',
           value: 'no-plugins',
         },
+        // Dynamic choices from pluginsChoices
+        ...pluginsChoices.map((plugin) => ({
+          // Display name
+          name: `${plugin.name} (${plugin.version})`,
+          // Value returned when selected
+          value: plugin.name,
+        })),
       ],
       filter: (answers) => {
         // If 'no-plugins' is selected, return an empty array
@@ -51,3 +62,5 @@ export const promptUser = async (appName: string, options: CommandOptions, hasPl
     },
   ]);
 };
+
+export { promptUser };

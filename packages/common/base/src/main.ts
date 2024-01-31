@@ -1,15 +1,15 @@
 import path from 'node:path';
 import { NestFactory } from '@nestjs/core';
-// import { ConfigService } from '@nestjs/config';
 import { NestLogger } from '@easylayer/logger';
 import { CoreModule } from './core.module';
+import { AppConfig } from './config';
 import { importPlugins, setupSwaggerServer } from './utils';
 
 export interface BootstrapOptions {
   appName?: string;
 }
 
-export const bootstrap = async ({ appName }: any) => {
+export const bootstrap = async ({ appName }: BootstrapOptions) => {
   const logger = new NestLogger();
 
   const basePath = path.resolve(process.cwd());
@@ -24,16 +24,16 @@ export const bootstrap = async ({ appName }: any) => {
   // Create a Nest application
   const app = await NestFactory.create(rootModule, { logger });
 
-  // const config = app.get(ConfigService);
+  const appConfig = app.get(AppConfig);
 
-  // if (config.NODE_ENV === 'development') {
-  setupSwaggerServer(app, {
-    title: appName,
-    description: 'Description',
-  });
-  // }
+  if (appConfig.NODE_ENV === 'development') {
+    setupSwaggerServer(app, {
+      title: appName ? appName : 'default',
+      description: 'Description',
+    });
+  }
 
-  const port = process.env.PORT || 3000;
+  const port = appConfig.PORT;
   await app.listen(port);
   logger.log(`Http server is listening on port ${port}`, 'NestApplication');
 };

@@ -7,7 +7,7 @@ export const resolveNodeModulesPath = (basePath: string): string => {
   return path.resolve(basePath, 'node_modules');
 };
 
-// Return path to index.js
+// Return path to plugin folders
 export const findEasylayerPlugins = async (initialNodeModulesPath: string): Promise<PluginInfo[]> => {
   let nodeModulesPath = initialNodeModulesPath;
 
