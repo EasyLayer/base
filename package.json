@@ -26,7 +26,7 @@
     "clear:node_modules": "lerna run  clear:node_modules && rimraf node_modules",
     "clear:dist": "lerna run clear:dist",
     "build:packages": "lerna run --stream build --ignore example-app",
-    "start:dev": "lerna run --stream start:dev",
+    "example-app:start:dev": "cd ./apps/example-app && yarn start:dev",
     "test:unit": "lerna run --stream test:unit",
     "lint": "lerna run --stream lint",
     "lint:fix": "lerna run --stream lint:fix",

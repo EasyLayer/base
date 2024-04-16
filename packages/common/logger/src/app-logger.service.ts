@@ -18,7 +18,7 @@ export class AppLogger implements IAppLogger {
 
   error(message: string, args?: any, context?: string): void {
     if (args instanceof Error) {
-      this.logger.error({ err: args, context }, message);
+      this.logger.error({ err: args.message, context }, message);
     } else {
       this.logger.error({ args, context }, message);
     }
