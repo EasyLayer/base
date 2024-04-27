@@ -1,4 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
+import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { IndexBitcoinBlockCommand } from '@easylayer/domain-cqrs-components';
 import { AppLogger } from '@easylayer/logger';
 import { Block } from '../models/block.model';
@@ -13,6 +14,7 @@ export class IndexBitcoinBlockCommandHandler implements ICommandHandler<IndexBit
     private readonly networkModelFactory: BitcoinNetworkModelFactoryService
   ) {}
 
+  @Transactional({ connectionName: 'blocks-write' })
   async execute({ payload }: IndexBitcoinBlockCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);

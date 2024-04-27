@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
+import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { EventStoreRepository } from '@easylayer/eventstore';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { CreateBitcoinTransactionsPoolCommand } from '@easylayer/domain-cqrs-components';
 import { AppLogger } from '@easylayer/logger';
@@ -13,11 +15,13 @@ export class CreateBitcoinTransactionsPoolCommandHandler
 {
   constructor(
     private readonly log: AppLogger,
+    private readonly eventStore: EventStoreRepository,
     private readonly poolModelFactoryService: BitcoinTransactionsPoolModelFactoryService,
     private readonly batchModelFactoryService: BitcoinTransactionsBatchModelFactoryService,
     private readonly networkProvider: BitcoinNetworkProviderService
   ) {}
 
+  @Transactional({ connectionName: 'transactions-write' })
   async execute({ payload }: CreateBitcoinTransactionsPoolCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);
@@ -51,6 +55,7 @@ export class CreateBitcoinTransactionsPoolCommandHandler
         });
 
         // save into db
+        await this.eventStore.save(transactionBatch);
 
         batches.push(transactionBatch);
       }
@@ -61,9 +66,11 @@ export class CreateBitcoinTransactionsPoolCommandHandler
         aggregateId: blockId,
         batches: batches.map((item: TransactionsBatch) => ({ id: item.aggregateId, status: 'created' })),
         blockId,
+        // status: 'indexing'
       });
 
       //save transactionPool into db
+      await this.eventStore.save(transactionPool);
 
       // commit batches with skip publishing
       for (const batch of batches) {

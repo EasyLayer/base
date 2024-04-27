@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
+import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { EventStoreRepository } from '@easylayer/eventstore';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { IndexBitcoinTransactionsBatchCommand } from '@easylayer/domain-cqrs-components';
 import { AppLogger } from '@easylayer/logger';
@@ -18,12 +20,14 @@ export class IndexBitcoinTransactionsBatchCommandHandler
 {
   constructor(
     private readonly log: AppLogger,
+    private readonly eventStore: EventStoreRepository,
     private readonly poolModelFactoryService: BitcoinTransactionsPoolModelFactoryService,
     private readonly batchModelFactoryService: BitcoinTransactionsBatchModelFactoryService,
     private readonly txModelFactoryService: BitcoinTransactionModelFactoryService,
     private readonly networkProvider: BitcoinNetworkProviderService
   ) {}
 
+  @Transactional({ connectionName: 'transactions-write' })
   async execute({ payload }: IndexBitcoinTransactionsBatchCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);
@@ -55,9 +59,11 @@ export class IndexBitcoinTransactionsBatchCommandHandler
             const tx: Transaction = this.txModelFactoryService.createNewModel();
 
             await tx.create({ aggregateId: uuidv4(), blockId, transaction });
-            await tx.commit(true);
 
             //save into db
+            await this.eventStore.save(tx);
+
+            await tx.commit(true);
 
             // Here we can add some basic transaction data to the package.
             // So that the event contains some basic information and does not go into the blockchain additionally
@@ -67,9 +73,11 @@ export class IndexBitcoinTransactionsBatchCommandHandler
             batch.aggregateId
           );
           await indexedBatch.index({ aggregateId: indexedBatch.aggregateId, status: 'indexed' });
-          await indexedBatch.commit(true);
 
           //save into db
+          await this.eventStore.save(indexedBatch);
+
+          await indexedBatch.commit(true);
 
           batches = [...batches, batch];
         }
@@ -78,6 +86,7 @@ export class IndexBitcoinTransactionsBatchCommandHandler
       }
 
       //save into db
+      await this.eventStore.save(transactionPool);
 
       await transactionPool.commit();
 

@@ -34,102 +34,120 @@ export class BitcoinBlocksService implements OnModuleInit {
   }
 
   private async indexMissedBlocks(): Promise<void> {
-    this.log.info('Start indexing missed blocks');
+    // this.log.info('Start indexing missed blocks');
 
-    while (true) {
-      try {
-        const currentNetworkBlockHeight = await this.networkProvider.getCurrentBlockHeight();
-        this.log.info('Current Network Block Height: ', currentNetworkBlockHeight);
+    // while (true) {
+    //   try {
+    //     const currentNetworkBlockHeight = await this.networkProvider.getCurrentBlockHeight();
+    //     this.log.info('Current Network Block Height: ', currentNetworkBlockHeight);
 
-        const { indexedBlockFromHeight, indexedBlockHeight } = await this.networkCommandFactory.init({
-          currentBlockHeight: currentNetworkBlockHeight,
-        });
+    //     // Запускаем команду типо обновления или что. 
+    //     // В комманду передадим currentNetworkBlockHeight 
+    //     // Команда достанет аггрегат, 
+    //     // допустим там будут indexedBlockFromHeight, indexedBlockHeight
+    //     // Мы делаем там проверку если indexedBlockFromHeight > BigInt(100)
+    //     // и тогда достаем блоки 
+    //     // и с помощью цикла парсим блоки? 
+    //     // и там же обновляем и network. 
+    //     // Но тут цикл, можно сделать что мы ждем команду через фабрику? 
+    //     // -- если да то цикл будет по сути в команде одной.
+    //     // НЕТ, я хочу таки в цикле чтобы небыло такого что все 200к блоков в одной команде парсяться...
 
-        // TODO: move  BigInt(100) into env
-        if (indexedBlockFromHeight > BigInt(100)) {
-          // Это значит что мы изменили на меньшое колово блоков с каких нужна индексация.
-          // Поэтомы мы должны проиндексировать блоки до indexedBlockFromHeight
-          // На следующей итерации когда мы будем смотреть блоки и indexedBlockFromHeight то он должен стать меньше на один.
-          // Типо он должен идти вниз а не от 100 и вверх. Тогда это будет работать.
 
-          // Мы должны сделать тут так что, если приходит очень много блоков, то мы как то пачкой все это должны уметь делать.
-          // Потому что провайдер сам отвечает за то сколько блоков дать?
-          // С одной стороны у каждого провайдера свои приколы и ограничния, у некоторых вообще нет получения многих да,
-          // С другой стороны если я в каком то месте запрошу этот метод, то что, он мне выдаст все блоки? ну мы как минимум указываем что?
-          // РЕШЕНИЕ: мы тут указываем диапазон какой нам нужен, а провайдер уже свой максимум там даст какой у него будет.
-          const blocks = await this.networkProvider.getManyBlocksByHeights([
-            this.arithmetic.divide(indexedBlockFromHeight, 1),
-            BigInt(100),
-          ]);
+    //     const { indexedBlockFromHeight, indexedBlockHeight } = await this.networkCommandFactory.init({
+    //       currentBlockHeight: currentNetworkBlockHeight,
+    //     });
 
-          // 1. Тут нужно учесть что в blocks может прийти больше (НЕТ, я там указываю конкретный диапазон)
-          // 2. IMPORTANT: Все норм. Только если приходит меньше диапазона? blocks должны быть так отсортированы
-          // что для этого случая от indexedBlockFromHeight и до BigInt(100) вниз, (а для случая что ниже наоборот)
+    //     // TODO: move  BigInt(100) into env
+    //     if (indexedBlockFromHeight > BigInt(100)) {
+    //       // Это значит что мы изменили на меньшое колово блоков с каких нужна индексация.
+    //       // Поэтомы мы должны проиндексировать блоки до indexedBlockFromHeight
+    //       // На следующей итерации когда мы будем смотреть блоки и indexedBlockFromHeight то он должен стать меньше на один.
+    //       // Типо он должен идти вниз а не от 100 и вверх. Тогда это будет работать.
 
-          for (const block of blocks) {
-            await this.blocksCommandFactory.indexBlock(block);
-          }
-        }
+    //       // Мы должны сделать тут так что, если приходит очень много блоков, то мы как то пачкой все это должны уметь делать.
+    //       // Потому что провайдер сам отвечает за то сколько блоков дать?
+    //       // С одной стороны у каждого провайдера свои приколы и ограничния, у некоторых вообще нет получения многих да,
+    //       // С другой стороны если я в каком то месте запрошу этот метод, то что, он мне выдаст все блоки? ну мы как минимум указываем что?
+    //       // РЕШЕНИЕ: мы тут указываем диапазон какой нам нужен, а провайдер уже свой максимум там даст какой у него будет.
+    //       const blocks = await this.networkProvider.getManyBlocksByHeights([
+    //         this.arithmetic.divide(indexedBlockFromHeight, 1),
+    //         BigInt(100),
+    //       ]);
 
-        // TODO: move BigInt(6) into env
-        // Мы смотрим тут только блоки до высоты конфирмации
-        if (indexedBlockHeight < currentNetworkBlockHeight - BigInt(6)) {
-          // Тут получаеться что каждый раз мы будем парсить блок и прибавлять + 1 к indexedBlockHeight,
-          // и когда он станет таким же как текущий то уже не нужно будет парсить
-          const blocks = await this.networkProvider.getManyBlocksByHeights([
-            this.arithmetic.add(indexedBlockHeight, 1),
-            BigInt(2), // currentBlockHeight
-          ]);
+    //       // 1. Тут нужно учесть что в blocks может прийти больше (НЕТ, я там указываю конкретный диапазон)
+    //       // 2. IMPORTANT: Все норм. Только если приходит меньше диапазона? blocks должны быть так отсортированы
+    //       // что для этого случая от indexedBlockFromHeight и до BigInt(100) вниз, (а для случая что ниже наоборот)
 
-          for (const block of blocks) {
-            // Лучше делать в одной комманде это.
-            // Для этого можно перенести network внутрь моуля блоков
-            await this.blocksCommandFactory.indexBlock(block);
-          }
-        }
+    //       for (const block of blocks) {
+    //         await this.blocksCommandFactory.indexBlock(block);
+    //       }
+    //     }
 
-        if (indexedBlockHeight === currentNetworkBlockHeight - BigInt(6) && indexedBlockFromHeight < BigInt(100)) {
-          // The last block was successfully indexed
-          break;
-        }
-        break;
-      } catch (error) {
-        this.log.error('missedBlocksChecking()', error, this.constructor.name);
-        throw error;
-      }
-    }
+    //     // TODO: move BigInt(6) into env
+    //     // Мы смотрим тут только блоки до высоты конфирмации
+    //     if (indexedBlockHeight < currentNetworkBlockHeight - BigInt(6)) {
+    //       // Тут получаеться что каждый раз мы будем парсить блок и прибавлять + 1 к indexedBlockHeight,
+    //       // и когда он станет таким же как текущий то уже не нужно будет парсить
+    //       const blocks = await this.networkProvider.getManyBlocksByHeights([
+    //         this.arithmetic.add(indexedBlockHeight, 1),
+    //         BigInt(2), // currentBlockHeight
+    //       ]);
+
+    //       for (const block of blocks) {
+    //         // Лучше делать в одной комманде это.
+    //         // Для этого можно перенести network внутрь моуля блоков
+    //         await this.blocksCommandFactory.indexBlock(block);
+    //       }
+    //     }
+
+    //     if (indexedBlockHeight === currentNetworkBlockHeight - BigInt(6) && indexedBlockFromHeight < BigInt(100)) {
+    //       // The last block was successfully indexed
+    //       break;
+    //     }
+    //     break;
+    //   } catch (error) {
+    //     this.log.error('missedBlocksChecking()', error, this.constructor.name);
+    //     throw error;
+    //   }
+    // }
   }
 
+  // Это то же как команда скорее всего должна быть отдельная// Вызывает просто метод фабрики
   private async startIterateBlocks(): Promise<void> {
-    this.log.info('Start iterating blocks');
+    // this.log.info('Start iterating blocks');
 
-    while (true) {
-      try {
-        const currentNetworkBlockHeight = await this.networkProvider.getCurrentBlockHeight();
-        this.log.info('Current Network Block Height: ', currentNetworkBlockHeight);
+    // while (true) {
+    //   try {
+    //     const currentNetworkBlockHeight = await this.networkProvider.getCurrentBlockHeight();
+    //     this.log.info('Current Network Block Height: ', currentNetworkBlockHeight);
 
-        const { indexedBlockHeight } = await this.networkCommandFactory.init({
-          currentBlockHeight: currentNetworkBlockHeight,
-        });
+    //     const { indexedBlockHeight } = await this.networkCommandFactory.init({
+    //       currentBlockHeight: currentNetworkBlockHeight,
+    //     });
 
-        if (indexedBlockHeight < currentNetworkBlockHeight) {
-          const block = await this.networkProvider.getOneBlockByHeight(this.arithmetic.add(indexedBlockHeight, 1));
+    //     if (indexedBlockHeight < currentNetworkBlockHeight) {
+    //       const block = await this.networkProvider.getOneBlockByHeight(this.arithmetic.add(indexedBlockHeight, 1));
 
-          await this.blocksCommandFactory.indexBlock(block);
-        }
+    //       await this.blocksCommandFactory.indexBlock(block);
+    //     }
 
-        if (indexedBlockHeight === currentNetworkBlockHeight) {
-          // The last block was successfully indexed
-          break;
-        }
-      } catch (error) {
-        this.log.error('startIterateBlocks()', error, this.constructor.name);
-      }
-    }
+    //     if (indexedBlockHeight === currentNetworkBlockHeight) {
+    //       // The last block was successfully indexed
+    //       break;
+    //     }
+    //   } catch (error) {
+    //     this.log.error('startIterateBlocks()', error, this.constructor.name);
+    //   }
+    // }
   }
 
   private async aggregatesInitialization(): Promise<void> {
     // This method should run factory witch run command witch get last event aggregates,
     // and publish its. Without saving into db.
+
+    // const { indexedBlockFromHeight, indexedBlockHeight } = await this.networkCommandFactory.init({
+    //   currentBlockHeight: currentNetworkBlockHeight,
+    // });
   }
 }

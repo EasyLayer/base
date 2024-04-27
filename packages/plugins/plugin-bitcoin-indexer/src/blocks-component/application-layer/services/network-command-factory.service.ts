@@ -10,18 +10,18 @@ export class BitcoinNetworkCommandFactoryService {
     // private readonly config: NetworkConfig
   ) {}
 
-  public async init(dto: any): Promise<{ indexedBlockHeight: bigint; indexedBlockFromHeight: bigint }> {
+  public async init(dto: any): Promise<string> {
+    const uuid = uuidv4();
     const result = await this.commandBus.execute(
       new InitBitcoinNetworkCommand({
         ...dto,
-        uuid: uuidv4(),
-        blockFromHeight: 0n,
-        blockHeight: 0n + BigInt(1),
+        uuid,
+        // blockFromHeight: 0n,
+        // blockHeight: 0n + BigInt(1), 
       })
     );
-    return {
-      indexedBlockHeight: result.indexedBlockHeight,
-      indexedBlockFromHeight: result.indexedBlockFromHeight,
-    };
+    return uuid;
+      // indexedBlockHeight: result.indexedBlockHeight,
+      // indexedBlockFromHeight: result.indexedBlockFromHeight,
   }
 }

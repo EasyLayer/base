@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { NestLogger } from '@easylayer/logger';
+import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
 import { importPlugins, setupSwaggerServer } from './utils';
@@ -10,6 +11,8 @@ import { importPlugins, setupSwaggerServer } from './utils';
 export interface BootstrapOptions {
   appName?: string;
 }
+
+initializeTransactionalContext();
 
 export const bootstrap = async ({ appName }: BootstrapOptions) => {
   const logger = new NestLogger();

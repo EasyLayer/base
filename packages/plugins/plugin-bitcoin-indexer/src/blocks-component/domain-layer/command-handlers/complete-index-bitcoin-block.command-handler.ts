@@ -1,4 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
+import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { EventStoreRepository } from '@easylayer/eventstore';
 import { CompleteIndexBitcoinBlockCommand } from '@easylayer/domain-cqrs-components';
 import { AppLogger } from '@easylayer/logger';
 import { Block } from '../models/block.model';
@@ -9,10 +11,12 @@ import { BitcoinBlockModelFactoryService, BitcoinNetworkModelFactoryService } fr
 export class CompleteIndexBitcoinBlockCommandHandler implements ICommandHandler<CompleteIndexBitcoinBlockCommand> {
   constructor(
     private readonly log: AppLogger,
+    private readonly eventStore: EventStoreRepository,
     private readonly modelFactory: BitcoinBlockModelFactoryService,
     private readonly networkModelFactory: BitcoinNetworkModelFactoryService
   ) {}
 
+  @Transactional({ connectionName: 'blocks-write' })
   async execute({ payload }: CompleteIndexBitcoinBlockCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);
@@ -26,7 +30,7 @@ export class CompleteIndexBitcoinBlockCommandHandler implements ICommandHandler<
       const params = { aggregateId: blockId, transactionsPoolId };
       await blockModel.completeIndexBlock(params);
 
-      // save into db
+      await this.eventStore.save([networkModel, blockModel]);
 
       await networkModel.commit(true);
       await blockModel.commit();

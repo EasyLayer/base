@@ -3,6 +3,7 @@ import { BitcoinBlockIndexedEvent, BitcoinBlockIndexCompletedEvent } from '@easy
 
 export class Block extends AggregateRoot {
   public aggregateId!: string; // uuid
+  // public aggregateName!: string; 
   public block!: any; // just example
   public status!: string; // aggregate status
   public transactionsPoolId!: string;

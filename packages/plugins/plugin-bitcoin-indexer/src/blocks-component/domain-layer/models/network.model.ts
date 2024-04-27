@@ -6,6 +6,7 @@ import {
 } from '@easylayer/domain-cqrs-components';
 
 export class Network extends AggregateRoot {
+  public readonly extra: string = 'network';
   public aggregateId!: string; // uuid
   public indexedBlockFromHeight!: bigint;
   public indexedBlockHeight!: bigint;
