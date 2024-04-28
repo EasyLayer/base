@@ -4,7 +4,7 @@ import { BaseNodeAdapter } from './node-adapters';
 
 @Injectable()
 export class ConnectionManager implements OnModuleInit {
-  private adapters: Map<string, BaseNodeAdapter> = new Map();
+  private _adapters: Map<string, BaseNodeAdapter> = new Map();
   private activeAdapterName!: string;
 
   constructor(
@@ -18,6 +18,10 @@ export class ConnectionManager implements OnModuleInit {
       }
       this.adapters.set(name, adapter);
     });
+  }
+
+  get adapters() {
+    return this._adapters;
   }
 
   async onModuleInit() {

@@ -16,7 +16,7 @@ export class EventStoreModule {
   static forRoot(config: EventStoreConfig): DynamicModule {
     const { name, ...restOptions } = config;
 
-    // TODO: remove from here 
+    // TODO: remove from here
     const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'data', `${name}.db`) : name;
 
     return {
@@ -36,7 +36,7 @@ export class EventStoreModule {
             // Add a DataSource with a unique name
             return addTransactionalDataSource({
               name,
-              dataSource: new DataSource(options)
+              dataSource: new DataSource(options),
             });
           },
         }),

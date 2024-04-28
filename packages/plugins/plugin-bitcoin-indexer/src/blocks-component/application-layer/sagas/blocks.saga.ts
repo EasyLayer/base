@@ -9,9 +9,20 @@ import { BitcoinBlocksCommandFactoryService } from '../services/blocks-command-f
 @Injectable()
 export class BlocksSaga {
   constructor(
-    private readonly commandFactoryService: BitcoinBlocksCommandFactoryService
+    private readonly commandFactoryService: BitcoinBlocksCommandFactoryService,
     // private readonly eventFactoryService:
+    private readonly blocksManagerService: BlocksManagerService,
   ) {}
+
+  @Saga()
+  onAggregatesStartupedEvent(events$: Observable<any>): Observable<void> {
+    return events$.pipe(
+      ofType(AggregatesStartupedEvent),
+      tap(event => {
+        this.blocksManagerService.startProcessing(event.payload.currentBlock);
+      })
+    );
+  }
 
   @SyncSaga()
   onBlockIndexedSuccessEvent(events$: Observable<any>): Observable<ICommand> {
