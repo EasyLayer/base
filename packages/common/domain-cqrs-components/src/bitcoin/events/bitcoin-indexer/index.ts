@@ -1,6 +1,7 @@
 export * from './bitcoin-network-status-updated.event';
 export * from './bitcoin-network-initialized.event';
 export * from './bitcoin-network-block-added.event';
+export * from './bitcoin-network-reorganisation.event';
 
 export * from './old-bitcoin-update-indexed-block-from-height.event';
 export * from './old-bitcoin-update-indexed-block-to-height.event';

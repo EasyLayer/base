@@ -4,6 +4,7 @@ import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provid
 import {
   BitcoinNetworkInitializedEvent,
   BitcoinNetworkBlockAddedEvent,
+  BitcoinNetworkReorganisationEvent,
 
   BitcoinNetworkStatusUpdatedEvent,
   BitcoinUpdateIndexedBlockFromHeightEvent,
@@ -25,7 +26,7 @@ type ChainNode = {
 class Blockchain {
   private head: ChainNode | null = null;
   private tail: ChainNode | null = null;
-  private _size: number = 0;
+  private _size: bigint = 0n;
 
   get lastPrevBlockHash(): string {
     if (this.tail) {
@@ -51,29 +52,35 @@ class Blockchain {
     }
   }
 
-  get size(): number {
+  get size(): bigint {
     return this._size;
   }
 
   isEmpty(): boolean {
-    return this.size === 0;
+    return this.size === 0n;
   }
 
   // Adding a block to the end of the chain
-  addBlock(height: bigint, hash: string, prevHash: string): void {
-      const newBlock: LightBlock = { height, hash, prevHash };
-      const newNode: ChainNode = { block: newBlock, next: null, prev: this.tail };
+  addBlock(height: bigint, hash: string, prevHash: string): boolean {
+    // Before adding a block, we validate it
+    if (!this.validateBlock(height, prevHash)) {
+      return false;
+    }
 
-      if (this.tail) {
-        this.tail.next = newNode;
-      }
-      this.tail = newNode;
+    const newBlock: LightBlock = { height, hash, prevHash };
+    const newNode: ChainNode = { block: newBlock, next: null, prev: this.tail };
 
-      if (!this.head) {
-        this.head = newNode;
-      }
+    if (this.tail) {
+      this.tail.next = newNode;
+    }
+    this.tail = newNode;
 
-      this._size++;
+    if (!this.head) {
+      this.head = newNode;
+    }
+
+    this._size++;
+    return true;
   }
 
   // Deleting the last block
@@ -145,6 +152,44 @@ class Blockchain {
     }
     return null;
   }
+
+  /**
+   * Truncates the blockchain just before a specified block height.
+   * @param {bigint} height - The height before which the chain should be truncated.
+   * @returns {boolean} Returns true if truncation was successful, false if the block was not found.
+   */
+  truncateToBlock(height: bigint): boolean {
+    let currentNode = this.tail;
+    let found = false;
+
+    // Iterate backwards from the last block 
+    // until we find the block immediately before the given height
+    while (currentNode && currentNode.prev) {
+      if (currentNode.prev.block.height === height - 1n) {
+        // Update the tail to the block before the specified height
+        this.tail = currentNode.prev;
+
+        // Delete all blocks after the found block
+        this.tail.next = null;
+
+        // Adjust the size of the chain
+        this._size = this.tail.block.height + 1n;
+        found = true;
+        break;
+      }
+      currentNode = currentNode.prev;
+    }
+
+    // Delete all blocks if the specified height is 1 (cut off the entire chain)
+    if (height === 1n && this.head) {
+      this.head = null;
+      this.tail = null;
+      this._size = 0n;
+      found = true;
+    }
+
+    return found;
+  }
 }
 
 export class Network extends AggregateRoot {
@@ -176,43 +221,8 @@ export class Network extends AggregateRoot {
 
     const { height, hash, previousblockhash } = block;
 
-    if (!this.chain.validateBlock(height, previousblockhash)) {
-      // So we need to update chain
-      // Вот может быть тут можно сделать метод приватный, который пройдеться по блокам провайдера 
-      // и найдет таки совпадение, откатит до этого совпадения chain 
-      // как он будет откатывать chain до этог осовпадения это конечно вопрос, ему по сути нужно 
-      // или по однмоу с конца удалять блоки, пока не найдет высоту что нужно? не только высоту но и хеш? 
-      // 
-
-      // Если реорганизация, то мы не можем тут создавать ивент, нам нужно в команде это сделать потому что блок поменяеться
-      // Таким образом в команде знать есть ли реорганизация и запустить ивент. 
-      // ИЛИ вариант что отсюда мы попадем на сагу другую, в этом месте мы все еще можем думаю использовать 
-      // связь между сагами и ничего страшного. НУЖНО ДУМАТЬ. 
-
-      await this.reorganisation(block, service);
-
-      const newBlock = await service.getOneBlockByHeight(this.chain.lastBlockHeight);
-      
-      if (!this.chain.validateBlock(newBlock.height, newBlock.hash, newBlock.previousblockhash)) {
-        // Тут мы должны удалить значит блок с chain 
-        this.chain.removeLast();
-
-        const newBlock2 = await service.getOneBlockByHeight(this.chain.lastBlockHeight);
-
-        if (!this.chain.validateBlock(newBlock2.height, newBlock2.hash, newBlock2.previousblockhash)) {
-          // Тут мы должны удалить значит блок с chain 
-          this.chain.removeLast();
-
-          const newBlock2 = await service.getOneBlockByHeight(this.chain.lastBlockHeight);
-        }
-      }
-
-      // await this.apply(new BitcoinNetworkReorganisationEvent({
-      //   aggregateId: this.aggregateId,
-      //   requestId,
-      //   status: 'reorganisation',
-      //   block
-      // }));
+    if (!this.chain.addBlock(height, hash, previousblockhash)) {
+      return await this.reorganisation({ block, requestId, service });
     }
 
     await this.apply(new BitcoinNetworkBlockAddedEvent({
@@ -223,17 +233,39 @@ export class Network extends AggregateRoot {
     }));
   }
 
-  // Мы не сможем тут это сделать потому что нам в команде как то прервать нужно тогда
-  // Чтобы блок понимал что не нужно индексировать, а мы это никак отсюда не сделаем кроме ошибки
-  // Поэтому мы не можем такие вещи тут сделать...
-  // ИДЕЯ, я могу поменять состояние в методе? или так нельзя делать? и сделат проверку на статус уже дальше в команде?
-  // думаю это было бы не правильно. 
-  private async reorganisation(block: any, service: BitcoinNetworkProviderService): Promise<boolean> {
-    // Check heiht
-    // if ()
+  async reorganisation(
+    { block, requestId, service } :
+    { block: any, requestId: string, service: BitcoinNetworkProviderService }
+  ): Promise<void> {
+    const { height } = block;
 
+    // Get previously blocks by height - 1
+    const oldBlock = await service.getOneBlockByHeight(height - 1n);
+    const localBlockNode = this.chain.findBlockByHeight(height - 1n);
 
-    return true;
+    if (!localBlockNode) {
+      // If we haven’t found a block by height in the chain by height, 
+      // then this is an error, 
+      // we must go back all the way to the loader and try with another block
+      throw new Error('Block not found in local chain');
+    }
+
+    if (oldBlock.hash === localBlockNode.block.hash && oldBlock.previousblockhash === localBlockNode.block.prevHash) {
+      // Match found
+      
+      // Update our chain by deleting entries up to the matchedBlock
+      this.chain.truncateToBlock(oldBlock.height);
+
+      await this.apply(new BitcoinNetworkReorganisationEvent({
+        aggregateId: this.aggregateId,
+        requestId,
+        status: 'reorganisation',
+        block: oldBlock
+      }));
+    }
+
+    // Recursive check the previous block
+    return this.reorganisation({ block: oldBlock, requestId, service });
   }
   
 
@@ -244,11 +276,17 @@ export class Network extends AggregateRoot {
   }
 
   private onBitcoinNetworkBlockAddedEvent({ payload }: BitcoinNetworkBlockAddedEvent) {
-    const { aggregateId, block } = payload;
-    this.aggregateId = aggregateId;
+    const { block } = payload;
 
     const { height, hash, previousblockhash } = block;
     this.chain.addBlock(height, hash, previousblockhash);
+  }
+
+  private onBitcoinNetworkReorganisationEvent({ payload }: BitcoinNetworkReorganisationEvent) {
+    const { block } = payload;
+
+    const { height } = block;
+    this.chain.truncateToBlock(height);
   }
 
 }

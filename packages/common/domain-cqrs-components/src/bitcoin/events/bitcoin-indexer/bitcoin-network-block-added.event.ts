@@ -4,6 +4,7 @@ interface BitcoinNetworkBlockAddedEventPayload {
   aggregateId: string;
   requestId: string;
   block: any;
+  status: string;
 }
 
 export class BitcoinNetworkBlockAddedEvent implements BasicEvent<BitcoinNetworkBlockAddedEventPayload> {
