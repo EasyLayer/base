@@ -1,9 +1,14 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AppLogger, RuntimeTracker } from '@easylayer/logger';
+import { NetworkCommandFactoryService } from './application-layer/services/network-command-factory.service';
 
 @Injectable()
 export class BitcoinIndexerService implements OnModuleInit {
-  constructor(private readonly log: AppLogger) {}
+  constructor(
+    private readonly log: AppLogger,
+    private readonly networkCommandFactory: NetworkCommandFactoryService
+  ) {}
 
   async onModuleInit() {
     await this.initialization();
@@ -17,10 +22,7 @@ export class BitcoinIndexerService implements OnModuleInit {
     this.log.info('Initialization all systems');
 
     try {
-      // Init all aggregates
-      // NOTE: we restore all aggregates and publish last event for each model
-      // NO, we restore aggregates in each component
-      // TODO
+      await this.networkCommandFactory.init({ requestId: uuidv4() });
     } catch (error) {
       this.log.error('initialization()', error, this.constructor.name);
       throw error;

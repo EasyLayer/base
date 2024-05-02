@@ -4,6 +4,11 @@
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./bitcoin": "./dist/bitcoin/index.js",
+    "./evm": "./dist/evm/index.js"
+  },
   "files": [
     "dist"
   ],

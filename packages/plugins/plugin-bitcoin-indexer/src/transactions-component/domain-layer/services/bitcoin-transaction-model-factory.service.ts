@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/cqrs';
-import { Transaction } from '../models/transaction.model';
+import { Transaction } from '../../../domain-layer/models/transaction.model';
 
 @Injectable()
 export class BitcoinTransactionModelFactoryService {

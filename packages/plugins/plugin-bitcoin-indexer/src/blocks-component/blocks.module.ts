@@ -3,9 +3,9 @@ import { LoggerModule } from '@easylayer/logger';
 import { EventStoreModule } from '@easylayer/eventstore';
 import { ArithmeticService } from '@easylayer/arithmetic';
 import { BitcoinBlocksService } from './blocks.service';
-import { BitcoinBlocksCommandFactoryService, BitcoinNetworkCommandFactoryService } from './application-layer/services';
-import { BitcoinBlockModelFactoryService, BitcoinNetworkModelFactoryService } from './domain-layer/services';
-import { BlocksCommandHandlers } from './domain-layer/command-handlers';
+import { BitcoinBlocksCommandFactoryService, BitcoinNetworkCommandFactoryService } from '../application-layer/services';
+import { BitcoinBlockModelFactoryService, BitcoinNetworkModelFactoryService } from '../domain-layer/services';
+import { BlocksCommandHandlers } from '../domain-layer/command-handlers';
 
 @Module({
   controllers: [],

@@ -5,9 +5,9 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { CreateBitcoinTransactionsPoolCommand } from '@easylayer/domain-cqrs-components';
 import { AppLogger } from '@easylayer/logger';
-import { TransactionsPool } from '../models/transactions-pool.model';
+import { TransactionsPool } from '../../../domain-layer/models/transactions-pool.model';
 import { BitcoinTransactionsBatchModelFactoryService, BitcoinTransactionsPoolModelFactoryService } from '../services';
-import { TransactionsBatch } from '../models/transactions-batch';
+import { TransactionsBatch } from '../../../domain-layer/models/transactions-batch';
 
 @CommandHandler(CreateBitcoinTransactionsPoolCommand)
 export class CreateBitcoinTransactionsPoolCommandHandler

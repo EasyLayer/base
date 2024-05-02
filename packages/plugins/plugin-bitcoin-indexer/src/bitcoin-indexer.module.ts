@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Module, DynamicModule } from '@nestjs/common';
 import { transformAndValidateSync } from 'class-transformer-validator';
 import { LoggerModule } from '@easylayer/logger';
+import { EventStoreModule } from '@easylayer/eventstore';
 import { BitcoinNetworkProviderModule, QuickNodeAdapter } from '@easylayer/bitcoin-network-provider';
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
 import { BitcoinIndexerService } from './bitcoin-indexer.service';
@@ -47,6 +48,18 @@ export class BitcoinIndexerModule {
           // },
           ...quickNodeProvidersFactories,
         ]),
+        // TODO: move condigs into envs
+        EventStoreModule.forRoot({
+          type: 'sqlite',
+          name: 'blocks-write',
+          database: '',
+          synchronize: true,
+          logging: true,
+          enableWAL: true,
+          // Now, when attempting to perform an operation that encountered a block,
+          // SQLite will attempt to retry the operation for the specified time before returning an error. 
+          // busyTimeout: 1000
+        }),
         BitcoinBlocksModule,
         BitcoinTransactionsModule,
       ],

@@ -16,8 +16,27 @@ export class EventStoreRepository<T extends AggregateRoot> {
     await Promise.all(aggregates.map((aggregate: T) => this.storeEvent(aggregate)));
   }
 
-  // Возможно тут будет механиз когда мы последний ивент может положем в uncommited
-  public async getOne(model: T & { aggregateId: string }, retryLastEvent: boolean = false): Promise<T> {
+  public async getOne(model: T & { aggregateId: string }): Promise<T> {
+    // Я смотрю что мы в любом случае должны тут преедать модель аггрегата
+    // даже если она пустая
+    const { aggregateId } = model;
+
+    if (!aggregateId) {
+      return model;
+    }
+
+    const eventRaws = await this.eventStore.find({
+      where: { aggregateId },
+      order: { version: 'ASC' },
+    });
+
+    await model.loadFromHistory(eventRaws.map(EventDataModel.deserialize));
+    return model;
+  }
+
+  public async getMany() {}
+
+  public async fetchLastEvent(model: T & { aggregateId: string }): Promise<T> {
     // Я смотрю что мы в любом случае должны тут преедать модель аггрегата
     // даже если она пустая
     const { aggregateId } = model;
@@ -40,8 +59,6 @@ export class EventStoreRepository<T extends AggregateRoot> {
 
     return model;
   }
-
-  public async getMany() {}
 
   public async getOneByExtra(model: T & { extra: string }): Promise<T> {
     const { extra } = model;

@@ -5,7 +5,9 @@ export type Hash = `0x${string}`;
 export interface AdapterOptions<T extends BaseNodeAdapter = BaseNodeAdapter> {
   // useClass?: Type<AdapterOptionsFactory<T>>;
   useFactory?: (...args: any[]) => Promise<T> | T;
+  useValue?: T;
 }
+
 
 // If we use useClass, then we do not pass the adapter there, but the class of the factory that has
 // createAdapter method, and that factory class must create an adapter instance for us itself

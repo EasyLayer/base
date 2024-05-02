@@ -16,6 +16,9 @@ export class BitcoinNetworkProviderModule {
         // } else if (adapter.useClass) {
         //   const factory = new adapter.useClass();
         //   return factory.createAdapter();
+      } else if (adapter.useValue) {
+        // Готовые экземпляры
+        return adapter.useValue;
       } else {
         throw new Error('Adapter configuration is invalid.');
       }
