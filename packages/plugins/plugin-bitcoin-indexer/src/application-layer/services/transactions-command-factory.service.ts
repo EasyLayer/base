@@ -1,0 +1,22 @@
+// import { v4 as uuidv4 } from 'uuid';
+import { Injectable } from '@nestjs/common';
+import { CommandBus } from '@easylayer/cqrs';
+import {
+  IndexTransactionsBatchCommand,
+} from '@easylayer/domain-cqrs-components/bitcoin';
+import { BlocksQueueService } from '../blocks-queue';
+
+@Injectable()
+export class TransactionsCommandFactoryService {
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly blocksQueueService: BlocksQueueService
+  ) {}
+
+  public async indexTransactionsBatch(dto: any): Promise<void> {
+    const { blockHeight } = dto;
+    // Get block with transactions from cache
+    const blockWithTransactions = await this.blocksQueueService.getOneBlockByHeight(blockHeight);
+    await this.commandBus.execute(new IndexTransactionsBatchCommand({ ...dto, block: blockWithTransactions }));
+  }
+}

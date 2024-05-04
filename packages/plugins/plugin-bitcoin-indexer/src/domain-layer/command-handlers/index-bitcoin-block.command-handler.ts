@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin';
@@ -5,17 +6,23 @@ import { AppLogger } from '@easylayer/logger';
 import {
   BitcoinNetworkProviderService,
 } from '@easylayer/bitcoin-network-provider';
+import { EventStoreRepository } from '@easylayer/eventstore';
 import { Block } from '../models/block.model';
 import { Network } from '../models/network.model';
-import { BitcoinBlockModelFactoryService, BitcoinNetworkModelFactoryService } from '../services';
+import { TransactionsBatch } from '../models/transactions-batch';
+import { BlockModelFactoryService, TransactionsBatchModelFactoryService, NetworkModelFactoryService } from '../services';
 
 @CommandHandler(IndexBlockCommand)
 export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockCommand> {
   constructor(
     private readonly log: AppLogger,
-    private readonly modelFactory: BitcoinBlockModelFactoryService,
-    private readonly networkModelFactory: BitcoinNetworkModelFactoryService,
-    private readonly networkProviderService: BitcoinNetworkProviderService
+    private readonly modelFactory: BlockModelFactoryService,
+    private readonly networkModelFactory: NetworkModelFactoryService,
+    private readonly batchModelFactory: TransactionsBatchModelFactoryService,
+    private readonly networkProviderService: BitcoinNetworkProviderService,
+    private readonly networkEventStore: EventStoreRepository<Network>,
+    private readonly blocksEventStore: EventStoreRepository<Block>,
+    private readonly batchesEventStore: EventStoreRepository<TransactionsBatch>,
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -24,52 +31,74 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('execute()', payload, this.constructor.name);
 
       const { block, requestId } = payload;
+      const { tx, ...lightweightBlock } = block;
+      const { height, hash, previousblockhash } = lightweightBlock;
 
       const networkModel: Network = await this.networkModelFactory.initByExtraModel();
-      await networkModel.addBlock({ block, requestId, service: this.networkProviderService });
 
-      const aggregateId = networkModel.chain.lastBlockHash;
-      const blockModel: Block = await this.modelFactory.initExistingModel(aggregateId);
+      /* Check reorganisation */
+      if (!networkModel.chain.addBlock(height, hash, previousblockhash)) {
+        await networkModel.reorganisation({ height, requestId, service: this.networkProviderService });
+        await this.networkEventStore.save(networkModel);
+        await networkModel.commit();
+        this.log.debug(`Network reorganisation started`, {}, this.constructor.name);
+        return;
+      }
 
-      // Теперь мы индексируем блок который в состоянии network 
-      // создаем паки транзакций 
-      // сохраняем все в одну базу 
-      // публикуем ивент Network про то что был блок или Добавлен или Реорганизация
-      // публикуем Block который будем ловить рекурсией в Саге чтобы распарсить каждый пак транз
+      await networkModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
 
-      // Check previous block hash
-      // if (blockModel.block && blockModel.block.hash !== block.hash) {
-      //   // If chain has been changed
-      //   // we have to decrease currentHeight -1 into networkModel
-      //   await networkModel.updateIndexedBlockHeight({ aggregateId: networkModel.aggregateId, height: 1n });
-      //   return await networkModel.commit();
-      // }
+      //save network into db
+      await this.networkEventStore.save(networkModel);
 
-      // TODO: add validation and maybe transformation to block structure
-      // remember if its validation rules = business rules then validation should be
-      // inside aggregator method
+      // { <aggregateId>:<status> }
+      const batches: Map<string, string> = new Map();
 
-      // const params = { aggregateId, block };
-      // await blockModel.indexBlock(params);
+      // TODO: move into env
+      const MAX_TRANSACTIONS_PER_BATCH = 100;
 
-      // if (indexedBlockFromHeigh) {
-      //   await networkModel.updateIndexedBlockFromHeight({
-      //     aggregateId: networkModel.aggregateId,
-      //     height: indexedBlockFromHeigh,
-      //   });
-      // }
+      /* Create transactions batches */
+      while (tx.length > 0) {
+        // Extract a batch of transactions, removing them from the copy of the array
+        // IMPORTANT: transactions in the block are arranged in order
+        // when splitting into batches we must follow this order!!
+        const pack = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
 
-      // if (indexedBlockHeigh) {
-      //   await networkModel.updateIndexedBlockHeight({
-      //     aggregateId: networkModel.aggregateId,
-      //     height: indexedBlockHeigh,
-      //   });
-      // }
+        const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
+
+        await transactionBatch.create({
+          aggregateId: uuidv4(),
+          transactions: new Set(pack),
+          blockHeight: height,
+          blockHash: hash
+        });
+
+        // save into db
+        await this.batchesEventStore.save(transactionBatch);
+
+        // Set batches with status created into variable
+        batches.set(transactionBatch.aggregateId, 'created');
+      }
+
+      // TODO: process the option of indexing the first batch of transactions immediately
+
+      /* Create a NEW block model */
+      // IMPORTANT: If a block with the current height already exists, 
+      // we will overwrite it with this state
+      const blockModel: Block = this.modelFactory.createNewModel();
+
+      await blockModel.index({
+        aggregateId: height,
+        block: lightweightBlock,
+        batches,
+      });
+
+      //save block into db
+      await this.blocksEventStore.save(blockModel);
 
       await networkModel.commit();
       await blockModel.commit();
 
-      this.log.debug('Block index started', params, this.constructor.name);
+      this.log.debug('Block index started', { height, hash, previousblockhash, ...lightweightBlock }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;

@@ -5,10 +5,7 @@ import {
   BitcoinNetworkInitializedEvent,
   BitcoinNetworkBlockAddedEvent,
   BitcoinNetworkReorganisationEvent,
-
-  BitcoinNetworkStatusUpdatedEvent,
-  BitcoinUpdateIndexedBlockFromHeightEvent,
-  BitcoinUpdateIndexedBlockHeightEvent,
+  BitcoinNetworkIndexBlockConfirmedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 type LightBlock = {
@@ -63,7 +60,7 @@ class Blockchain {
   // Adding a block to the end of the chain
   addBlock(height: bigint, hash: string, prevHash: string): boolean {
     // Before adding a block, we validate it
-    if (!this.validateBlock(height, prevHash)) {
+    if (!this.validateNextBlock(height, prevHash)) {
       return false;
     }
 
@@ -122,7 +119,7 @@ class Blockchain {
     return true;
   }
 
-  validateBlock(height: bigint, prevHash: string): boolean {
+  validateNextBlock(height: bigint, prevHash: string): boolean {
     if (!this.tail) {
       // If there's no blocks in the chain, we assume this is the first block.
       return true;
@@ -135,6 +132,37 @@ class Blockchain {
 
     // Check if the given previous hash matches the last block's hash.
     if (this.tail.block.hash !== prevHash) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Validates that the provided block data matches the last block in the chain.
+   * @param height The expected height of the last block.
+   * @param hash The expected hash of the last block.
+   * @param prevHash The expected previous hash of the last block.
+   * @returns {boolean} true if the provided data matches the last block, false otherwise.
+   */
+  validateLastBlock(height: bigint, hash: string, prevHash: string): boolean {
+    if (!this.tail) {
+      // If there are no blocks, the check cannot be performed.
+      throw new Error("No blocks in the blockchain.");
+    }
+
+    // Check that the height of the last block matches the passed height.
+    if (this.tail.block.height !== height) {
+      return false;
+    }
+
+    // Check that the hash of the last block matches the passed hash
+    if (this.tail.block.hash !== hash) {
+      return false; // Несоответствие хеша
+    }
+
+    // Check that the previous hash of the last block matches the previous hash passed in.
+    if (this.tail.block.prevHash !== prevHash) {
       return false;
     }
 
@@ -214,7 +242,7 @@ export class Network extends AggregateRoot {
     }));
   }
 
-  public async addBlock({ block, requestId, service }: { block: any, requestId: string, service: BitcoinNetworkProviderService }) {
+  public async addBlock({ block, requestId }: { block: any, requestId: string }) {
     if (this.status !== 'awaiting' && this.status !== 'reorganisation') {
       throw new Error('Previous Block did not complete indexing');
     }
@@ -222,7 +250,7 @@ export class Network extends AggregateRoot {
     const { height, hash, previousblockhash } = block;
 
     if (!this.chain.addBlock(height, hash, previousblockhash)) {
-      return await this.reorganisation({ block, requestId, service });
+      throw new Error('Need reorganisation');
     }
 
     await this.apply(new BitcoinNetworkBlockAddedEvent({
@@ -233,11 +261,13 @@ export class Network extends AggregateRoot {
     }));
   }
 
-  async reorganisation(
-    { block, requestId, service } :
-    { block: any, requestId: string, service: BitcoinNetworkProviderService }
+  public async reorganisation(
+    { height, requestId, service } :
+    { height: bigint, requestId: string, service: BitcoinNetworkProviderService }
   ): Promise<void> {
-    const { height } = block;
+    if (this.status !== 'awaiting' && this.status !== 'reorganisation') {
+      throw new Error('Previous Block did not complete indexing');
+    }
 
     // Get previously blocks by height - 1
     const oldBlock = await service.getOneBlockByHeight(height - 1n);
@@ -265,9 +295,28 @@ export class Network extends AggregateRoot {
     }
 
     // Recursive check the previous block
-    return this.reorganisation({ block: oldBlock, requestId, service });
+    return this.reorganisation({ height: oldBlock.height, requestId, service });
   }
   
+  public async confirmIndexBlock({ block, requestId }: { block: any, requestId: string }) {
+    if (this.status !== 'indexing') {
+      throw new Error('Any Block did not start indexing');
+    }
+    
+    const { height, hash, previousblockhash } = block;
+
+    // Check this block in state
+    if (!this.chain.validateLastBlock(height, hash, previousblockhash)) {
+      throw new Error('Last block chain mismatch');
+    }
+
+    await this.apply(new BitcoinNetworkIndexBlockConfirmedEvent({
+      aggregateId: this.aggregateId,
+      requestId,
+      status: 'awaiting',
+      block
+    }));
+  }
 
   private onBitcoinNetworkInitializedEvent({ payload }: BitcoinNetworkInitializedEvent) {
     const { aggregateId, status } = payload;
@@ -287,6 +336,11 @@ export class Network extends AggregateRoot {
 
     const { height } = block;
     this.chain.truncateToBlock(height);
+  }
+
+  private onBitcoinNetworkIndexBlockConfirmedEvent({ payload }: BitcoinNetworkIndexBlockConfirmedEvent) {
+    const { status } = payload;
+    this.status = status;
   }
 
 }

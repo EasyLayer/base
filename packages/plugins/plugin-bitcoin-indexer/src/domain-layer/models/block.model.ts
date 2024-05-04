@@ -1,30 +1,23 @@
 import { AggregateRoot } from '@easylayer/cqrs';
-import { BitcoinBlockIndexedEvent, BitcoinBlockIndexCompletedEvent } from '@easylayer/domain-cqrs-components/bitcoin';
+import {
+  BitcoinBlockIndexStartedEvent,
+  BitcoinBlockIndexCompletedEvent
+} from '@easylayer/domain-cqrs-components/bitcoin';
 
 export class Block extends AggregateRoot {
-  public aggregateId!: string; // uuid
-  // public aggregateName!: string; 
-  public block!: any; // just example
-  public hash!: string;
-  public height!: bigint;
-  public status!: string; // aggregate status
-  public batches!: any[];
-  // public transactionsPoolId!: string;
-
-  // get aggregateId(): string {
-  //   return this._aggregateId;
-  // }
-
-  // set aggregateId(aggregateId: bigint | string) {
-  //   this._aggregateId = String(aggregateId);
-  // }
+  public aggregateId!: string; // block height
+  public block!: any; // without transactions (or just with transactions hashes)
+  public status!: string; // indexing or completed
+  public batches!: Map<string, string>;
 
   // This is create aggregate method
-  public async indexBlock({ aggregateId, block }: { aggregateId: string; block: any }) {
+  public async index({ aggregateId, block, batches }: { aggregateId: string; block: any, batches: Map<string, string> }) {
     // QUESTION: if the status does not match, should I throw an error or just skip it?
-    if (this.status !== 'indexing' && this.status !== 'indexed') {
-      await this.apply(new BitcoinBlockIndexedEvent({ aggregateId, block, status: 'indexing' }));
+    if (this.status === 'indexing') {
+      throw new Error('Block already start indexing');
     }
+
+    await this.apply(new BitcoinBlockIndexStartedEvent({ aggregateId, block, batches, status: 'indexing' }));
   }
 
   public async completeIndexBlock({
@@ -39,16 +32,17 @@ export class Block extends AggregateRoot {
     }
   }
 
-  private onBitcoinBlockIndexedEvent({ payload }: BitcoinBlockIndexedEvent) {
-    const { aggregateId, block, status } = payload;
+  private onBitcoinBlockIndexStartedEvent({ payload }: BitcoinBlockIndexStartedEvent) {
+    const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
     this.block = block;
     this.status = status;
+    this.batches = batches;
   }
 
-  private onBitcoinBlockIndexCompletedEvent({ payload }: BitcoinBlockIndexCompletedEvent) {
-    const { transactionsPoolId, status } = payload;
-    this.transactionsPoolId = transactionsPoolId;
-    this.status = status;
-  }
+  // private onBitcoinBlockIndexCompletedEvent({ payload }: BitcoinBlockIndexCompletedEvent) {
+  //   const { transactionsPoolId, status } = payload;
+  //   this.transactionsPoolId = transactionsPoolId;
+  //   this.status = status;
+  // }
 }

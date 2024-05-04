@@ -1,5 +1,5 @@
 import { AggregateRoot } from '@easylayer/cqrs';
-import { BitcoinTransactionCreatedEvent } from '@easylayer/domain-cqrs-components';
+import { BitcoinTransactionCreatedEvent } from '@easylayer/domain-cqrs-components/bitcoin';
 
 export class Transaction extends AggregateRoot {
   public aggregateId!: string; // uuid

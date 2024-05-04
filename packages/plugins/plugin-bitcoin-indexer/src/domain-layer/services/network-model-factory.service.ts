@@ -5,7 +5,7 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { Network } from '../models/network.model';
 
 @Injectable()
-export class BitcoinNetworkModelFactoryService {
+export class NetworkModelFactoryService {
 
   constructor(
     private readonly publisher: EventPublisher,
@@ -28,5 +28,12 @@ export class BitcoinNetworkModelFactoryService {
     const model = await this.networkRepository.getOneByExtra(this.createNewModel());
     // 2. Если в базе такого нет то мы создаем просто модель базовую. 
     return model;
+  }
+
+  public async publishLastEvent(): Promise<void> {
+    // TODO
+    const model = await this.networkRepository.getOneByExtra(this.createNewModel());
+    const event = await this.networkRepository.fetchLastEvent(model);
+    return model.publish(event);
   }
 }

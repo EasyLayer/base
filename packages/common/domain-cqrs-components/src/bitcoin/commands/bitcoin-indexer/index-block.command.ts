@@ -1,7 +1,6 @@
 export interface IIndexBlockCommand {
   block: any;
-  indexedBlockFromHeigh: bigint;
-  indexedBlockHeigh: bigint;
+  requestId: string;
 }
 
 export class IndexBlockCommand {

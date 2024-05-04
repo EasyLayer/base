@@ -8,7 +8,7 @@ import {
   BitcoinTransactionsPoolCreatedEvent,
   BitcoinTransactionsPoolUpdatedEvent,
 } from '@easylayer/domain-cqrs-components';
-import { BitcoinTransactionsCommandFactoryService } from '../services/transactions-command-factory.service';
+import { BitcoinTransactionsCommandFactoryService } from '../../../application-layer/services/transactions-command-factory.service';
 
 @Injectable()
 export class TransactionsSaga {

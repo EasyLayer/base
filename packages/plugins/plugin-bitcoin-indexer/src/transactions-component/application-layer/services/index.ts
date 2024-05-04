@@ -1,1 +1,1 @@
-export * from './transactions-command-factory.service';
+export * from '../../../application-layer/services/transactions-command-factory.service';

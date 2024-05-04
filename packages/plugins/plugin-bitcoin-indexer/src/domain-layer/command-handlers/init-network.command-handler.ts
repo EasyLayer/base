@@ -5,15 +5,15 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { InitNetworkCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
 import { Network } from '../models/network.model';
-import { BitcoinNetworkModelFactoryService, BitcoinBlockModelFactoryService } from '../services';
+import { NetworkModelFactoryService, BlockModelFactoryService } from '../services';
 
 @CommandHandler(InitNetworkCommand)
 export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCommand> {
   constructor(
     private readonly log: AppLogger,
     private readonly networkRepository: EventStoreRepository<Network>,
-    private readonly networkModelFactory: BitcoinNetworkModelFactoryService,
-    private readonly blocksModelFactory: BitcoinBlockModelFactoryService,
+    private readonly networkModelFactory: NetworkModelFactoryService,
+    private readonly blocksModelFactory: BlockModelFactoryService,
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -30,6 +30,11 @@ export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCom
         // Publish last block event (if it exists)
         const blockAggregateId = String(networkModel.chain.lastBlockHeight);
         await this.blocksModelFactory.publishLastEvent(blockAggregateId);
+      }
+
+      if (networkModel.status === 'reorganisation') {
+        // Publish last network event to process reorganisation
+        await this.networkModelFactory.publishLastEvent();
       }
 
       await this.networkRepository.save(networkModel);

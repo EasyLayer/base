@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/cqrs';
-import { Transaction } from '../../../domain-layer/models/transaction.model';
+import { Transaction } from '../models/transaction.model';
 
 @Injectable()
-export class BitcoinTransactionModelFactoryService {
+export class TransactionModelFactoryService {
   constructor(private readonly publisher: EventPublisher) {}
 
   public createNewModel(): Transaction {

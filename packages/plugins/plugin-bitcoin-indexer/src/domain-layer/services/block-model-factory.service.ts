@@ -4,7 +4,7 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { Block } from '../models/block.model';
 
 @Injectable()
-export class BitcoinBlockModelFactoryService {
+export class BlockModelFactoryService {
   constructor(
     private readonly publisher: EventPublisher,
     private readonly blocksRepository: EventStoreRepository<Block>

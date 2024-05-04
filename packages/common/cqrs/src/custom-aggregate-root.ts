@@ -27,12 +27,7 @@ export abstract class CustomAggregateRoot<EventBase extends IEvent = IEvent> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async publishAll<T extends EventBase = EventBase>(event: T[]): Promise<void> {}
 
-  async commit(skipPublishing: boolean = false): Promise<void> {
-    if (skipPublishing) {
-      this.uncommit();
-      return;
-    }
-
+  async commit(): Promise<void> {
     const events = this.getUncommittedEvents();
     await this.publishAll(events);
     this.uncommit();

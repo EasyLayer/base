@@ -85,7 +85,7 @@ export class BlocksQueueService {
 
     while (true) {
       // This will wait for a block to be available
-      const block = await this.blockQueue.dequeue();
+      const block = await this.blockQueue.peekFirstBlock();
       if (block) {
         this.log.debug('Block Queue was dequeue', { block }, this.constructor.name);
 
@@ -99,7 +99,6 @@ export class BlocksQueueService {
 
     try {
       await this.commandFactory.indexBlockCommand({ block, requestId: uuidv4() });
-      // Block is automatically removed from the queue by dequeue
     } catch (error) {
       this.log.error('Failed to process block:', error, this.constructor.name);
 
@@ -108,5 +107,13 @@ export class BlocksQueueService {
 
       this.log.debug('Block Queue was requeue', { block }, this.constructor.name);
     }
+  }
+
+  async confirmProcessBlock(): Promise<void> {
+    return this.blockQueue.dequeue();
+  }
+
+  async getOneBlockByHeight(height: bigint | string): Promise<Block> {
+    return this.blockQueue.fetchBlockByHeight(BigInt(height));
   }
 }
