@@ -61,13 +61,22 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         // Extract a batch of transactions, removing them from the copy of the array
         // IMPORTANT: transactions in the block are arranged in order
         // when splitting into batches we must follow this order!!
-        const pack = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
+        const transactionSlice = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
+
+        // We create a Map to store transactions with a key - the transaction hash
+        // TODO: add type
+        const transactionsMap: Map<string, any> = new Map(transactionSlice.map((transaction: { hash: string, inputs: any, outputs: any }) => [
+          transaction.hash, {
+            inputs: transaction.inputs,
+            outputs: transaction.outputs
+          }
+        ]));
 
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
 
         await transactionBatch.create({
           aggregateId: uuidv4(),
-          transactions: new Set(pack),
+          transactions: transactionsMap,
           blockHeight: height,
           blockHash: hash
         });
@@ -90,6 +99,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         aggregateId: height,
         block: lightweightBlock,
         batches,
+        requestId
       });
 
       //save block into db

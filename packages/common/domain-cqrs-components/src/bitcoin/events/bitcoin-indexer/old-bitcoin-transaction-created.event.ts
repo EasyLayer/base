@@ -4,6 +4,7 @@ interface BitcoinTransactionCreatedEventPayload {
   aggregateId: string;
   transaction: any;
   blockId: string;
+  requestId: string;
 }
 
 export class BitcoinTransactionCreatedEvent implements BasicEvent<BitcoinTransactionCreatedEventPayload> {

@@ -6,7 +6,8 @@ import { SyncSaga, ICommand, ofType, execute } from '@easylayer/cqrs';
 import {
   BitcoinNetworkInitializedEvent,
   BitcoinBlockIndexStartedEvent,
-  BitcoinNetworkIndexBlockConfirmedEvent
+  BitcoinNetworkIndexBlockConfirmedEvent,
+  BitcoinBlockBatchesUpdatedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 import { BlocksCommandFactoryService, TransactionsCommandFactoryService } from '../services';
 import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
@@ -73,22 +74,24 @@ export class IndexerSaga {
     );
   }
 
-  // @SyncSaga()
-  // onTransactionsPoolUpdatedSuccessEvent(events$: Observable<any>): Observable<ICommand> {
-  //   return events$.pipe(
-  //     ofType(BitcoinTransactionsPoolUpdatedEvent), // shared event
-  //     execute({
-  //       event: BitcoinTransactionsPoolUpdatedEvent,
-  //       command: ({ payload }) =>
-  //         this.commandFactoryService.indexTransactionsBatch({
-  //           transactionsPoolId: payload.aggregateId,
-  //           blockId: payload.blockId,
-  //         }),
-  //     }),
-  //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinTransactionsPoolUpdatedEvent> for event: ${error}`);
-  //       return of();
-  //     })
-  //   );
-  // }
+  @SyncSaga()
+  onBitcoinBlockBatchesUpdatedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBlockBatchesUpdatedEvent),
+      execute({
+        event: BitcoinBlockBatchesUpdatedEvent,
+        command: ({ payload }) =>
+          this.batchCommandFactoryService.indexTransactionsBatch({
+            blockHeight: payload.aggregateId,
+            block: payload.block,
+            batches: payload.batches,
+            requestId: uuidv4()
+          }),
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBlockBatchesUpdatedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
 }

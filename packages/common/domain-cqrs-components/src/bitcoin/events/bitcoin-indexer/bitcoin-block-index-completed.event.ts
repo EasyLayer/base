@@ -2,8 +2,8 @@ import { BasicEvent } from '../../../base.event';
 
 interface BitcoinBlockIndexCompletedEventPayload {
   aggregateId: string;
-  transactionsPoolId: string;
   status: string;
+  requestId: string;
 }
 
 export class BitcoinBlockIndexCompletedEvent implements BasicEvent<BitcoinBlockIndexCompletedEventPayload> {

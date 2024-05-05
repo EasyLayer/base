@@ -10,12 +10,14 @@ export class Transaction extends AggregateRoot {
     aggregateId,
     transaction,
     blockId,
+    requestId
   }: {
     aggregateId: string;
     transaction: any;
     blockId: string;
+    requestId: string
   }) {
-    await this.apply(new BitcoinTransactionCreatedEvent({ aggregateId, transaction, blockId }));
+    await this.apply(new BitcoinTransactionCreatedEvent({ aggregateId, transaction, blockId, requestId }));
   }
 
   private onBitcoinTransactionCreatedEvent({ payload }: BitcoinTransactionCreatedEvent) {

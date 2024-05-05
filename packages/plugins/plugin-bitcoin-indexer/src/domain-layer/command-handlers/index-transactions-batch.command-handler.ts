@@ -37,7 +37,7 @@ export class IndexTransactionsBatchCommandHandler
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { block, batches, requestId } = payload;
+      const { block, requestId } = payload;
 
       // TODO: we can have here transactions not all but "from to"
       // for this we need to fetch block from cache with not all tranactions
@@ -53,11 +53,13 @@ export class IndexTransactionsBatchCommandHandler
       const blockModel: Block =
         await this.blocksModelFactoryService.initExistingModel(block.height);
 
+      const { batches } = blockModel;
+
       const MAX_INDEXING_BATCH_PER_ONE_TIME = 1;
 
       /* Find no indexed batches */
       const notIndexedBatches = []; // TODO: add type
-      for (let [id, status] of blockModel.batches) {
+      for (let [id, status] of batches) {
         if (status === 'created') {
           notIndexedBatches.push(id);
           if (notIndexedBatches.length === MAX_INDEXING_BATCH_PER_ONE_TIME) {
@@ -82,48 +84,59 @@ export class IndexTransactionsBatchCommandHandler
         return;
       }
 
+      const newBatches = [];
+
       for (const batchId of notIndexedBatches) {
         // Get transactionsBatch aggregate
         const transactionsBatch: TransactionsBatch = await this.batchModelFactoryService.initExistingModel(batchId);
 
-        // Filter the tx Set to find transactions with hashes present in txHashes (O(1))
+        // Filter the batch transactions Map to find transactions with hashes present in tx (O(1))
+        // TODO: add type
         const filteredTransactions = tx.filter((transaction: any) => transactionsBatch.transactions.has(transaction.hash));
 
         // Create each transaction
         for (const transaction of filteredTransactions) {
           const t: Transaction = this.txsModelFactoryService.createNewModel();
 
-          await t.create({ aggregateId: transaction.hash, blockId: transaction.blockId, transaction });
+          await t.create({ aggregateId: transaction.hash, blockId: transaction.blockId, transaction, requestId });
 
           //save into db
           await this.txsEventStore.save(t);
 
           // TODO: think if we need to publish event for each Transaction? 
           // We dont have to publish eash transaction 
-          // but we have to make sure that TransactionsBatch publis with all neccesary date
+          // but we have to make sure that TransactionsBatch publish with all neccesuary date
           // await t.commit();
 
           // Here we can add some basic transaction data to the package.
           // So that the event contains some basic information and does not go into the blockchain additionally
         }
 
-        // TODODODODODODO
-        await transactionsBatch.index({ aggregateId: indexedBatch.aggregateId, status: 'indexed' });
+        await transactionsBatch.index({ requestId });
 
         //save into db
-        await this.eventStore.save(indexedBatch);
+        await this.batchesEventStore.save(transactionsBatch);
 
-        await indexedBatch.commit(true);
-
-        batches = [...batches, batch];
+        // TODO: это нужно оптимизировать
+        newBatches.push(transactionsBatch);
       }
 
-      await transactionPool.update({ batches, status: 'in_process' });
+      // Update batches in block model
+      await blockModel.updateBatches({ batchesHashes: newBatches.map(item => item.aggregateId), requestId });
 
       //save into db
-      await this.eventStore.save(transactionPool);
+      await this.blocksEventStore.save(blockModel);
 
-      await transactionPool.commit();
+      // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
+      // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы
+      // и проверить не будет ли там исключения. 
+      // Поэтому мы тут в массиве публикуем ивенты всех батчей(может и один он будет)
+      // (Отдельно транзакции не будут публиковаться никогда)
+      for (let batch of newBatches) {
+        await batch.commit();
+      }
+
+      await blockModel.commit();
 
       this.log.debug(`Transactions Batch successfull indexed`, {}, this.constructor.name);
     } catch (error) {

@@ -1,14 +1,20 @@
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
   BitcoinTransactionsBatchCreatedEvent,
-  // BitcoinTransactionsBatchIndexedEvent,
+  BitcoinTransactionsBatchIndexedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
+
+export interface lightweightTransaction {
+  inputs: any;
+  outputs: any;
+}
 
 export class TransactionsBatch extends AggregateRoot {
   public aggregateId!: string; // uuid
   public blockHeight!: bigint;
   public blockHash!: string;
-  public transactions!: Set<string>; // Should be Set. With Set find fast;
+  public transactions!: Map<string, any>; //lightweightTransaction
+  public status!: string;
 
   public async create({
     aggregateId,
@@ -17,7 +23,7 @@ export class TransactionsBatch extends AggregateRoot {
     blockHash
   }: {
     aggregateId: string;
-    transactions: Set<string>;
+    transactions: Map<string, any>;
     blockHeight: bigint;
     blockHash: string;
   }) {
@@ -27,24 +33,31 @@ export class TransactionsBatch extends AggregateRoot {
         transactions,
         blockHeight,
         blockHash,
+        status: 'created'
       })
     );
   }
 
-  // public async index({ aggregateId, status }: { aggregateId: string; status: string }) {
-  //   await this.apply(new BitcoinTransactionsBatchIndexedEvent({ aggregateId, status }));
-  // }
+  public async index({ requestId }: { requestId: string }) {
+    // TODO: add checks
+    await this.apply(new BitcoinTransactionsBatchIndexedEvent({
+      aggregateId: this.aggregateId,
+      status: 'completed',
+      requestId
+    }));
+  }
 
   private onBitcoinTransactionsBatchCreatedEvent({ payload }: BitcoinTransactionsBatchCreatedEvent) {
-    const { aggregateId, transactions, blockHeight, blockHash } = payload;
+    const { aggregateId, transactions, blockHeight, blockHash, status } = payload;
     this.aggregateId = aggregateId;
     this.blockHeight = blockHeight;
     this.transactions = transactions;
     this.blockHash = blockHash;
+    this.status = status;
   }
 
-  // private onBitcoinTransactionsBatchIndexedEvent({ payload }: BitcoinTransactionsBatchIndexedEvent) {
-  //   const { status } = payload;
-  //   this.status = status;
-  // }
+  private onBitcoinTransactionsBatchIndexedEvent({ payload }: BitcoinTransactionsBatchIndexedEvent) {
+    const { status } = payload;
+    this.status = status;
+  }
 }
