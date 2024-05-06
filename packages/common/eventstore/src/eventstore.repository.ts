@@ -4,7 +4,7 @@ import { AggregateRoot, IEvent } from '@easylayer/cqrs';
 import { EventDataModel } from './event-data.model';
 
 @Injectable()
-export class EventStoreRepository<T extends AggregateRoot> {
+export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
   constructor(
     @Inject('EVENT_DATA_MODEL_REPOSITORY')
     private eventStore: Repository<EventDataModel>

@@ -1,19 +1,16 @@
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { IndexTransactionsBatchCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
 import { Block } from '../models/block.model';
 import { Network } from '../models/network.model';
 import { TransactionsBatch } from '../models/transactions-batch';
-import { Transaction } from '../models/transaction.model';
 import {
   BlockModelFactoryService,
   NetworkModelFactoryService,
   TransactionsBatchModelFactoryService,
-  TransactionModelFactoryService
 } from '../services';
 
 @CommandHandler(IndexTransactionsBatchCommand)
@@ -25,11 +22,7 @@ export class IndexTransactionsBatchCommandHandler
     private readonly blocksModelFactoryService: BlockModelFactoryService,
     private readonly networkModelFactoryService: NetworkModelFactoryService,
     private readonly batchModelFactoryService: TransactionsBatchModelFactoryService,
-    private readonly txsModelFactoryService: TransactionModelFactoryService,
-    private readonly networkEventStore: EventStoreRepository<Network>,
-    private readonly blocksEventStore: EventStoreRepository<Block>,
-    private readonly batchesEventStore: EventStoreRepository<TransactionsBatch>,
-    private readonly txsEventStore: EventStoreRepository<Transaction>,
+    private readonly eventStore: EventStoreRepository,
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -42,13 +35,6 @@ export class IndexTransactionsBatchCommandHandler
       // TODO: we can have here transactions not all but "from to"
       // for this we need to fetch block from cache with not all tranactions
       const { tx, ...lightweightBlock } = block;
-      // Если мы полчим batches в команду, т опо сути нам не нужно на этом этапе доставать блок с состояния так??
-      // Нам все ровно нужно обновить состояние блока указав что мы проиндексировали конкретный батч. 
-      // Ну тут еще мы можем 
-      // или не сохранять состояние пока все не проиндексируються а если будет ошибка то будем поновой все батчи индексировать
-      // или мы можем взять модуь блока с айди где высота и перезаписать его, перезаписать получаеться с обновленным списком
-      // batches, только нужно думать над синхронизацией. 
-      // РЕШЕНИЯ: ТУТ Я ОСТАВЛЮ КАК МЕСТО ОПТИМИЗАЦИИ (если что batches будем передавать просто пока будем брать с блока)
 
       const blockModel: Block =
         await this.blocksModelFactoryService.initExistingModel(block.height);
@@ -71,14 +57,20 @@ export class IndexTransactionsBatchCommandHandler
       }
 
       // TODO: process the option if this is the last batch, then immediately indicate that the block is indexed
+      // (тут прикольно то что мы сразу первый батч обработает и если мы размер батча так укажем что 
+        // он захватит все транзы, то получиться что мы тут же и проиндексируем это все.)
 
+      /* Complete block index logic */
       if (notIndexedBatches.length === 0) {
-        // Тут мы должны обнвоить блок, и network 
-        // await transactionPool.update({ batches, status: 'completed' });
-        // и должны опубликовать события на которые будет подписана Сага и сможет удалить блок с очереди
+        await blockModel.completeIndexBlock({ requestId, batches });
+
         const networkModel: Network = await this.networkModelFactoryService.initByExtraModel();
-        // await blockModel.completeIndexBlock(); ???
-        await networkModel.confirmIndexBlock({ requestId, block: lightweightBlock })
+        await networkModel.confirmIndexBlock({ requestId, block: lightweightBlock });
+
+        await this.eventStore.save([networkModel, blockModel]);
+
+        await blockModel.commit();
+        await networkModel.commit();
 
         this.log.debug(`Block successfull indexed`, {}, this.constructor.name);
         return;
@@ -92,40 +84,19 @@ export class IndexTransactionsBatchCommandHandler
 
         // Filter the batch transactions Map to find transactions with hashes present in tx (O(1))
         // TODO: add type
-        const filteredTransactions = tx.filter((transaction: any) => transactionsBatch.transactions.has(transaction.hash));
+        // TODO: optimise
+        const filteredTransactions = tx.filter((transaction: { hash: string }) => transactionsBatch.transactions.has(transaction.hash));
 
-        // Create each transaction
-        for (const transaction of filteredTransactions) {
-          const t: Transaction = this.txsModelFactoryService.createNewModel();
+        await transactionsBatch.index({ transactions: filteredTransactions, requestId });
 
-          await t.create({ aggregateId: transaction.hash, blockId: transaction.blockId, transaction, requestId });
-
-          //save into db
-          await this.txsEventStore.save(t);
-
-          // TODO: think if we need to publish event for each Transaction? 
-          // We dont have to publish eash transaction 
-          // but we have to make sure that TransactionsBatch publish with all neccesuary date
-          // await t.commit();
-
-          // Here we can add some basic transaction data to the package.
-          // So that the event contains some basic information and does not go into the blockchain additionally
-        }
-
-        await transactionsBatch.index({ requestId });
-
-        //save into db
-        await this.batchesEventStore.save(transactionsBatch);
-
-        // TODO: это нужно оптимизировать
+        // TODO: this needs to be optimized
         newBatches.push(transactionsBatch);
       }
 
       // Update batches in block model
       await blockModel.updateBatches({ batchesHashes: newBatches.map(item => item.aggregateId), requestId });
 
-      //save into db
-      await this.blocksEventStore.save(blockModel);
+      await this.eventStore.save([...newBatches, blockModel]);
 
       // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
       // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы

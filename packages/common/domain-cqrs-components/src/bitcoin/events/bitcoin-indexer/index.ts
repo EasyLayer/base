@@ -7,13 +7,3 @@ export * from './bitcoin-transactions-batch-indexed.event';
 export * from './bitcoin-block-indexed.event';
 export * from './bitcoin-block-index-completed.event';
 export * from './bitcoin-block-batches-updated.event';
-
-
-
-export * from './old-bitcoin-update-indexed-block-from-height.event';
-export * from './old-bitcoin-update-indexed-block-to-height.event';
-export * from './old-bitcoin-transaction-created.event';
-export * from './old-bitcoin-wallet-parsed.event';
-export * from './old-bitcoin-wallets-batch-created.event';
-export * from './old-bitcoin-transactions-pool-created.event';
-export * from './old-bitcoin-transactions-pool-updated.event';

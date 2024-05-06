@@ -7,8 +7,21 @@ import { BitcoinNetworkProviderModule, QuickNodeAdapter } from '@easylayer/bitco
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
 import { BitcoinIndexerService } from './bitcoin-indexer.service';
 import { AppConfig, ProvidersConfig } from './config';
-import { BitcoinBlocksModule } from './blocks-component/blocks.module';
-import { BitcoinTransactionsModule } from './transactions-component/transactions.module';
+import { BlocksQueueService } from './application-layer/blocks-queue';
+import { IndexerSaga } from './application-layer/sagas';
+import {
+  BlocksCommandFactoryService,
+  NetworkCommandFactoryService,
+  TransactionsCommandFactoryService
+} from './application-layer/services';
+import {
+  BlockModelFactoryService,
+  NetworkModelFactoryService,
+  TransactionsBatchModelFactoryService
+} from './domain-layer/services';
+import { CommandHandlers } from './domain-layer/command-handlers';
+
+
 
 @Module({})
 export class BitcoinIndexerModule {
@@ -34,7 +47,7 @@ export class BitcoinIndexerModule {
       module: BitcoinIndexerModule,
       controllers: [BitcoinIndexerController],
       imports: [
-        LoggerModule.forRoot({ componentName: 'BitcoinBlocksIndexerModule' }),
+        LoggerModule.forRoot({ componentName: 'BitcoinIndexerModule' }),
         BitcoinNetworkProviderModule.forRootAsync([
           // {
           //   useFactory: () => new SelfNodeAdapter({
@@ -51,7 +64,7 @@ export class BitcoinIndexerModule {
         // TODO: move condigs into envs
         EventStoreModule.forRoot({
           type: 'sqlite',
-          name: 'blocks-write',
+          name: 'indexer-write',
           database: '',
           synchronize: true,
           logging: true,
@@ -59,9 +72,7 @@ export class BitcoinIndexerModule {
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error. 
           // busyTimeout: 1000
-        }),
-        BitcoinBlocksModule,
-        BitcoinTransactionsModule,
+        })
       ],
       providers: [
         {
@@ -76,8 +87,17 @@ export class BitcoinIndexerModule {
           useValue: providersConfig,
         },
         BitcoinIndexerService,
+        BlocksQueueService,
+        IndexerSaga,
+        BlocksCommandFactoryService,
+        NetworkCommandFactoryService,
+        TransactionsCommandFactoryService,
+        BlockModelFactoryService,
+        NetworkModelFactoryService,
+        TransactionsBatchModelFactoryService,
+        ...CommandHandlers
       ],
-      exports: [BitcoinIndexerService],
+      exports: [],
     };
   }
 }

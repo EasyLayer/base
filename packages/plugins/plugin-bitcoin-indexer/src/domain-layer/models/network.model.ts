@@ -283,7 +283,7 @@ export class Network extends AggregateRoot {
     if (oldBlock.hash === localBlockNode.block.hash && oldBlock.previousblockhash === localBlockNode.block.prevHash) {
       // Match found
       
-      // Update our chain by deleting entries up to the matchedBlock
+      // Update our chain by truncate entries up to the matchedBlock
       this.chain.truncateToBlock(oldBlock.height);
 
       await this.apply(new BitcoinNetworkReorganisationEvent({

@@ -7,7 +7,8 @@ import {
   BitcoinNetworkInitializedEvent,
   BitcoinBlockIndexStartedEvent,
   BitcoinNetworkIndexBlockConfirmedEvent,
-  BitcoinBlockBatchesUpdatedEvent
+  BitcoinBlockBatchesUpdatedEvent,
+  BitcoinNetworkReorganisationEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 import { BlocksCommandFactoryService, TransactionsCommandFactoryService } from '../services';
 import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
@@ -16,7 +17,6 @@ import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
 export class IndexerSaga {
   constructor(
     private readonly batchCommandFactoryService: TransactionsCommandFactoryService,
-    // private readonly eventFactoryService:
     private readonly blocksQueueService: BlocksQueueService,
   ) {}
 
@@ -31,6 +31,22 @@ export class IndexerSaga {
       }),
       catchError((error) => {
         console.error(`Error handling <BitcoinNetworkInitializedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
+
+  @SyncSaga()
+  onBitcoinNetworkReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinNetworkReorganisationEvent),
+      execute({
+        event: BitcoinNetworkReorganisationEvent,
+        command: ({ payload }) =>
+          this.blocksQueueService.reorganizeBlocks(payload.block.height)
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinNetworkReorganisationEvent> for event: ${error}`);
         return of();
       })
     );

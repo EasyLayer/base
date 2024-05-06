@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
@@ -11,7 +11,7 @@ import { NetworkModelFactoryService, BlockModelFactoryService } from '../service
 export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCommand> {
   constructor(
     private readonly log: AppLogger,
-    private readonly networkRepository: EventStoreRepository<Network>,
+    private readonly networkEventStore: EventStoreRepository,
     private readonly networkModelFactory: NetworkModelFactoryService,
     private readonly blocksModelFactory: BlockModelFactoryService,
   ) {}
@@ -37,7 +37,7 @@ export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCom
         await this.networkModelFactory.publishLastEvent();
       }
 
-      await this.networkRepository.save(networkModel);
+      await this.networkEventStore.save(networkModel);
       await networkModel.commit();
 
       this.log.debug('Aggregates successfull init', {}, this.constructor.name);

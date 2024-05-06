@@ -64,7 +64,7 @@ export class BlocksQueueService {
     }
   }
   
-  public reorganizeBlocks(newStartHeight: bigint): void {
+  public async reorganizeBlocks(newStartHeight: bigint): Promise<void> {
     this.log.debug('reorganizeBlocks()', { newStartHeight }, this.constructor.name);
     this.blockQueue.clear();
 
@@ -101,11 +101,6 @@ export class BlocksQueueService {
       await this.commandFactory.indexBlockCommand({ block, requestId: uuidv4() });
     } catch (error) {
       this.log.error('Failed to process block:', error, this.constructor.name);
-
-      // Move the block back to the beginning of the queue for reprocessing
-      this.blockQueue.requeue(block);
-
-      this.log.debug('Block Queue was requeue', { block }, this.constructor.name);
     }
   }
 

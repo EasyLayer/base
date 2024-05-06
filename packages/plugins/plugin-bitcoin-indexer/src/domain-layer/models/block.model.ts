@@ -39,7 +39,6 @@ export class Block extends AggregateRoot {
     }));
   }
 
-  // TODO
   public async completeIndexBlock({
     requestId,
     batches
@@ -48,9 +47,13 @@ export class Block extends AggregateRoot {
     batches: Map<string, string>
   }) {
     if (this.status === 'indexing') {
-      // TODO: add check batches (must be all have status created)
+      for (let [id, status] of batches) {
+        if (status !== 'completed') {
+          throw new Error('Not all transactions batches have been indexed');
+        }
+      }
 
-      await this.apply(new BitcoinBlockIndexCompletedEvent({ aggregateId: this.aggregateId, requestId, status: 'completed' }));
+      await this.apply(new BitcoinBlockIndexCompletedEvent({ aggregateId: this.aggregateId, requestId, batches, status: 'completed' }));
     }
   }
 
@@ -63,8 +66,9 @@ export class Block extends AggregateRoot {
   }
 
   private onBitcoinBlockIndexCompletedEvent({ payload }: BitcoinBlockIndexCompletedEvent) {
-    const { status } = payload;
+    const { status, batches } = payload;
     this.status = status;
+    this.batches = batches;
   }
 
   private onBitcoinBlockBatchesUpdatedEvent({ payload }: BitcoinBlockBatchesUpdatedEvent) {

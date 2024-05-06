@@ -10,7 +10,11 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { Block } from '../models/block.model';
 import { Network } from '../models/network.model';
 import { TransactionsBatch } from '../models/transactions-batch';
-import { BlockModelFactoryService, TransactionsBatchModelFactoryService, NetworkModelFactoryService } from '../services';
+import {
+  BlockModelFactoryService,
+  TransactionsBatchModelFactoryService,
+  NetworkModelFactoryService
+} from '../services';
 
 @CommandHandler(IndexBlockCommand)
 export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockCommand> {
@@ -20,9 +24,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
     private readonly networkModelFactory: NetworkModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
-    private readonly networkEventStore: EventStoreRepository<Network>,
-    private readonly blocksEventStore: EventStoreRepository<Block>,
-    private readonly batchesEventStore: EventStoreRepository<TransactionsBatch>,
+    private readonly eventStore: EventStoreRepository,
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -31,15 +33,16 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('execute()', payload, this.constructor.name);
 
       const { block, requestId } = payload;
-      const { tx, ...lightweightBlock } = block;
+      const { tx, ...lightweightBlock } = block; // Давай для этой команды я сделаю достать блок у которого транзы будут только хэши.
       const { height, hash, previousblockhash } = lightweightBlock;
 
+      // TODO: Network should be in snapshot cache
       const networkModel: Network = await this.networkModelFactory.initByExtraModel();
 
       /* Check reorganisation */
       if (!networkModel.chain.addBlock(height, hash, previousblockhash)) {
         await networkModel.reorganisation({ height, requestId, service: this.networkProviderService });
-        await this.networkEventStore.save(networkModel);
+        await this.eventStore.save(networkModel);
         await networkModel.commit();
         this.log.debug(`Network reorganisation started`, {}, this.constructor.name);
         return;
@@ -47,14 +50,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       await networkModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
 
-      //save network into db
-      await this.networkEventStore.save(networkModel);
-
-      // { <aggregateId>:<status> }
-      const batches: Map<string, string> = new Map();
-
       // TODO: move into env
-      const MAX_TRANSACTIONS_PER_BATCH = 100;
+      const MAX_TRANSACTIONS_PER_BATCH = 1000;
+
+      const batches = [];
 
       /* Create transactions batches */
       while (tx.length > 0) {
@@ -65,11 +64,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
         // We create a Map to store transactions with a key - the transaction hash
         // TODO: add type
-        const transactionsMap: Map<string, any> = new Map(transactionSlice.map((transaction: { hash: string, inputs: any, outputs: any }) => [
-          transaction.hash, {
-            inputs: transaction.inputs,
-            outputs: transaction.outputs
-          }
+        // TODO: мы тут только hash дотсаем и кладем их в список не проиндексированных транз. 
+        // ПОтом когда мы будем брать конкретный батч, мы достаем с очереди по блоку конкретные транзы и работаем с ними. 
+        const transactionsMap: Map<string, any> = new Map(transactionSlice.map((transaction: { hash: string }) => [
+          transaction.hash, null
         ]));
 
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
@@ -81,11 +79,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           blockHash: hash
         });
 
-        // save into db
-        await this.batchesEventStore.save(transactionBatch);
-
         // Set batches with status created into variable
-        batches.set(transactionBatch.aggregateId, 'created');
+        // batches.set(transactionBatch.aggregateId, 'created');
+        batches.push(transactionBatch);
       }
 
       // TODO: process the option of indexing the first batch of transactions immediately
@@ -95,15 +91,20 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // we will overwrite it with this state
       const blockModel: Block = this.modelFactory.createNewModel();
 
+      // { <aggregateId>:<status> }
+      const batchesMap: Map<string, string> = new Map();
+      batches.forEach(batch => {
+        batchesMap.set(batch.aggregateId, 'created');
+      });
+
       await blockModel.index({
         aggregateId: height,
         block: lightweightBlock,
-        batches,
+        batches: batchesMap,
         requestId
       });
 
-      //save block into db
-      await this.blocksEventStore.save(blockModel);
+      await this.eventStore.save([...batches, networkModel, blockModel]);
 
       await networkModel.commit();
       await blockModel.commit();
