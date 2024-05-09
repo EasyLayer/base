@@ -1,11 +1,12 @@
 import { QuickNodeProviderOptions } from './quick-node.provider';
 import { SelfNodeProviderOptions } from './self-node.provider';
 
+export type Hash = `0x${string}`;
 
-export interface BaseProviderNodeOptions {
-    type: ProviderNodeType;
-    name: string;
+export type NodeProviderTypes = 'selfnode' | 'quicknode';
+
+export interface NodeProviderTypeInterface {
+    type: NodeProviderTypes;
 }
 
-export type ProviderNodeType = 'selfnode' | 'quicknode';
-export type ProviderNodeOptions = SelfNodeProviderOptions | QuickNodeProviderOptions;
+export type ProviderNodeOptions = SelfNodeProviderOptions & NodeProviderTypeInterface | QuickNodeProviderOptions & NodeProviderTypeInterface;

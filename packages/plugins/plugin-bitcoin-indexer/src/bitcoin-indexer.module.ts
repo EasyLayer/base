@@ -3,7 +3,7 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { transformAndValidateSync } from 'class-transformer-validator';
 import { LoggerModule } from '@easylayer/logger';
 import { EventStoreModule } from '@easylayer/eventstore';
-import { BitcoinNetworkProviderModule, QuickNodeProvider } from '@easylayer/bitcoin-network-provider';
+import { BitcoinNetworkProviderModule, QuickNodeProvider, SelfNodeProvider } from '@easylayer/bitcoin-network-provider';
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
 import { BitcoinIndexerService } from './bitcoin-indexer.service';
 import { AppConfig, ProvidersConfig } from './config';
@@ -21,8 +21,6 @@ import {
 } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 
-
-
 @Module({})
 export class BitcoinIndexerModule {
   static register(): DynamicModule {
@@ -30,26 +28,18 @@ export class BitcoinIndexerModule {
       transformer: { enableImplicitConversion: true },
       validator: { whitelist: true },
     });
-
-    // TODO: we must be able to parse provider configs correctly, group them and send them to the provider module (without creating the provider directly here).
-    // NOTE: Passing the provider factory is required for custom providers.   
-     
+    
     // Create QuickNode providers
-    const quickNodeProvidersOptions = [];
-    for (const quickNodeProvider of providersConfig.QUICK_NODE_BASE_URLS) {
-      quickNodeProvidersOptions.push({
-        // useFactory: () =>
-        //   new QuickNodeAdapter({
-        //     name: uuidv4(), // random name //'Quick Node Bitcoin',
-        //     baseUrl: quickNodeProvider,
-        //   }),
-        type: 'quicknode',
-        name: uuidv4(),
-        baseUrl: quickNodeProvider
+    const quickNodeProviders = [];
+    for (const quickNodeProviderOption of providersConfig.QUICK_NODE_BASE_URLS) {
+      quickNodeProviders.push({
+        useFactory: () =>
+          new QuickNodeProvider({
+            uniqName: uuidv4(),
+            baseUrl: quickNodeProviderOption,
+          }), 
       });
     }
-
-    // const providers = [{ connection:  }]
 
     return {
       module: BitcoinIndexerModule,
@@ -58,9 +48,10 @@ export class BitcoinIndexerModule {
         LoggerModule.forRoot({ componentName: 'BitcoinIndexerModule' }),
         BitcoinNetworkProviderModule.forRootAsync({
           providers: [
+            ...quickNodeProviders
           ]
         }),
-        // TODO: move condigs into envs
+        // TODO: move configs into envs
         EventStoreModule.forRoot({
           type: 'sqlite',
           name: 'indexer-write',

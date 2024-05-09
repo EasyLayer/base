@@ -17,7 +17,7 @@ export const loadBlock = async ({
 
   const providers: ProviderOptions[] = providersConnectionOptions.map((connection: ProviderNodeOptions) => {
     return { connection }
-  })
+  });
 
   const appContext = await NestFactory.createApplicationContext(
     BitcoinNetworkProviderModule.forRootAsync({

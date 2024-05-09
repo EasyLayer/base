@@ -3,4 +3,3 @@ export { ConnectionManager } from './connection-manager';
 export { BitcoinCryptoUtilsService } from './crypto-utils.service';
 export { BitcoinNetworkProviderService } from './bitcoin-network-provider.service';
 export * from './node-providers';
-export { ProviderOptions } from './provider-factory.service';

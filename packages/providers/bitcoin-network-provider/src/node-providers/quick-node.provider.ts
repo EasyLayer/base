@@ -1,11 +1,10 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import rateLimit from 'axios-rate-limit';
-import { BaseNodeProvider, Hash } from './base-node-provider';
-import { BaseProviderNodeOptions } from './interfaces';
+import { BaseNodeProvider, BaseNodeProviderOptions } from './base-node-provider';
+import { Hash, NodeProviderTypes } from './interfaces';
 
-export interface QuickNodeProviderOptions extends BaseProviderNodeOptions {
+export interface QuickNodeProviderOptions extends BaseNodeProviderOptions {
   baseUrl: string;
-
 }
 
 export const createQuickNodeProvider = (options: QuickNodeProviderOptions): QuickNodeProvider => {
@@ -15,8 +14,20 @@ export const createQuickNodeProvider = (options: QuickNodeProviderOptions): Quic
 export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions> {
   private _httpClient!: AxiosInstance;
 
+  readonly type: NodeProviderTypes = 'quicknode';
+  baseUrl!: string;
+
   constructor(options: QuickNodeProviderOptions) {
     super(options);
+    this.baseUrl = options.baseUrl;
+  }
+
+  get connectionOptions() {
+    return {
+      type: this.type,
+      uniqName: this.uniqName,
+      baseUrl: this.baseUrl
+    }
   }
 
   public async connect() {

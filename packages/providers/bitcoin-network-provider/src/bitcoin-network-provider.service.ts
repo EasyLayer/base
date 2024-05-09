@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConnectionManager } from './connection-manager';
-import { Hash } from './node-providers/base-node-provider';
+import { Hash } from './node-providers';
 
 @Injectable()
 export class BitcoinNetworkProviderService {

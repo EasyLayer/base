@@ -1,18 +1,18 @@
-// import { Type } from '@nestjs/common';
-import { ProviderNodeOptions } from './interfaces'
+import { Hash } from './interfaces'
 
-export type Hash = `0x${string}`;
+export interface BaseNodeProviderOptions {
+  uniqName: string;
+}
 
-export abstract class BaseNodeProvider<T extends ProviderNodeOptions = ProviderNodeOptions> {
-  protected _connectionOptions!: T;
+export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseNodeProviderOptions> implements BaseNodeProviderOptions {
+  abstract type: string;
+  uniqName: string;
 
-  constructor(options: T) {
-    this._connectionOptions = options;
+  constructor({ uniqName }: T) {
+    this.uniqName = uniqName;
   }
 
-  get connectionOptions() {
-    return this._connectionOptions;
-  }
+  abstract get connectionOptions(): T;
 
   abstract connect(): Promise<void>;
   abstract disconnect(): Promise<void>;

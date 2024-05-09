@@ -12,7 +12,7 @@ export class ConnectionManager implements OnModuleInit {
     private readonly log: AppLogger
   ) {
     providers.forEach((provider: BaseNodeProvider) => {
-      const name = provider.connectionOptions.name;
+      const name = provider.uniqName;
       if (this._providers.has(name)) {
         throw new Error(`An adapter with the name "${name}" has already been added.`);
       }
@@ -27,7 +27,7 @@ export class ConnectionManager implements OnModuleInit {
   async onModuleInit() {
     for (const provider of this._providers.values()) {
       if (await this.tryConnectProvider(provider)) {
-        this.activeProviderName = provider.connectionOptions.name;
+        this.activeProviderName = provider.uniqName;
         this.log.info(`Connected to provider: ${provider.constructor.name} with name: ${this.activeProviderName}`);
         return;
       }
@@ -46,13 +46,15 @@ export class ConnectionManager implements OnModuleInit {
   }
 
   // Adding new provider dynamically
-  public addProvider(provider: BaseNodeProvider): void {
-    const name = provider.connectionOptions.name;
-    if (this._providers.has(name)) {
-      throw new Error(`Provider with the name "${name}" already exists.`);
-    }
-    this._providers.set(name, provider);
-  }
+  // IMPORTANT: we can't add new provider in runtime, just switch from existing
+
+  // public addProvider(provider: BaseNodeProvider): void {
+  //   const name = provider.name;
+  //   if (this._providers.has(name)) {
+  //     throw new Error(`Provider with the name "${name}" already exists.`);
+  //   }
+  //   this._providers.set(name, provider);
+  // }
 
   // Removing a provider dynamically
   public removeProvider(name: string): boolean {
@@ -146,7 +148,7 @@ export class ConnectionManager implements OnModuleInit {
       await provider.connect();
       return true;
     } catch (error) {
-      this.log.error(`Failed to connect with provider named ${provider.connectionOptions.name}`, error, this.constructor.name);
+      this.log.error(`Failed to connect with provider named ${provider.uniqName}`, error, this.constructor.name);
       return false;
     }
   }

@@ -3,7 +3,7 @@ import { LoggerModule, AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService } from './bitcoin-network-provider.service';
 import { ConnectionManager } from './connection-manager';
 import { BitcoinCryptoUtilsService } from './crypto-utils.service';
-import { createProvider, ProviderOptions } from './provider-factory.service';
+import { createProvider, ProviderOptions } from './node-providers';
 
 export interface BitcoinNetworkProviderModuleOptions {
   providers: ProviderOptions[];

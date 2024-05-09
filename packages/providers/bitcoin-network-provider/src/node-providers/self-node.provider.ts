@@ -1,11 +1,10 @@
 import { BitcoinCoreConnectionOptions, Client } from 'bitcoin-core';
-import { BaseNodeProvider } from './base-node-provider';
-import { BaseProviderNodeOptions } from './interfaces';
+import { BaseNodeProvider, BaseNodeProviderOptions } from './base-node-provider';
+import { NodeProviderTypes } from './interfaces';
 
-export interface SelfNodeProviderOptions extends BitcoinCoreConnectionOptions, BaseProviderNodeOptions {
+export interface SelfNodeProviderOptions extends BitcoinCoreConnectionOptions, BaseNodeProviderOptions {
   host: string;
   port: number;
-  secureConnection: boolean;
 }
 
 export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNodeProvider => {
@@ -13,10 +12,24 @@ export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNo
 }
 
 export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> {
+  readonly type: NodeProviderTypes = 'selfnode';
   private _httpClient!: Client;
+  host: string;
+  port: number;
 
   constructor(options: SelfNodeProviderOptions) {
     super(options);
+    this.host = options.host;
+    this.port = options.port;
+  }
+
+  get connectionOptions() {
+    return {
+      type: this.type,
+      uniqName: this.uniqName,
+      port: this.port,
+      host: this.host
+    }
   }
 
   public async connect() {

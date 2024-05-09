@@ -88,12 +88,12 @@ export class BlocksQueueService {
     while (true) {
       this.log.debug('Block Queue Lenght: ', { length: this.blockQueue.length }, this.constructor.name);
       // This will wait for a block to be available
-      const block = await this.blockQueue.peekFirstBlock();
-      if (block) {
-        this.log.debug('Block Queue was dequeue', { block }, this.constructor.name);
+      // const block = await this.blockQueue.peekFirstBlock();
+      // if (block) {
+      //   this.log.debug('Block Queue was dequeue', { block }, this.constructor.name);
 
-        await this.processBlock(block);
-      }
+      //   await this.processBlock(block);
+      // }
     }
   }
 
