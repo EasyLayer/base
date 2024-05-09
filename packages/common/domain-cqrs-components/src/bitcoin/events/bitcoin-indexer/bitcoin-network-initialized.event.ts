@@ -4,7 +4,7 @@ interface BitcoinNetworkInitializedEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
-  height: bigint;
+  height: string;
 }
 
 export class BitcoinNetworkInitializedEvent implements BasicEvent<BitcoinNetworkInitializedEventPayload> {

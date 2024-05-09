@@ -31,7 +31,7 @@ export class TransactionsBatch extends AggregateRoot {
       new BitcoinTransactionsBatchCreatedEvent({
         aggregateId,
         transactions,
-        blockHeight,
+        blockHeight: blockHeight.toString(),
         blockHash,
         status: 'created'
       })
@@ -54,7 +54,7 @@ export class TransactionsBatch extends AggregateRoot {
   private onBitcoinTransactionsBatchCreatedEvent({ payload }: BitcoinTransactionsBatchCreatedEvent) {
     const { aggregateId, transactions, blockHeight, blockHash, status } = payload;
     this.aggregateId = aggregateId;
-    this.blockHeight = blockHeight;
+    this.blockHeight = BigInt(blockHeight);
     this.transactions = transactions;
     this.blockHash = blockHash;
     this.status = status;

@@ -15,8 +15,6 @@
   "dependencies": {
     "@easylayer/core": "0.0.2-experimental.1",
     "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.1",
-    "@easylayer/plugin-bitcoin-parser": "0.0.2-experimental.1",
-    "@easylayer/plugin-bitcoin-wallet": "0.0.2-experimental.1",
     "@easylayer/utils": "0.0.2-experimental.1"
   },
   "devDependencies": {

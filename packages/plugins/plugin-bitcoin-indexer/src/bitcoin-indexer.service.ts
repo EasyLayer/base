@@ -14,10 +14,10 @@ export class BitcoinIndexerService implements OnModuleInit {
     await this.initialization();
   }
 
-  @RuntimeTracker({
-    errorThresholdMs: 3000,
-    warningThresholdMs: 2000,
-  })
+  // @RuntimeTracker({
+  //   errorThresholdMs: 3000,
+  //   warningThresholdMs: 2000,
+  // })
   private async initialization(): Promise<void> {
     this.log.info('Initialization all systems');
 

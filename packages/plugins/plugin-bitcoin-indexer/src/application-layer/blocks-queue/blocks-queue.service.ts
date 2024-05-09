@@ -6,6 +6,7 @@ import { AppLogger } from '@easylayer/logger';
 import { ConnectionManager } from '@easylayer/bitcoin-network-provider';
 import { BlocksQueue } from './blocks-queue';
 import { Block } from './interfaces';
+import { BlocksCommandFactoryService } from '../services/blocks-command-factory.service';
 
 @Injectable()
 export class BlocksQueueService {
@@ -21,14 +22,14 @@ export class BlocksQueueService {
 
   constructor(
     private readonly log: AppLogger,
-    private readonly commandFactory: any,
+    private readonly blocksCommandFactory: BlocksCommandFactoryService,
     private readonly connectionManager: ConnectionManager,
     // private readonly 
   ) {
     this.startQueueIteratting();
   }
 
-  public async startBlocksLoading(commonHeight: bigint): Promise<void> {
+  public async startBlocksLoading(commonHeight: bigint | string): Promise<void> {
     this.log.debug('startBlocksLoading()', { commonHeight }, this.constructor.name);
 
     if (this.isLoadingStarted) {
@@ -37,7 +38,7 @@ export class BlocksQueueService {
     }
 
     this.isLoadingStarted = true;
-    this.commonHeight = commonHeight;
+    this.commonHeight = BigInt(commonHeight);
     const activeTasks = new Set();
     while (true) {
       while (this.blockQueue.length < this.maxQueueSize && activeTasks.size < this.workerPool.options.maxThreads) {
@@ -77,13 +78,15 @@ export class BlocksQueueService {
   private async loadBlock(height: bigint): Promise<Block> {
     this.log.debug('loadBlock()', { height }, this.constructor.name);
 
-    return this.workerPool.run({ height, adapters: this.connectionManager.adapters.values() });
+    const providersConnectionOptions = this.connectionManager.connectionOptionsForAllProviders();
+    return this.workerPool.run({ height, providersConnectionOptions });
   }
 
   private async startQueueIteratting(): Promise<void> {
     this.log.debug('startQueueIteratting()', {}, this.constructor.name);
 
     while (true) {
+      this.log.debug('Block Queue Lenght: ', { length: this.blockQueue.length }, this.constructor.name);
       // This will wait for a block to be available
       const block = await this.blockQueue.peekFirstBlock();
       if (block) {
@@ -98,7 +101,7 @@ export class BlocksQueueService {
     this.log.debug('processBlock()', { block }, this.constructor.name);
 
     try {
-      await this.commandFactory.indexBlockCommand({ block, requestId: uuidv4() });
+      await this.blocksCommandFactory.indexBlock({ block, requestId: uuidv4() });
     } catch (error) {
       this.log.error('Failed to process block:', error, this.constructor.name);
     }

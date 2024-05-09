@@ -3,7 +3,7 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { transformAndValidateSync } from 'class-transformer-validator';
 import { LoggerModule } from '@easylayer/logger';
 import { EventStoreModule } from '@easylayer/eventstore';
-import { BitcoinNetworkProviderModule, QuickNodeAdapter } from '@easylayer/bitcoin-network-provider';
+import { BitcoinNetworkProviderModule, QuickNodeProvider } from '@easylayer/bitcoin-network-provider';
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
 import { BitcoinIndexerService } from './bitcoin-indexer.service';
 import { AppConfig, ProvidersConfig } from './config';
@@ -31,41 +31,40 @@ export class BitcoinIndexerModule {
       validator: { whitelist: true },
     });
 
+    // TODO: we must be able to parse provider configs correctly, group them and send them to the provider module (without creating the provider directly here).
+    // NOTE: Passing the provider factory is required for custom providers.   
+     
     // Create QuickNode providers
-    const quickNodeProvidersFactories = [];
+    const quickNodeProvidersOptions = [];
     for (const quickNodeProvider of providersConfig.QUICK_NODE_BASE_URLS) {
-      quickNodeProvidersFactories.push({
-        useFactory: () =>
-          new QuickNodeAdapter({
-            name: uuidv4(), // random name //'Quick Node Bitcoin',
-            baseUrl: quickNodeProvider,
-          }),
+      quickNodeProvidersOptions.push({
+        // useFactory: () =>
+        //   new QuickNodeAdapter({
+        //     name: uuidv4(), // random name //'Quick Node Bitcoin',
+        //     baseUrl: quickNodeProvider,
+        //   }),
+        type: 'quicknode',
+        name: uuidv4(),
+        baseUrl: quickNodeProvider
       });
     }
+
+    // const providers = [{ connection:  }]
 
     return {
       module: BitcoinIndexerModule,
       controllers: [BitcoinIndexerController],
       imports: [
         LoggerModule.forRoot({ componentName: 'BitcoinIndexerModule' }),
-        BitcoinNetworkProviderModule.forRootAsync([
-          // {
-          //   useFactory: () => new SelfNodeAdapter({
-          //     name: 'Self Node Yaroslav Mac',
-          //     host: providersConfig.SELF_NODE_HOST,
-          //     network: providersConfig.SELF_NODE_NETWORK,
-          //     port: providersConfig.SELF_NODE_PORT,
-          //     password: providersConfig.SELF_NODE_PASSWORD,
-          //     username: providersConfig.SELF_NODE_USERNAMR
-          //   }),
-          // },
-          ...quickNodeProvidersFactories,
-        ]),
+        BitcoinNetworkProviderModule.forRootAsync({
+          providers: [
+          ]
+        }),
         // TODO: move condigs into envs
         EventStoreModule.forRoot({
           type: 'sqlite',
           name: 'indexer-write',
-          database: '',
+          // database: '',
           synchronize: true,
           logging: true,
           enableWAL: true,

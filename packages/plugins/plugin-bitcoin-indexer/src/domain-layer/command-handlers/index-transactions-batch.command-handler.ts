@@ -76,7 +76,7 @@ export class IndexTransactionsBatchCommandHandler
         return;
       }
 
-      const newBatches = [];
+      const updatedBatches = [];
 
       for (const batchId of notIndexedBatches) {
         // Get transactionsBatch aggregate
@@ -90,20 +90,20 @@ export class IndexTransactionsBatchCommandHandler
         await transactionsBatch.index({ transactions: filteredTransactions, requestId });
 
         // TODO: this needs to be optimized
-        newBatches.push(transactionsBatch);
+        updatedBatches.push(transactionsBatch);
       }
 
       // Update batches in block model
-      await blockModel.updateBatches({ batchesHashes: newBatches.map(item => item.aggregateId), requestId });
+      await blockModel.updateBatches({ batchesHashes: updatedBatches.map(item => item.aggregateId), requestId });
 
-      await this.eventStore.save([...newBatches, blockModel]);
+      await this.eventStore.save([...updatedBatches, blockModel]);
 
       // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
       // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы
       // и проверить не будет ли там исключения. 
       // Поэтому мы тут в массиве публикуем ивенты всех батчей(может и один он будет)
       // (Отдельно транзакции не будут публиковаться никогда)
-      for (let batch of newBatches) {
+      for (let batch of updatedBatches) {
         await batch.commit();
       }
 

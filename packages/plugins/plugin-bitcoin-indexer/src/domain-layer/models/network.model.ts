@@ -238,7 +238,7 @@ export class Network extends AggregateRoot {
       aggregateId,
       requestId,
       status,
-      height
+      height: height.toString()
     }));
   }
 

@@ -1,32 +1,17 @@
 // import { Type } from '@nestjs/common';
+import { ProviderNodeOptions } from './interfaces'
 
 export type Hash = `0x${string}`;
 
-export interface AdapterOptions<T extends BaseNodeAdapter = BaseNodeAdapter> {
-  // useClass?: Type<AdapterOptionsFactory<T>>;
-  useFactory?: (...args: any[]) => Promise<T> | T;
-  useValue?: T;
-}
+export abstract class BaseNodeProvider<T extends ProviderNodeOptions = ProviderNodeOptions> {
+  protected _connectionOptions!: T;
 
+  constructor(options: T) {
+    this._connectionOptions = options;
+  }
 
-// If we use useClass, then we do not pass the adapter there, but the class of the factory that has
-// createAdapter method, and that factory class must create an adapter instance for us itself
-// export interface AdapterOptionsFactory<T extends BaseNodeAdapter = BaseNodeAdapter> {
-//     createAdapter(...args: any[]): Promise<T> | T;
-// }
-
-export interface BaseOptions {
-  name: string;
-}
-
-export abstract class BaseNodeAdapter<TOptions extends BaseOptions = BaseOptions> {
-  public readonly name!: string;
-  protected connectionOptions: Omit<TOptions, 'name'>;
-
-  constructor(options: TOptions) {
-    const { name, ...restOptions } = options;
-    this.name = name;
-    this.connectionOptions = restOptions;
+  get connectionOptions() {
+    return this._connectionOptions;
   }
 
   abstract connect(): Promise<void>;

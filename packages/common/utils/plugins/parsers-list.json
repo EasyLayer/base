@@ -1,6 +1,0 @@
-{
-    "bitcoin_parser": {
-        "version": "0.0.2-experimental.0",
-        "name":  "@easylayer/bitcoin-parser"
-    }
-}

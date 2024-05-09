@@ -3,17 +3,27 @@ import { NestFactory } from '@nestjs/core';
 import {
   BitcoinNetworkProviderModule,
   BitcoinNetworkProviderService,
-  BitcoinNetworkProviderOptions
+  ProviderNodeOptions,
+  ProviderOptions
 } from '@easylayer/bitcoin-network-provider';
 
 export const loadBlock = async ({
   height,
-  adapters
+  providersConnectionOptions
 }: {
   height: string | bigint;
-  adapters: BitcoinNetworkProviderOptions;
+  providersConnectionOptions: ProviderNodeOptions[];
 }) => {
-    const appContext = await NestFactory.createApplicationContext(BitcoinNetworkProviderModule.forRootAsync(adapters));
-    const bitcoinService = appContext.get(BitcoinNetworkProviderService);
-    return bitcoinService.getOneBlockByHeight(height);
+
+  const providers: ProviderOptions[] = providersConnectionOptions.map((connection: ProviderNodeOptions) => {
+    return { connection }
+  })
+
+  const appContext = await NestFactory.createApplicationContext(
+    BitcoinNetworkProviderModule.forRootAsync({
+      providers
+    })
+  );
+  const bitcoinService = appContext.get(BitcoinNetworkProviderService);
+  return bitcoinService.getOneBlockByHeight(height);
 };

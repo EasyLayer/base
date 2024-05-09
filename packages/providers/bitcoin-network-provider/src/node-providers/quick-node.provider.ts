@@ -1,15 +1,21 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { BaseNodeAdapter, BaseOptions } from './base-node-adapter';
-import { Hash } from './base-node-adapter';
+import rateLimit from 'axios-rate-limit';
+import { BaseNodeProvider, Hash } from './base-node-provider';
+import { BaseProviderNodeOptions } from './interfaces';
 
-export interface QuickNodeAdapterOptions extends BaseOptions {
+export interface QuickNodeProviderOptions extends BaseProviderNodeOptions {
   baseUrl: string;
+
 }
 
-export class QuickNodeAdapter extends BaseNodeAdapter<QuickNodeAdapterOptions> {
+export const createQuickNodeProvider = (options: QuickNodeProviderOptions): QuickNodeProvider => {
+  return new QuickNodeProvider(options);
+}
+
+export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions> {
   private _httpClient!: AxiosInstance;
 
-  constructor(options: QuickNodeAdapterOptions) {
+  constructor(options: QuickNodeProviderOptions) {
     super(options);
   }
 
@@ -20,12 +26,14 @@ export class QuickNodeAdapter extends BaseNodeAdapter<QuickNodeAdapterOptions> {
     //   // },
     //   endpointUrl: this.connectionOptions.baseUrl,
     // })
-    this._httpClient = axios.create({
+
+    this._httpClient = rateLimit(axios.create({
       baseURL: this.connectionOptions.baseUrl,
       headers: {
         'Content-Type': 'application/json',
       },
-    });
+      // TODO: add to envs
+    }), { maxRequests: 10, perMilliseconds: 1000 });
 
     if (!this.healthcheck()) {
       throw new Error('Cant connect');

@@ -1,12 +1,21 @@
 import { BitcoinCoreConnectionOptions, Client } from 'bitcoin-core';
-import { BaseNodeAdapter, BaseOptions } from './base-node-adapter';
+import { BaseNodeProvider } from './base-node-provider';
+import { BaseProviderNodeOptions } from './interfaces';
 
-export interface SelfNodeAdapterOptions extends BitcoinCoreConnectionOptions, BaseOptions {}
+export interface SelfNodeProviderOptions extends BitcoinCoreConnectionOptions, BaseProviderNodeOptions {
+  host: string;
+  port: number;
+  secureConnection: boolean;
+}
 
-export class SelfNodeAdapter extends BaseNodeAdapter<SelfNodeAdapterOptions> {
+export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNodeProvider => {
+  return new SelfNodeProvider(options);
+}
+
+export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> {
   private _httpClient!: Client;
 
-  constructor(options: SelfNodeAdapterOptions) {
+  constructor(options: SelfNodeProviderOptions) {
     super(options);
   }
 

@@ -1,5 +1,6 @@
-export { BitcoinNetworkProviderModule, BitcoinNetworkProviderOptions } from './bitcoin-network-provider.module';
+export { BitcoinNetworkProviderModule, BitcoinNetworkProviderModuleOptions } from './bitcoin-network-provider.module';
 export { ConnectionManager } from './connection-manager';
 export { BitcoinCryptoUtilsService } from './crypto-utils.service';
 export { BitcoinNetworkProviderService } from './bitcoin-network-provider.service';
-export * from './node-adapters';
+export * from './node-providers';
+export { ProviderOptions } from './provider-factory.service';

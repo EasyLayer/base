@@ -95,6 +95,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
       // (without select after insert)
       await this.eventStore.createQueryBuilder().insert().values(events).updateEntity(false).execute();
     } catch (error) {
+      console.log(error);
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError;
 

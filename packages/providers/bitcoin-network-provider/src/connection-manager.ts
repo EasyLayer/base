@@ -1,96 +1,132 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AppLogger } from '@easylayer/logger';
-import { BaseNodeAdapter } from './node-adapters';
+import { BaseNodeProvider, ProviderNodeOptions } from './node-providers';
 
 @Injectable()
 export class ConnectionManager implements OnModuleInit {
-  private _adapters: Map<string, BaseNodeAdapter> = new Map();
-  private activeAdapterName!: string;
+  private _providers: Map<string, BaseNodeProvider> = new Map();
+  private activeProviderName!: string;
 
   constructor(
-    adapters: BaseNodeAdapter[],
+    providers: BaseNodeProvider[],
     private readonly log: AppLogger
   ) {
-    adapters.forEach((adapter) => {
-      const name = adapter.name;
-      if (this.adapters.has(name)) {
+    providers.forEach((provider: BaseNodeProvider) => {
+      const name = provider.connectionOptions.name;
+      if (this._providers.has(name)) {
         throw new Error(`An adapter with the name "${name}" has already been added.`);
       }
-      this.adapters.set(name, adapter);
+      this._providers.set(name, provider);
     });
   }
 
-  get adapters() {
-    return this._adapters;
+  get providers() {
+    return this._providers;
   }
 
   async onModuleInit() {
-    for (const adapter of this.adapters.values()) {
-      if (await this.tryConnectAdapter(adapter)) {
-        this.activeAdapterName = adapter.name;
-        this.log.info(`Connected to adapter: ${adapter.constructor.name} with name: ${adapter.name}`);
+    for (const provider of this._providers.values()) {
+      if (await this.tryConnectProvider(provider)) {
+        this.activeProviderName = provider.connectionOptions.name;
+        this.log.info(`Connected to provider: ${provider.constructor.name} with name: ${this.activeProviderName}`);
         return;
       }
     }
-    throw new Error('Unable to connect to any adapter.');
+    throw new Error('Unable to connect to any providers.');
   }
 
-  public async switchAdapter(adapterName: string): Promise<void> {
-    const adapter = this.adapters.get(adapterName);
-    if (!adapter) {
-      throw new Error(`Adapter with name ${adapterName} not found`);
+  // Get all connections options for all providers
+  public connectionOptionsForAllProviders<T extends ProviderNodeOptions>(): T[] {
+    const options: T[] = [];
+
+    for (const provider of this._providers.values()) {
+      options.push(provider.connectionOptions as T);
+    }
+    return options;
+  }
+
+  // Adding new provider dynamically
+  public addProvider(provider: BaseNodeProvider): void {
+    const name = provider.connectionOptions.name;
+    if (this._providers.has(name)) {
+      throw new Error(`Provider with the name "${name}" already exists.`);
+    }
+    this._providers.set(name, provider);
+  }
+
+  // Removing a provider dynamically
+  public removeProvider(name: string): boolean {
+    if (!this._providers.has(name)) {
+      throw new Error(`Provider with name ${name} not found`);
+    }
+    return this._providers.delete(name);
+  }
+
+  // Disconnecting and removing connection for a provider
+  public async disconnectProvider(name: string): Promise<void> {
+    const provider = await this.getProviderByName(name);
+    await provider.disconnect();
+    this.log.info(`Disconnected from provider: ${provider.constructor.name} with name: ${name}`);
+  }
+
+  // Switch active provider
+  public async switchProvider(name: string): Promise<void> {
+    const provider = this._providers.get(name);
+    if (!provider) {
+      throw new Error(`Provider with name ${name} not found`);
     }
 
-    if (await this.tryConnectAdapter(adapter)) {
-      this.activeAdapterName = adapterName;
-      this.log.info(`Switched to adapter: ${adapter.constructor.name} with name: ${adapterName}`);
+    if (await this.tryConnectProvider(provider)) {
+      this.activeProviderName = name;
+      this.log.info(`Switched to provider: ${provider.constructor.name} with name: ${name}`);
     } else {
-      throw new Error(`Failed to switch to adapter with name ${adapterName}`);
+      throw new Error(`Failed to switch to provider with name ${name}`);
     }
   }
 
-  public async getCurrentAdapter(): Promise<BaseNodeAdapter> {
-    const adapter = this.adapters.get(this.activeAdapterName);
-    if (!adapter) {
-      throw new Error(`Adapter with name ${this.activeAdapterName} not found`);
+  public async getActiveProvider(): Promise<BaseNodeProvider> {
+    const provider = this._providers.get(this.activeProviderName);
+    if (!provider) {
+      throw new Error(`Provider with name ${this.activeProviderName} not found`);
     }
 
-    if ((await adapter.healthcheck()) || (await this.tryConnectAdapter(adapter))) {
-      return adapter;
+    if ((await provider.healthcheck()) || (await this.tryConnectProvider(provider))) {
+      return provider;
     }
 
-    throw new Error('No available adapters found');
+    throw new Error('No available providers found');
   }
 
-  public async getAdapterByName(name: string): Promise<BaseNodeAdapter> {
-    const adapter = this.adapters.get(name);
-    if (!adapter) {
-      throw new Error(`Adapter with name ${name} not found`);
+  // TODO: remove from this adapter connection logic
+  public async getProviderByName(name: string): Promise<BaseNodeProvider> {
+    const provider = this._providers.get(name);
+    if (!provider) {
+      throw new Error(`Provider with name ${name} not found`);
     }
 
-    // If the requested adapter is already active, return it
-    if (this.activeAdapterName === name) {
-      return adapter;
+    // If the requested provider is already active, return it
+    if (this.activeProviderName === name) {
+      return provider;
     }
 
-    // Trying to connect to the requested adapter
-    const isConnected = await this.tryConnectAdapter(adapter);
+    // Trying to connect to the requested provider
+    const isConnected = await this.tryConnectProvider(provider);
     if (!isConnected) {
-      throw new Error(`Failed to connect to adapter with name ${name}`);
+      throw new Error(`Failed to connect to provider with name ${name}`);
     }
 
     // Disable the current active adapter if necessary
-    if (this.activeAdapterName && this.activeAdapterName !== name) {
-      const currentActiveAdapter = this.adapters.get(this.activeAdapterName);
-      if (currentActiveAdapter) {
+    if (this.activeProviderName && this.activeProviderName !== name) {
+      const currentActiveProvider = this._providers.get(this.activeProviderName);
+      if (currentActiveProvider) {
         try {
-          await currentActiveAdapter.disconnect();
+          await currentActiveProvider.disconnect();
           this.log.info(
-            `Disconnected from adapter: ${currentActiveAdapter.constructor.name} with name: ${this.activeAdapterName}`
+            `Disconnected from provider: ${currentActiveProvider.constructor.name} with name: ${this.activeProviderName}`
           );
         } catch (error) {
           this.log.error(
-            `Failed to disconnect from adapter named ${this.activeAdapterName}`,
+            `Failed to disconnect from provider named ${this.activeProviderName}`,
             error,
             this.constructor.name
           );
@@ -100,17 +136,17 @@ export class ConnectionManager implements OnModuleInit {
     }
 
     // Update the active adapter
-    this.activeAdapterName = name;
-    this.log.info(`Connected to adapter: ${adapter.constructor.name} with name: ${name}`);
-    return adapter;
+    this.activeProviderName = name;
+    this.log.info(`Connected to adapter: ${provider.constructor.name} with name: ${name}`);
+    return provider;
   }
 
-  private async tryConnectAdapter(adapter: BaseNodeAdapter): Promise<boolean> {
+  private async tryConnectProvider(provider: BaseNodeProvider): Promise<boolean> {
     try {
-      await adapter.connect();
+      await provider.connect();
       return true;
     } catch (error) {
-      this.log.error(`Failed to connect with adapter named ${adapter.name}`, error, this.constructor.name);
+      this.log.error(`Failed to connect with provider named ${provider.connectionOptions.name}`, error, this.constructor.name);
       return false;
     }
   }

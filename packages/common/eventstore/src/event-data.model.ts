@@ -1,5 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, Unique } from 'typeorm';
+import { Entity, PrimaryColumn, Column, Unique } from 'typeorm';
 import { IEvent } from '@easylayer/cqrs';
+
+export interface BasicEvent<T> {
+  payload: BasicEventPayload & T;
+}
+
+interface BasicEventPayload {
+  aggregateId: string;
+  requestId?: string;
+}
 
 export interface EventDataParameters {
   aggregateId: string;
@@ -14,10 +23,7 @@ export interface EventDataParameters {
 @Unique('UQ__request_id__aggregate_id', ['requestId', 'aggregateId'])
 @Unique('UQ__version__aggregate_id', ['version', 'aggregateId'])
 export class EventDataModel {
-  @PrimaryGeneratedColumn('uuid')
-  public id!: string;
-
-  @Column({ type: 'uuid' })
+  @PrimaryColumn('uuid', { generated: false })
   public aggregateId!: string;
 
   // делаем это поле extra , оно будет строкой, и сюда по сути можно будет доп уникальность зписать
@@ -37,15 +43,23 @@ export class EventDataModel {
   @Column({ type: 'json' })
   public payload!: Record<string, any>;
 
-  static deserialize({ aggregateId, type, requestId, version, payload }: EventDataModel): IEvent {
-    const aggregateEvent: IEvent = { ...payload, requestId, id: aggregateId };
+  static deserialize({ aggregateId, type, requestId, payload }: EventDataModel): BasicEvent<IEvent> {
+    const aggregateEvent: BasicEvent<IEvent> = {
+      payload: {
+        aggregateId,
+        requestId,
+        ...payload
+      }
+    };
+
     aggregateEvent.constructor = { name: type } as typeof Object.constructor;
 
     return Object.assign(Object.create(aggregateEvent), aggregateEvent);
   }
 
   static serialize(event: Record<string, any>, version: number): EventDataModel {
-    const { aggregateId, extra, requestId, ...payload } = event;
+    const { payload } = event;
+    const { aggregateId, extra, requestId, ...rest } = payload;
 
     if (!aggregateId) {
       throw new Error('Aggregate Id is missed');
@@ -62,10 +76,10 @@ export class EventDataModel {
     return new EventDataModel({
       aggregateId,
       version,
-      payload,
-      type: Object.getPrototypeOf(event).constructor.name,
       requestId,
       extra,
+      payload: rest,
+      type: Object.getPrototypeOf(event).constructor.name,
     });
   }
 
