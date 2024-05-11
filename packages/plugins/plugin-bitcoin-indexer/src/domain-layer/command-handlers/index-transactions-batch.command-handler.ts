@@ -64,7 +64,7 @@ export class IndexTransactionsBatchCommandHandler
       if (notIndexedBatches.length === 0) {
         await blockModel.completeIndexBlock({ requestId, batches });
 
-        const networkModel: Network = await this.networkModelFactoryService.initByExtraModel();
+        const networkModel: Network = await this.networkModelFactoryService.initModel();
         await networkModel.confirmIndexBlock({ requestId, block: lightweightBlock });
 
         await this.eventStore.save([networkModel, blockModel]);

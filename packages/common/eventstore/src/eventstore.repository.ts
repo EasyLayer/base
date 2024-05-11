@@ -17,8 +17,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
   }
 
   public async getOne(model: T & { aggregateId: string }): Promise<T> {
-    // Я смотрю что мы в любом случае должны тут преедать модель аггрегата
-    // даже если она пустая
+    // IMPORTANT: We have to go over the model of the unit here even if it is empty
     const { aggregateId } = model;
 
     if (!aggregateId) {
@@ -99,19 +98,18 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError;
 
-        // TODO
+        // TODO: check errors for all drivers
         if (driverError.code === 'SQLITE_CONSTRAINT') {
-          throw new Error('Version conflict error');
-          // switch (driverError.constraint) {
-          //   // constraints are specified in entities
-          //   case 'UQ__request_id__aggregate_id':
-          //     console.log('Idempotency protection, just return\n');
-          //     return;
-          //   case 'UQ__version__aggregate_id':
-          //     throw new Error('Version conflict error');
-          //   default:
-          //     throw error;;
-          // }
+          switch (driverError.constraint) {
+            // constraints are specified in entities
+            case 'UQ__request_id__aggregate_id':
+              console.log('Idempotency protection, just return\n');
+              return;
+            case 'UQ__version__aggregate_id':
+              throw new Error('Version conflict error');
+            default:
+              throw error;;
+          }
         }
         throw error;
       }

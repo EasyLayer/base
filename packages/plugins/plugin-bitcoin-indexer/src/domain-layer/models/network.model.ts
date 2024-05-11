@@ -221,8 +221,7 @@ class Blockchain {
 }
 
 export class Network extends AggregateRoot {
-  public readonly extra: string = 'network';
-  public aggregateId!: string; // uuid
+  public aggregateId: string = 'network';
   public status!: string;
   public chain: Blockchain = new Blockchain();
  
@@ -230,12 +229,11 @@ export class Network extends AggregateRoot {
   // 1 - create Network if it's first creation
   // 2 - use already created params but still publish event
   public async init({ requestId }: { requestId: string }) {
-    const aggregateId = this.aggregateId || uuidv4();
     const status = this.status || 'awaiting';
     const height = this.chain.lastBlockHeight;
 
     await this.apply(new BitcoinNetworkInitializedEvent({
-      aggregateId,
+      aggregateId: this.aggregateId,
       requestId,
       status,
       height: height.toString()

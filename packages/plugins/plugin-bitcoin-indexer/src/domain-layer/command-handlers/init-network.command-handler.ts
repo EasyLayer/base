@@ -23,7 +23,7 @@ export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCom
 
       const { requestId } = payload;
 
-      const networkModel: Network = await this.networkModelFactory.initByExtraModel();
+      const networkModel: Network = await this.networkModelFactory.initModel();
       await networkModel.init({ requestId });
 
       if (networkModel.status === 'indexing') {
@@ -37,6 +37,7 @@ export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCom
         await this.networkModelFactory.publishLastEvent();
       }
 
+      this.log.debug('Aggregate to save', networkModel, this.constructor.name);
       await this.networkEventStore.save(networkModel);
       await networkModel.commit();
 

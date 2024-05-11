@@ -33,14 +33,17 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('execute()', payload, this.constructor.name);
 
       const { block, requestId } = payload;
-      const { tx, ...lightweightBlock } = block; // Давай для этой команды я сделаю достать блок у которого транзы будут только хэши.
+      // TODO: For this command, you need to get a block in which only hashes will be transferred.
+      const { tx, ...lightweightBlock } = block; 
       const { height, hash, previousblockhash } = lightweightBlock;
 
       // TODO: Network should be in snapshot cache
-      const networkModel: Network = await this.networkModelFactory.initByExtraModel();
+      const networkModel: Network = await this.networkModelFactory.initModel();
+
+      this.log.debug('Init Network model', networkModel, this.constructor.name);
 
       /* Check reorganisation */
-      if (!networkModel.chain.addBlock(height, hash, previousblockhash)) {
+      if (!networkModel.chain.validateLastBlock(height, hash, previousblockhash)) {
         await networkModel.reorganisation({ height, requestId, service: this.networkProviderService });
         await this.eventStore.save(networkModel);
         await networkModel.commit();
@@ -48,12 +51,17 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         return;
       }
 
+      this.log.debug('BEFORE Network added new block', networkModel, this.constructor.name);
+
       await networkModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
+      this.log.debug('Network added new block', networkModel, this.constructor.name);
 
       // TODO: move into env
       const MAX_TRANSACTIONS_PER_BATCH = 1000;
 
       const batches = [];
+
+      this.log.debug('Transactions lenght', { length: tx.length }, this.constructor.name);
 
       /* Create transactions batches */
       while (tx.length > 0) {
@@ -64,8 +72,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
         // We create a Map to store transactions with a key - the transaction hash
         // TODO: add type
-        // TODO: мы тут только hash дотсаем и кладем их в список не проиндексированных транз. 
-        // ПОтом когда мы будем брать конкретный батч, мы достаем с очереди по блоку конкретные транзы и работаем с ними. 
+        // IMPORTANT: Here we just get the hash and put them in the list of non-indexed transactions.
+        // Then, when we work with a specific batch, 
+        // we take specific transactions from the queue (by block) and work with them.
         const transactionsMap: Map<string, any> = new Map(transactionSlice.map((transaction: { hash: string }) => [
           transaction.hash, null
         ]));
@@ -79,10 +88,11 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           blockHash: hash
         });
 
-        // Set batches with status created into variable
-        // batches.set(transactionBatch.aggregateId, 'created');
         batches.push(transactionBatch);
       }
+
+      this.log.debug('Batches lenght', { length: batches.length }, this.constructor.name);
+
 
       // TODO: process the option of indexing the first batch of transactions immediately
 

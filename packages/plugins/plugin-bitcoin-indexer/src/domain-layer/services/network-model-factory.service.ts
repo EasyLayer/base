@@ -21,18 +21,14 @@ export class NetworkModelFactoryService {
     return this.publisher.mergeObjectContext(new Network());
   }
 
-  public async initByExtraModel(): Promise<Network> {
-    // Network aggregate может быть только один в нашей системе. 
-    // Поэтому когда мы делаем init, мы 
-    // 1. Проверяем в базе есть ли с таким то именем аггрегат 
-    const model = await this.networkRepository.getOneByExtra(this.createNewModel());
-    // 2. Если в базе такого нет то мы создаем просто модель базовую. 
+  public async initModel(): Promise<Network> {
+    const model = await this.networkRepository.getOne(this.createNewModel());
+    // NOTE: If there is no such thing in the database, then we will return the base model.
     return model;
   }
 
   public async publishLastEvent(): Promise<void> {
-    // TODO
-    const model = await this.networkRepository.getOneByExtra(this.createNewModel());
+    const model = await this.networkRepository.getOne(this.createNewModel());
     const event = await this.networkRepository.fetchLastEvent(model);
     return model.publish(event);
   }

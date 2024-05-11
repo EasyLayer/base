@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, Unique } from 'typeorm';
+import { Entity, Column, Unique, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { IEvent } from '@easylayer/cqrs';
 
 export interface BasicEvent<T> {
@@ -23,11 +23,13 @@ export interface EventDataParameters {
 @Unique('UQ__request_id__aggregate_id', ['requestId', 'aggregateId'])
 @Unique('UQ__version__aggregate_id', ['version', 'aggregateId'])
 export class EventDataModel {
-  @PrimaryColumn('uuid', { generated: false })
+  @PrimaryGeneratedColumn()
+  public id!: number;
+
+  @Index()
+  @Column()
   public aggregateId!: string;
 
-  // делаем это поле extra , оно будет строкой, и сюда по сути можно будет доп уникальность зписать
-  // то ли имя то ли какой то другой идентификатор и искать по нему. Думаю это будет хорошо.
   @Column({ type: 'varchar', default: null })
   public extra!: string;
 

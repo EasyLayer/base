@@ -44,6 +44,8 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
         'Content-Type': 'application/json',
       },
       // TODO: add to envs
+      // TODO: мы также должны эти значения сопоставлять с количеством воркеров...
+      
     }), { maxRequests: 10, perMilliseconds: 1000 });
 
     if (!this.healthcheck()) {
