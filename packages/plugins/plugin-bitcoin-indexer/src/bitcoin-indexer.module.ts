@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Module, DynamicModule } from '@nestjs/common';
 import { transformAndValidateSync } from 'class-transformer-validator';
 import { LoggerModule } from '@easylayer/logger';
+import { ArithmeticService } from '@easylayer/arithmetic';
 import { EventStoreModule } from '@easylayer/eventstore';
 import { BitcoinNetworkProviderModule, QuickNodeProvider, SelfNodeProvider } from '@easylayer/bitcoin-network-provider';
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
@@ -76,6 +77,7 @@ export class BitcoinIndexerModule {
           provide: ProvidersConfig,
           useValue: providersConfig,
         },
+        ArithmeticService,
         BitcoinIndexerService,
         BlocksQueueService,
         IndexerSaga,

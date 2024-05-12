@@ -23,7 +23,9 @@ type ChainNode = {
 class Blockchain {
   private head: ChainNode | null = null;
   private tail: ChainNode | null = null;
-  private _size: bigint = 0n;
+  // IMPORTANT: the blockchain starts from block 0,
+  // so if there are no blocks at all, we use -1
+  private _size: bigint = -1n;
 
   get lastPrevBlockHash(): string {
     if (this.tail) {
@@ -45,7 +47,7 @@ class Blockchain {
     if (this.tail) {
       return this.tail.block.height;
     } else {
-      return 0n;
+      return -1n;
     }
   }
 
@@ -54,7 +56,7 @@ class Blockchain {
   }
 
   isEmpty(): boolean {
-    return this.size === 0n;
+    return this.size === -1n;
   }
 
   // Adding a block to the end of the chain
@@ -209,10 +211,10 @@ class Blockchain {
     }
 
     // Delete all blocks if the specified height is 1 (cut off the entire chain)
-    if (height === 1n && this.head) {
+    if (height === 0n && this.head) {
       this.head = null;
       this.tail = null;
-      this._size = 0n;
+      this._size = -1n;
       found = true;
     }
 

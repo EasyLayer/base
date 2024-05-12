@@ -1,133 +1,132 @@
 import { Block } from './interfaces';
 
+/**
+ * Class representing a queue specifically for blocks in a blockchain context.
+ * Maintains a FIFO (first-in-first-out) structure for blocks, ensuring the integrity of the sequence.
+ */
 export class BlocksQueue<T extends Block> {
-    private items: T[] = []; // может ли это быть Set?? 
-    private nextBlockPromise: Promise<void> | null = null;
-    private nextBlockPromiseResolve: (() => void) | null = null;
-    private _lastHeight: bigint = BigInt(0);
+    private items: T[] = []; // FIFO
+    private blockProcessedPromise!: Promise<void>;
+    private resolveNextBlock!: () => void;
+    // IMPORTANT: the blockchain starts from block 0,
+    // so if there are no blocks at all, we use -1n
+    private _lastHeight: bigint = -1n;
 
+    /**
+     * Initializes a new instance of BlocksQueue and sets up the initial block processing promise.
+     */
     constructor() {
-      this.resetNextBlockPromise();
+      this.initBlockProcessedPromise();
     }
   
+    /**
+     * Gets the current length of the queue.
+     * @returns The number of items in the queue.
+     */
     get length() {
       return this.items.length;
     }
 
+    /**
+     * Gets the height of the last block in the queue.
+     * @returns The height as a bigint.
+     */
     get lastHeight(): bigint {
       return this._lastHeight;
     }
 
+    /**
+     * Sets the height of the last block in the queue.
+     * @param height The new height value as a bigint.
+     */
     set lastHeight(height: bigint) {
       this._lastHeight = height;
     }
 
-    enqueue(item: T): boolean {
-      if (this.lastHeight && item.height <= this.lastHeight) {
-        return false; // Не добавляем блок, если он не следует строго после последнего
+    /**
+     * Enqueues a block to the queue if its height is exactly one more than the height of the last block.
+     * @param item The block to be added to the queue.
+     * @returns Boolean indicating success or failure of the enqueue operation.
+     */
+    // TODO: remove BigInt when add Block constructor class in service. 
+    // This queue have to works only with Block interface
+    public enqueue(item: T): boolean {
+      if (BigInt(item.height) !== this._lastHeight + 1n) {
+        // Don't add a block if its height does not strictly follow the last block
+        return false;
       }
 
       this.items.push(item);
-      this._lastHeight = item.height;
+      this._lastHeight = BigInt(item.height);
       return true;
     }
 
-    dequeue(): void {
+    /**
+     * Dequeues the first block from the queue and resolves the block processing promise.
+     */
+    public dequeue(): void {
       if (this.items.length > 0) {
         this.items.shift();
-        if (this.nextBlockPromiseResolve) {
-          // Allow the next block to be processed
-          this.nextBlockPromiseResolve();
-          // Reset for the next use
-          this.resetNextBlockPromise();
-      }
+        // Resolve the promise, indicating that the block has been processed
+        this.resolveNextBlock();
       }
     }
 
-    clear(): void {
-        // Очистка всей очереди
-        this.items = [];
-        if (this.nextBlockPromiseResolve) {
-          this.nextBlockPromiseResolve();
-        }
-        this.resetNextBlockPromise();
+    /**
+     * Clears the queue and resets the block processing mechanism.
+     */
+    public clear(): void {
+      // Clear the entire queue
+      this.items = [];
+      // Resolve the promise, indicating that the block has been processed
+      this.resolveNextBlock();
+      // Init the promise for the next wait
+      this.initBlockProcessedPromise();
     }
 
-    async peekFirstBlock(): Promise<T | undefined> {
-      // Return the first block, waiting for the promise to resolve before doing so
-      await this.nextBlockPromise;
+    /**
+     * Peeks at the first block in the queue and waits for the block processing promise to resolve before proceeding.
+     * @returns A promise that resolves to the first block in the queue or undefined if the queue is empty.
+     */
+    public async peekFirstBlock(): Promise<T | undefined> {
+      // NOTE: Before processing the next block from the queue,
+      // we wait for the resolving of the promise of the previous block
+      await this.blockProcessedPromise;
+
+      // Init the promise for the next wait
+      this.initBlockProcessedPromise();
+
+      // Peek first in block
       return this.items[0];
     }
 
-    private resetNextBlockPromise() {
-      this.nextBlockPromise = new Promise<void>(resolve => {
-        this.nextBlockPromiseResolve = resolve;
+    /**
+     * Initializes the block processing promise.
+     */
+    private initBlockProcessedPromise(): void {
+      this.blockProcessedPromise = new Promise<void>(resolve => {
+        this.resolveNextBlock = resolve;
       });
+
+      // If the queue is empty, immediately resolve the promise
+      if (this.items.length === 0) {
+        this.resolveNextBlock();
+      }
     }
-  
-    // enqueue(item: T): void {
-    //   this.items.push(item);
-    //   // Sort blocks by height, given that height is a bigint
-      // this.items.sort((a, b) => {
-      //   if (a.height < b.height) return -1;
-      //   if (a.height > b.height) return 1;
-      //   return 0;
-      // });
-    //   this.processNext();
-    // }
-  
-    // private processNext(): void {
-    //   if (this.waitingResolvers.length > 0 && this.items.length > 0) {
-    //     const resolver = this.waitingResolvers.shift();
-    //     const item = this.items.shift();
-    //     if (resolver && item) {
-    //       resolver(item);
-    //     }
-    //   }
-    // }
-    
-    // async peekFirstBlock(): Promise<T> {
-    //   if (this.items.length > 0) {
-    //     // Возвращаем блок, но не удаляем его из очереди
-    //     return Promise.resolve(this.items[0]);
-    //   }
-    //   return new Promise<T>(resolve => {
-    //     // Правильно типизируем резолвер, чтобы он принимал аргумент типа T и возвращал void
-    //     this.waitingResolvers.push(resolve as (item?: T) => void);
-    //   });
-    // }
 
-    // dequeue(): void {
-    //   if (this.items.length > 0) {
-    //     this.items.shift();  // Фактическое удаление блока из очереди
-    //     this.processNext();  // Обработка следующего ожидающего резолвера, если таковой имеется
-    //   }
-    // }
-  
-    // requeue(item: T):void {
-    //   this.items.unshift(item);
-    //   // this.items.sort((a, b) => a.height - b.height); // Повторная сортировка на случай requeue
-    //   this.processNext();
-    // }
-  
-    // clear(): void {
-    //   this.items = [];
-    //   // Отклоняем все ожидающие обещания пустыми
-    //   while (this.waitingResolvers.length > 0) {
-    //       const resolver = this.waitingResolvers.shift();
-    //       if (resolver) {
-    //         resolver();
-    //       }
-    //   }
-    // }
-
-    fetchBlockByHeight(height: bigint): T {
+    /**
+     * Fetches a block by its height from the queue.
+     * @param height The height of the block to be retrieved.
+     * @returns The block with the specified height.
+     * @throws Error if no block is found with the specified height.
+     */
+    public fetchBlockByHeight(height: bigint): T {
       // Method find block by height inside queue and return it 
       const block = this.items.find(item => item.height === height);
       if (block) {
-          return block;
+        return block;
       } else {
-          throw new Error(`No block found with height ${height.toString()}`);
+        throw new Error(`No block found with height ${height.toString()}`);
       }
     }
 }
