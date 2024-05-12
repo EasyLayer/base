@@ -20,9 +20,9 @@ export class BitcoinNetworkProviderService {
     return await provider.getOneBlockHashByHeight(BigInt(height));
   }
 
-  public async getOneBlockByHeight(height: string | bigint): Promise<any> {
+  public async getOneBlockByHeight(height: string | bigint, verbosity?: number): Promise<any> {
     const provider = await this._connectionManager.getActiveProvider();
-    return await provider.getOneBlockByHeight(BigInt(height));
+    return await provider.getOneBlockByHeight(BigInt(height), verbosity);
   }
 
   public async getManyBlocksByHeights(heights: string[] | bigint[] | number[]): Promise<any> {

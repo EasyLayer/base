@@ -18,11 +18,13 @@ export class TransactionsBatch extends AggregateRoot {
 
   public async create({
     aggregateId,
+    requestId,
     transactions,
     blockHeight,
     blockHash
   }: {
     aggregateId: string;
+    requestId: string,
     transactions: Map<string, any>;
     blockHeight: bigint;
     blockHash: string;
@@ -30,6 +32,7 @@ export class TransactionsBatch extends AggregateRoot {
     await this.apply(
       new BitcoinTransactionsBatchCreatedEvent({
         aggregateId,
+        requestId,
         transactions,
         blockHeight: blockHeight.toString(),
         blockHash,

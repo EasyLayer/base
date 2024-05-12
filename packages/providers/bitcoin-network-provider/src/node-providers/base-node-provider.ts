@@ -28,7 +28,7 @@ export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseN
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getOneBlockByHeight(height: string | bigint): Promise<any> {
+  async getOneBlockByHeight(height: string | bigint, verbosity?: number): Promise<any> {
     throw new Error('Method getOneBlockByHeight() is not supported by this provider');
   }
 

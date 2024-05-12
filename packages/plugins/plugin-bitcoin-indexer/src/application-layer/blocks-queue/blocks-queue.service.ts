@@ -17,7 +17,7 @@ export class BlocksQueueService implements OnModuleInit  {
   private workerPool: Piscina = new Piscina({
     filename: join(__dirname, 'worker.js'),
     minThreads: 1,
-    maxThreads: 4 // TODO: max threads = cpu * 2 - 2
+    maxThreads: 1 // TODO: max threads = cpu * 2 - 2
   });
   private maxQueueSize: number = 10; // TODO: move into env
   private isLoadingStarted = false;
@@ -40,7 +40,7 @@ export class BlocksQueueService implements OnModuleInit  {
    * @param height The height of the block as bigint or string.
    * @returns A promise that resolves to the block if found.
    */
-  public async getOneBlockByHeight(height: bigint | string): Promise<Block> {
+  public async getOneBlockByHeight(height: bigint | string | number): Promise<Block> {
     return this.blockQueue.fetchBlockByHeight(BigInt(height));
   }
 
@@ -67,6 +67,9 @@ export class BlocksQueueService implements OnModuleInit  {
         await this.blocksCommandFactory.indexBlock({ block, requestId: uuidv4() });
       } catch (error) {
         this.log.error('Failed to process block:', error, this.constructor.name);
+
+        // TODO: тут получаеться мы должны отпустить промис тот очереди блять. 
+        // но тут сука непонятно потому что
       }
     }
   }

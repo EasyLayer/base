@@ -149,8 +149,8 @@ class Blockchain {
    */
   validateLastBlock(height: bigint, hash: string, prevHash: string): boolean {
     if (!this.tail) {
-      // If there are no blocks, the check cannot be performed.
-      throw new Error("No blocks in the blockchain.");
+      // If there's no blocks in the chain, we assume this is the first block.
+      return true;
     }
 
     // Check that the height of the last block matches the passed height.
@@ -247,9 +247,11 @@ export class Network extends AggregateRoot {
       throw new Error('Previous Block did not complete indexing');
     }
 
-    const { height, hash, previousblockhash } = block;
+    const { height, previousblockhash } = block;
 
-    if (!this.chain.addBlock(height, hash, previousblockhash)) {
+    // NOTE: This is essentially not needed here, 
+    // we have to already checked this in the command in order to trigger the reorganization events
+    if (!this.chain.validateNextBlock(height, previousblockhash)) {
       throw new Error('Need reorganisation');
     }
 

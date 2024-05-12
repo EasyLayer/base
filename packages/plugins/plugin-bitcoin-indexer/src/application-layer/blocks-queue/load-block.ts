@@ -27,5 +27,5 @@ export const loadBlock = async ({
   const bitcoinService = appContext.get(BitcoinNetworkProviderService);
 
 
-  return bitcoinService.getOneBlockByHeight(height);
+  return bitcoinService.getOneBlockByHeight(height, 2);
 };

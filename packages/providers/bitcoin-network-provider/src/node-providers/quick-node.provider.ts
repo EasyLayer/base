@@ -103,12 +103,12 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     }
   }
 
-  public async getOneBlockByHash(hash: Hash): Promise<any> {
+  public async getOneBlockByHash(hash: Hash, verbosity: number = 1): Promise<any> {
     try {
       const data = {
         jsonrpc: '2.0',
         method: 'getblock',
-        params: [hash, 1],
+        params: [hash, verbosity],
       };
 
       const response = await this._httpClient.post('/', data);
@@ -133,9 +133,9 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     return blocks;
   }
 
-  public async getOneBlockByHeight(height: string | bigint): Promise<any> {
+  public async getOneBlockByHeight(height: string | bigint, verbosity?: number): Promise<any> {
     const blockHash = await this.getOneBlockHashByHeight(height);
-    const block = await this.getOneBlockByHash(blockHash);
+    const block = await this.getOneBlockByHash(blockHash, verbosity);
     return block;
   }
 

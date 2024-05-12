@@ -14,9 +14,14 @@ export class TransactionsCommandFactoryService {
   ) {}
 
   public async indexTransactionsBatch(dto: any): Promise<void> {
-    const { block } = dto;
+    const { block, batches } = dto;
+
     // Get block with transactions from cache
     const blockWithTransactions = await this.blocksQueueService.getOneBlockByHeight(block.height);
-    await this.commandBus.execute(new IndexTransactionsBatchCommand({ ...dto, block: blockWithTransactions }));
+    await this.commandBus.execute(new IndexTransactionsBatchCommand({
+      ...dto,
+      block: blockWithTransactions,
+      batches: Object.fromEntries(batches)
+    }));
   }
 }

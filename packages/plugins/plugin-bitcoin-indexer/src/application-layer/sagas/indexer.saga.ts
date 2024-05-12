@@ -52,26 +52,26 @@ export class IndexerSaga {
   //   );
   // }
 
-  // @SyncSaga()
-  // onBitcoinBlockIndexStartedEvent(events$: Observable<any>): Observable<ICommand> {
-  //   return events$.pipe(
-  //     ofType(BitcoinBlockIndexStartedEvent),
-  //     execute({
-  //       event: BitcoinBlockIndexStartedEvent,
-  //       command: ({ payload }) =>
-  //         this.transactionsCommandFactoryService.indexTransactionsBatch({
-  //           blockHeight: payload.aggregateId,
-  //           block: payload.block,
-  //           batches: payload.batches,
-  //           requestId: uuidv4()
-  //         }),
-  //     }),
-  //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinBlockIndexStartedEvent> for event: ${error}`);
-  //       return of();
-  //     })
-  //   );
-  // }
+  @SyncSaga()
+  onBitcoinBlockIndexStartedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBlockIndexStartedEvent),
+      execute({
+        event: BitcoinBlockIndexStartedEvent,
+        command: ({ payload }) =>
+          this.transactionsCommandFactoryService.indexTransactionsBatch({
+            blockHeight: payload.aggregateId,
+            block: payload.block,
+            batches: payload.batches,
+            requestId: uuidv4()
+          }),
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBlockIndexStartedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
 
   // @SyncSaga()
   // onBitcoinNetworkIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
@@ -90,24 +90,24 @@ export class IndexerSaga {
   //   );
   // }
 
-  // @SyncSaga()
-  // onBitcoinBlockBatchesUpdatedEvent(events$: Observable<any>): Observable<ICommand> {
-  //   return events$.pipe(
-  //     ofType(BitcoinBlockBatchesUpdatedEvent),
-  //     execute({
-  //       event: BitcoinBlockBatchesUpdatedEvent,
-  //       command: ({ payload }) =>
-  //         this.transactionsCommandFactoryService.indexTransactionsBatch({
-  //           blockHeight: payload.aggregateId,
-  //           block: payload.block,
-  //           batches: payload.batches,
-  //           requestId: uuidv4()
-  //         }),
-  //     }),
-  //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinBlockBatchesUpdatedEvent> for event: ${error}`);
-  //       return of();
-  //     })
-  //   );
-  // }
+  @SyncSaga()
+  onBitcoinBlockBatchesUpdatedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBlockBatchesUpdatedEvent),
+      execute({
+        event: BitcoinBlockBatchesUpdatedEvent,
+        command: ({ payload }) =>
+          this.transactionsCommandFactoryService.indexTransactionsBatch({
+            blockHeight: payload.aggregateId,
+            block: payload.block,
+            batches: payload.batches,
+            requestId: uuidv4()
+          }),
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBlockBatchesUpdatedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
 }

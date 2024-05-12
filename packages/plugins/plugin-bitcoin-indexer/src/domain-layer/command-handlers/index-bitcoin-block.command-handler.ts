@@ -33,6 +33,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('execute()', payload, this.constructor.name);
 
       const { block, requestId } = payload;
+
       // TODO: For this command, you need to get a block in which only hashes will be transferred.
       const { tx, ...lightweightBlock } = block; 
       const { height, hash, previousblockhash } = lightweightBlock;
@@ -43,15 +44,13 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('Init Network model', networkModel, this.constructor.name);
 
       /* Check reorganisation */
-      if (!networkModel.chain.validateLastBlock(height, hash, previousblockhash)) {
+      if (!networkModel.chain.validateNextBlock(height, previousblockhash)) {
         await networkModel.reorganisation({ height, requestId, service: this.networkProviderService });
         await this.eventStore.save(networkModel);
         await networkModel.commit();
         this.log.debug(`Network reorganisation started`, {}, this.constructor.name);
         return;
       }
-
-      this.log.debug('BEFORE Network added new block', networkModel, this.constructor.name);
 
       await networkModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
       this.log.debug('Network added new block', networkModel, this.constructor.name);
@@ -80,9 +79,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         ]));
 
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
-
+        
         await transactionBatch.create({
           aggregateId: uuidv4(),
+          requestId,
           transactions: transactionsMap,
           blockHeight: height,
           blockHash: hash
@@ -108,7 +108,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       });
 
       await blockModel.index({
-        aggregateId: height,
+        aggregateId: height == 0 ? 'genesis' : height, //TODO: add description for this
         block: lightweightBlock,
         batches: batchesMap,
         requestId

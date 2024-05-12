@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { Block } from './interfaces';
 
 /**
@@ -97,7 +98,9 @@ export class BlocksQueue<T extends Block> {
       this.initBlockProcessedPromise();
 
       // Peek first in block
-      return this.items[0];
+      // IMPORTANT: We make sure to clone the block so that modifications to the object 
+      // later in the process cannot affect the block in the queue.
+      return this.items[0] ? _.cloneDeep(this.items[0]) : undefined;
     }
 
     /**
@@ -122,7 +125,7 @@ export class BlocksQueue<T extends Block> {
      */
     public fetchBlockByHeight(height: bigint): T {
       // Method find block by height inside queue and return it 
-      const block = this.items.find(item => item.height === height);
+      const block = this.items.find(item => BigInt(item.height) === height);
       if (block) {
         return block;
       } else {
