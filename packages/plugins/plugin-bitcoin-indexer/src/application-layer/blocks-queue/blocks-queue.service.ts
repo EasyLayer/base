@@ -17,7 +17,7 @@ export class BlocksQueueService implements OnModuleInit  {
   private workerPool: Piscina = new Piscina({
     filename: join(__dirname, 'worker.js'),
     minThreads: 1,
-    maxThreads: 10 // TODO: max threads = cpu * 2 - 2
+    maxThreads: 1 // TODO: max threads = cpu * 2 - 2
   });
   private maxQueueSize: number = 100; // TODO: move into env
   private isLoadingStarted = false;

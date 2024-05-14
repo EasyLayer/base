@@ -6,6 +6,7 @@ import {
   BitcoinNetworkBlockAddedEvent,
   BitcoinNetworkReorganisationEvent,
   BitcoinNetworkIndexBlockConfirmedEvent,
+  BitcoinNetworkBlockWithConfirmAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 type LightBlock = {
@@ -147,6 +148,8 @@ class Blockchain {
    * @param prevHash The expected previous hash of the last block.
    * @returns {boolean} true if the provided data matches the last block, false otherwise.
    */
+  // NOTE: This method is needed for the case when we confirm the indexing of a block
+  // in another command to make sure that the block we are passing exactly matches the chain
   validateLastBlock(height: bigint | string | number, hash: string, prevHash: string): boolean {
     if (!this.tail) {
       // If there's no blocks in the chain, we assume this is the first block.
@@ -263,6 +266,27 @@ export class Network extends AggregateRoot {
     }));
   }
 
+  public async addBlockWithImmediatelyConfirm({ block, requestId }: { block: any, requestId: string }) {
+    if (this.status !== 'awaiting' && this.status !== 'reorganisation') {
+      throw new Error('addBlock() Previous Block did not complete indexing');
+    }
+
+    const { height, hash, previousblockhash } = block;
+
+    // NOTE: This is essentially not needed here, 
+    // we have to already checked this in the command in order to trigger the reorganization events
+    if (!this.chain.validateNextBlock(height, previousblockhash)) {
+      throw new Error('Need reorganisation');
+    }
+
+    await this.apply(new BitcoinNetworkBlockWithConfirmAddedEvent({
+      aggregateId: this.aggregateId,
+      requestId,
+      status: 'awaiting',
+      block
+    }));
+  }
+
   public async reorganisation(
     { height, requestId, service } :
     { height: bigint, requestId: string, service: BitcoinNetworkProviderService }
@@ -343,6 +367,14 @@ export class Network extends AggregateRoot {
 
   private onBitcoinNetworkIndexBlockConfirmedEvent({ payload }: BitcoinNetworkIndexBlockConfirmedEvent) {
     const { status } = payload;
+    this.status = status;
+  }
+
+  private onBitcoinNetworkBlockWithConfirmAddedEvent({ payload }: BitcoinNetworkBlockWithConfirmAddedEvent) {
+    const { block, status } = payload;
+
+    const { height, hash, previousblockhash } = block;
+    this.chain.addBlock(height, hash, previousblockhash);
     this.status = status;
   }
 }

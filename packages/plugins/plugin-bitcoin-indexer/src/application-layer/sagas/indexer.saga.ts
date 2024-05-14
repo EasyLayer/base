@@ -8,7 +8,8 @@ import {
   BitcoinBlockIndexStartedEvent,
   BitcoinNetworkIndexBlockConfirmedEvent,
   BitcoinBlockBatchesUpdatedEvent,
-  BitcoinNetworkReorganisationEvent
+  BitcoinNetworkReorganisationEvent,
+  BitcoinBlockWithCompleteIndexedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 import { BlocksCommandFactoryService, TransactionsCommandFactoryService } from '../services';
 import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
@@ -84,6 +85,23 @@ export class IndexerSaga {
       }),
       catchError((error) => {
         console.error(`Error handling <BitcoinNetworkIndexBlockConfirmedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
+
+  @SyncSaga()
+  onBitcoinBlockWithCompleteIndexedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBlockWithCompleteIndexedEvent),
+      execute({
+        event: BitcoinBlockWithCompleteIndexedEvent,
+        command: ({ payload }) =>
+          // TODO: think do we need params block here?
+          this.blocksQueueService.confirmIndexBlock()
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBlockWithCompleteIndexedEvent> for event: ${error}`);
         return of();
       })
     );

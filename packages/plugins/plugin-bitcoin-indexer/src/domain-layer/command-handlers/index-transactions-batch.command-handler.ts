@@ -42,6 +42,7 @@ export class IndexTransactionsBatchCommandHandler
 
         const { batches } = blockModel;
 
+      // TODO: move to env
       const MAX_INDEXING_BATCH_PER_ONE_TIME = 1;
 
       /* Find no indexed batches */
@@ -57,15 +58,11 @@ export class IndexTransactionsBatchCommandHandler
         }
       }
 
-      // TODO: process the option if this is the last batch, then immediately indicate that the block is indexed
-      // (тут прикольно то что мы сразу первый батч обработает и если мы размер батча так укажем что 
-        // он захватит все транзы, то получиться что мы тут же и проиндексируем это все.)
-
       /* Complete block index logic */
       if (notIndexedBatches.length === 0) {
         this.log.debug('No batches for indexing', { notIndexedBatches }, this.constructor.name);
 
-        await blockModel.completeIndexBlock({ requestId, batches });
+        await blockModel.completeIndexBlock({ requestId });
 
         const networkModel: Network = await this.networkModelFactoryService.initModel();
         await networkModel.confirmIndexBlock({ requestId, block: lightweightBlock });
