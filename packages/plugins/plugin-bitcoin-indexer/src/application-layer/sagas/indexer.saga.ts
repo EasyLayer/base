@@ -62,7 +62,6 @@ export class IndexerSaga {
           this.transactionsCommandFactoryService.indexTransactionsBatch({
             blockHeight: payload.aggregateId,
             block: payload.block,
-            batches: payload.batches,
             requestId: uuidv4()
           }),
       }),
@@ -73,22 +72,22 @@ export class IndexerSaga {
     );
   }
 
-  // @SyncSaga()
-  // onBitcoinNetworkIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
-  //   return events$.pipe(
-  //     ofType(BitcoinNetworkIndexBlockConfirmedEvent),
-  //     execute({
-  //       event: BitcoinNetworkIndexBlockConfirmedEvent,
-  //       command: ({ payload }) =>
-  //         // TODO: think do we need params block here?
-  //         this.blocksQueueService.confirmProcessBlock()
-  //     }),
-  //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinNetworkIndexBlockConfirmedEvent> for event: ${error}`);
-  //       return of();
-  //     })
-  //   );
-  // }
+  @SyncSaga()
+  onBitcoinNetworkIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinNetworkIndexBlockConfirmedEvent),
+      execute({
+        event: BitcoinNetworkIndexBlockConfirmedEvent,
+        command: ({ payload }) =>
+          // TODO: think do we need params block here?
+          this.blocksQueueService.confirmIndexBlock()
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinNetworkIndexBlockConfirmedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
 
   @SyncSaga()
   onBitcoinBlockBatchesUpdatedEvent(events$: Observable<any>): Observable<ICommand> {
@@ -100,7 +99,6 @@ export class IndexerSaga {
           this.transactionsCommandFactoryService.indexTransactionsBatch({
             blockHeight: payload.aggregateId,
             block: payload.block,
-            batches: payload.batches,
             requestId: uuidv4()
           }),
       }),

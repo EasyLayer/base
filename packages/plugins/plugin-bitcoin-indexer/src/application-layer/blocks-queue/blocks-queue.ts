@@ -44,6 +44,12 @@ export class BlocksQueue<T extends Block> {
       this._lastHeight = height;
     }
 
+    public onError() {
+      // NOTE: This method is needed in case of an emergency 
+      // to release a promise without manipulating the queue
+      this.resolveNextBlock();
+    }
+
     /**
      * Enqueues a block to the queue if its height is exactly one more than the height of the last block.
      * @param item The block to be added to the queue.
@@ -67,7 +73,9 @@ export class BlocksQueue<T extends Block> {
      */
     public dequeue(): void {
       if (this.items.length > 0) {
+        console.log('\n1dequeue', this.items[0]);
         this.items.shift();
+        console.log('\n2dequeue', this.items[0]);
         // Resolve the promise, indicating that the block has been processed
         this.resolveNextBlock();
       }

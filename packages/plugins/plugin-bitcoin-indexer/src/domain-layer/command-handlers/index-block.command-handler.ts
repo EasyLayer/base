@@ -41,7 +41,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // TODO: Network should be in snapshot cache
       const networkModel: Network = await this.networkModelFactory.initModel();
 
-      this.log.debug('Init Network model', networkModel, this.constructor.name);
+      this.log.debug('Init Network model', { aggregateId: networkModel.aggregateId }, this.constructor.name);
 
       /* Check reorganisation */
       if (!networkModel.chain.validateNextBlock(height, previousblockhash)) {
@@ -53,8 +53,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       }
 
       await networkModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
-      this.log.debug('Network added new block', networkModel, this.constructor.name);
-
+      this.log.debug('Network added new block', { aggregateId: networkModel.aggregateId, block: { height, hash, previousblockhash } }, this.constructor.name);
       // TODO: move into env
       const MAX_TRANSACTIONS_PER_BATCH = 1000;
 
@@ -94,7 +93,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('Batches lenght', { length: batches.length }, this.constructor.name);
 
 
-      // TODO: process the option of indexing the first batch of transactions immediately
+      if (batches.length === 1) {
+        // TODO: process the option of indexing the first batch of transactions immediately
+      }
 
       /* Create a NEW block model */
       // IMPORTANT: If a block with the current height already exists, 
@@ -108,7 +109,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       });
 
       await blockModel.index({
-        aggregateId: height == 0 ? 'genesis' : height, //TODO: add description for this
+        // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
+        aggregateId: height || 'genesis',
         block: lightweightBlock,
         batches: batchesMap,
         requestId
@@ -119,7 +121,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       await networkModel.commit();
       await blockModel.commit();
 
-      this.log.debug('Block index started', { height, hash, previousblockhash, ...lightweightBlock }, this.constructor.name);
+      this.log.debug('Block index started', { block: lightweightBlock }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;

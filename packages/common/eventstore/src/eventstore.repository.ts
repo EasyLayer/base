@@ -26,7 +26,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
 
     const eventRaws = await this.eventStore.find({
       where: { aggregateId },
-      order: { version: 'ASC' },
+      order: { version: 'ASC' }, // TODO: think can we sort by "id" here? 
     });
 
     await model.loadFromHistory(eventRaws.map(EventDataModel.deserialize));

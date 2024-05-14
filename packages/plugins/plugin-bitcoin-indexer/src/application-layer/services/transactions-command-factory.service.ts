@@ -21,7 +21,6 @@ export class TransactionsCommandFactoryService {
     await this.commandBus.execute(new IndexTransactionsBatchCommand({
       ...dto,
       block: blockWithTransactions,
-      batches: Object.fromEntries(batches)
     }));
   }
 }

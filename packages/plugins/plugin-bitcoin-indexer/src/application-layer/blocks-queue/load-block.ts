@@ -22,7 +22,8 @@ export const loadBlock = async ({
   const appContext = await NestFactory.createApplicationContext(
     BitcoinNetworkProviderModule.forRootAsync({
       providers
-    })
+    }),
+    { logger: false }
   );
   const bitcoinService = appContext.get(BitcoinNetworkProviderService);
 

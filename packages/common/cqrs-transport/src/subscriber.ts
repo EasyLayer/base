@@ -23,7 +23,7 @@ export class Subscriber implements IMessageSource {
       if (this.bridge) {
         this.queueSingleConcurrency
           .add(async () => {
-            await new Promise((resolve) => setTimeout(resolve, 1));
+            // await new Promise((resolve) => setTimeout(resolve, 1));
 
             this.bridge.next(event);
           })

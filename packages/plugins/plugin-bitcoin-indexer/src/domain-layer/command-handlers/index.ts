@@ -1,4 +1,4 @@
-import { IndexBlockCommandHandler } from './index-bitcoin-block.command-handler';
+import { IndexBlockCommandHandler } from './index-block.command-handler';
 import { InitNetworkCommandHandler } from './init-network.command-handler';
 import { IndexTransactionsBatchCommandHandler } from './index-transactions-batch.command-handler';
 

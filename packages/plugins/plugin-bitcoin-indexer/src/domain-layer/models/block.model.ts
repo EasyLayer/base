@@ -18,7 +18,13 @@ export class Block extends AggregateRoot {
       throw new Error('Block already start indexing');
     }
 
-    await this.apply(new BitcoinBlockIndexStartedEvent({ aggregateId, block, batches, requestId, status: 'indexing' }));
+    await this.apply(new BitcoinBlockIndexStartedEvent({
+      aggregateId,
+      block,
+      batches: Object.fromEntries(batches),
+      requestId,
+      status: 'indexing'
+    }));
   }
 
   public async updateBatches({ batchesHashes, requestId }: { batchesHashes: string[], requestId: string }) {
@@ -34,7 +40,7 @@ export class Block extends AggregateRoot {
     await this.apply(new BitcoinBlockBatchesUpdatedEvent({
       aggregateId: this.aggregateId,
       requestId,
-      batches: this.batches,
+      batches: Object.fromEntries(this.batches),
       block: this.block
     }));
   }
@@ -53,7 +59,12 @@ export class Block extends AggregateRoot {
         }
       }
 
-      await this.apply(new BitcoinBlockIndexCompletedEvent({ aggregateId: this.aggregateId, requestId, batches, status: 'completed' }));
+      await this.apply(new BitcoinBlockIndexCompletedEvent({
+        aggregateId: this.aggregateId,
+        requestId,
+        batches: Object.fromEntries(batches),
+        status: 'completed'
+      }));
     }
   }
 
@@ -62,17 +73,17 @@ export class Block extends AggregateRoot {
     this.aggregateId = aggregateId;
     this.block = block;
     this.status = status;
-    this.batches = batches;
+    this.batches = new Map(Object.entries(batches));
   }
 
   private onBitcoinBlockIndexCompletedEvent({ payload }: BitcoinBlockIndexCompletedEvent) {
     const { status, batches } = payload;
     this.status = status;
-    this.batches = batches;
+    this.batches = new Map(Object.entries(batches));
   }
 
   private onBitcoinBlockBatchesUpdatedEvent({ payload }: BitcoinBlockBatchesUpdatedEvent) {
     const { batches } = payload;
-    this.batches = batches;
+    this.batches = new Map(Object.entries(batches));
   }
 }

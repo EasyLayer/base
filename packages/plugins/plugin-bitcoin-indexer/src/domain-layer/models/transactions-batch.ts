@@ -5,8 +5,10 @@ import {
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 export interface LightweightTransaction {
-  inputs: any;
-  outputs: any;
+  txid: string;
+  hash: string;
+  vin: any;
+  vout: any;
 }
 
 export class TransactionsBatch extends AggregateRoot {
@@ -29,11 +31,12 @@ export class TransactionsBatch extends AggregateRoot {
     blockHeight: bigint;
     blockHash: string;
   }) {
+
     await this.apply(
       new BitcoinTransactionsBatchCreatedEvent({
         aggregateId,
         requestId,
-        transactions,
+        transactions: Object.fromEntries(transactions),
         blockHeight: blockHeight.toString(),
         blockHash,
         status: 'created'
@@ -44,7 +47,6 @@ export class TransactionsBatch extends AggregateRoot {
   public async index({ transactions, requestId }: { transactions: LightweightTransaction, requestId: string }) {
 
     // Check transactions
-
 
     await this.apply(new BitcoinTransactionsBatchIndexedEvent({
       aggregateId: this.aggregateId,
@@ -58,7 +60,7 @@ export class TransactionsBatch extends AggregateRoot {
     const { aggregateId, transactions, blockHeight, blockHash, status } = payload;
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
-    this.transactions = transactions;
+    this.transactions = new Map(Object.entries(transactions));
     this.blockHash = blockHash;
     this.status = status;
   }
@@ -68,8 +70,8 @@ export class TransactionsBatch extends AggregateRoot {
     this.status = status;
     this.transactions = new Map(transactions.map((transaction: LightweightTransaction & { hash: string }) => [
       transaction.hash, {
-        inputs: transaction.inputs,
-        outputs: transaction.outputs
+        vin: transaction.vin,
+        vout: transaction.vout
       }
     ]));
   }

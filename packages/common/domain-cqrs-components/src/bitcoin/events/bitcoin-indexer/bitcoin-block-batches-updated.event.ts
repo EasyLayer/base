@@ -2,7 +2,7 @@ import { BasicEvent } from '../../../base.event';
 
 interface BitcoinBlockBatchesUpdatedEventPayload {
   aggregateId: string;
-  batches: Map<string, string>;
+  batches: any;
   requestId: string;
   block: any;
 }

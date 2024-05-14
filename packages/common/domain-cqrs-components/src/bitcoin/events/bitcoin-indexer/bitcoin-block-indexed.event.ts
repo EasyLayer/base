@@ -4,7 +4,7 @@ interface BitcoinBlockIndexStartedEventPayload {
   aggregateId: string;
   block: any;
   status: string;
-  batches: Map<string, string>;
+  batches: any;
   requestId: string;
 }
 

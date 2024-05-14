@@ -3,7 +3,7 @@ import { BasicEvent } from '../../../base.event';
 interface BitcoinTransactionsBatchCreatedEventPayload {
   aggregateId: string;
   requestId: string;
-  transactions: Map<string, any>;
+  transactions: any;
   blockHeight: string;
   blockHash: string;
   status: string;

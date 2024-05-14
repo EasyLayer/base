@@ -37,7 +37,6 @@ export class InitNetworkCommandHandler implements ICommandHandler<InitNetworkCom
         await this.networkModelFactory.publishLastEvent();
       }
 
-      this.log.debug('Aggregate to save', networkModel, this.constructor.name);
       await this.networkEventStore.save(networkModel);
       await networkModel.commit();
 

@@ -4,7 +4,7 @@ interface BitcoinBlockIndexCompletedEventPayload {
   aggregateId: string;
   status: string;
   requestId: string;
-  batches: Map<string, string>;
+  batches: any;
 }
 
 export class BitcoinBlockIndexCompletedEvent implements BasicEvent<BitcoinBlockIndexCompletedEventPayload> {

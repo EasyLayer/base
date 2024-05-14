@@ -17,7 +17,7 @@ export class BlocksQueueService implements OnModuleInit  {
   private workerPool: Piscina = new Piscina({
     filename: join(__dirname, 'worker.js'),
     minThreads: 1,
-    maxThreads: 1 // TODO: max threads = cpu * 2 - 2
+    maxThreads: 4 // TODO: max threads = cpu * 2 - 2
   });
   private maxQueueSize: number = 10; // TODO: move into env
   private isLoadingStarted = false;
@@ -45,13 +45,20 @@ export class BlocksQueueService implements OnModuleInit  {
   }
 
   private async *blocksIterator(): AsyncGenerator<Block, void, unknown> {
+    // let delay = 1; // начальное значение задержки в миллисекундах
+
     while (true) {
       if (this.blockQueue.length > 0) {
         const block = await this.blockQueue.peekFirstBlock();
-        if (block) yield block;
+        if (block) {
+          yield block;
+          // delay = 1;
+        }
       } else {
-        // Wait 1s until new blocks appear
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // TODO: add description about why we use setImmediate() here
+        await new Promise(resolve => setImmediate(resolve));
+        // await new Promise(resolve => setTimeout(resolve, delay));
+        // delay *= 2; 
       }
     }
   }
@@ -68,8 +75,9 @@ export class BlocksQueueService implements OnModuleInit  {
       } catch (error) {
         this.log.error('Failed to process block:', error, this.constructor.name);
 
-        // TODO: тут получаеться мы должны отпустить промис тот очереди блять. 
-        // но тут сука непонятно потому что
+        // IMPORTANT: We call this to resolve queue promise 
+        // that we can try same block one more time
+        this.blockQueue.onError();
       }
     }
   }
@@ -210,8 +218,8 @@ export class BlocksQueueService implements OnModuleInit  {
    */
   private async loadBlockWithRetry(height: bigint, maxRetries: number = 3): Promise<Block> {
     this.log.debug('loadBlockWithRetry()', { height, maxRetries }, this.constructor.name);
-
     let counter = 0;
+    let delay = 100;
 
     while (counter < maxRetries) {
       try {
@@ -222,6 +230,9 @@ export class BlocksQueueService implements OnModuleInit  {
         if (counter >= maxRetries) {
           throw new Error(`Failed to load block at height ${height} after ${maxRetries} attempts: ${error}`);
         }
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= 2;
       }
     }
 

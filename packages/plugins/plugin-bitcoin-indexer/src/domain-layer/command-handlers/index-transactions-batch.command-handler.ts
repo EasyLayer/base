@@ -36,10 +36,11 @@ export class IndexTransactionsBatchCommandHandler
       // for this we need to fetch block from cache with not all tranactions
       const { tx, ...lightweightBlock } = block;
 
+      // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
       const blockModel: Block =
-        await this.blocksModelFactoryService.initExistingModel(block.height);
+        await this.blocksModelFactoryService.initExistingModel(block.height || 'genesis');
 
-      const { batches } = blockModel;
+        const { batches } = blockModel;
 
       const MAX_INDEXING_BATCH_PER_ONE_TIME = 1;
 
@@ -62,6 +63,8 @@ export class IndexTransactionsBatchCommandHandler
 
       /* Complete block index logic */
       if (notIndexedBatches.length === 0) {
+        this.log.debug('No batches for indexing', { notIndexedBatches }, this.constructor.name);
+
         await blockModel.completeIndexBlock({ requestId, batches });
 
         const networkModel: Network = await this.networkModelFactoryService.initModel();
@@ -72,7 +75,7 @@ export class IndexTransactionsBatchCommandHandler
         await blockModel.commit();
         await networkModel.commit();
 
-        this.log.debug(`Block successfull indexed`, {}, this.constructor.name);
+        this.log.debug(`Block successfull indexed`, { block: lightweightBlock }, this.constructor.name);
         return;
       }
 
@@ -109,7 +112,7 @@ export class IndexTransactionsBatchCommandHandler
 
       await blockModel.commit();
 
-      this.log.debug(`Transactions Batch successfull indexed`, {}, this.constructor.name);
+      this.log.debug(`Transactions Batch successfull indexed`, { batches: notIndexedBatches }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;
