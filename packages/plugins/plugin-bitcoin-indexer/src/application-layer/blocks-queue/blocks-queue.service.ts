@@ -14,10 +14,14 @@ import { BlocksCommandFactoryService } from '../services/blocks-command-factory.
 @Injectable()
 export class BlocksQueueService implements OnModuleInit  {
   private blockQueue = new BlocksQueue<Block>();
+  // IMPORTANT: We specify the same values for minThreads and maxThreads.
+  // We do this so that the workers in the pool are created once and then reused,
+  // but if we specify minThreads < maxThreads,
+  // then we will recreate the workers each time until the maxThreads
   private workerPool: Piscina = new Piscina({
     filename: join(__dirname, 'worker.js'),
-    minThreads: 1,
-    maxThreads: 1 // TODO: max threads = cpu * 2 - 2
+    minThreads: 2,
+    maxThreads: 2 // TODO: max threads = cpu * 2 - 2
   });
   private maxQueueSize: number = 100; // TODO: move into env
   private isLoadingStarted = false;
