@@ -17,9 +17,9 @@ export class BlocksQueueService implements OnModuleInit  {
   private workerPool: Piscina = new Piscina({
     filename: join(__dirname, 'worker.js'),
     minThreads: 1,
-    maxThreads: 4 // TODO: max threads = cpu * 2 - 2
+    maxThreads: 10 // TODO: max threads = cpu * 2 - 2
   });
-  private maxQueueSize: number = 10; // TODO: move into env
+  private maxQueueSize: number = 100; // TODO: move into env
   private isLoadingStarted = false;
 
   constructor(
@@ -45,20 +45,15 @@ export class BlocksQueueService implements OnModuleInit  {
   }
 
   private async *blocksIterator(): AsyncGenerator<Block, void, unknown> {
-    // let delay = 1; // начальное значение задержки в миллисекундах
-
     while (true) {
       if (this.blockQueue.length > 0) {
         const block = await this.blockQueue.peekFirstBlock();
         if (block) {
           yield block;
-          // delay = 1;
         }
       } else {
         // TODO: add description about why we use setImmediate() here
         await new Promise(resolve => setImmediate(resolve));
-        // await new Promise(resolve => setTimeout(resolve, delay));
-        // delay *= 2; 
       }
     }
   }
@@ -125,6 +120,8 @@ export class BlocksQueueService implements OnModuleInit  {
    * Confirms that a block has been already indexed by dequeuing it.
    */
   public async confirmIndexBlock(): Promise<void> {
+    this.log.debug(`dequeue()`, {}, this.constructor.name);
+
     return this.blockQueue.dequeue();
   }
 
@@ -133,7 +130,7 @@ export class BlocksQueueService implements OnModuleInit  {
     // it needs to calculate blocks from parallel threds before enqueue
     let blocksBatch: Block[] = [];
 
-    // this.log.debug('Blocks Queue Length', { length: this.blockQueue.length }, this.constructor.name);
+    this.log.info('Blocks Queue Length', { length: this.blockQueue.length }, this.constructor.name);
 
     while (this.blockQueue.length < this.maxQueueSize) {
       const promises = [];
@@ -194,6 +191,8 @@ export class BlocksQueueService implements OnModuleInit  {
         length: this.blockQueue.length
       }, this.constructor.name);
     }
+
+    this.log.info('Blocks Queue Length', { length: this.blockQueue.length }, this.constructor.name);
 
     return true;
   }

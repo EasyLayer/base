@@ -46,7 +46,7 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
       // TODO: add to envs
       // TODO: мы также должны эти значения сопоставлять с количеством воркеров...
       
-    }), { maxRequests: 10, perMilliseconds: 1000 });
+    }), { maxRequests: 30, perMilliseconds: 1000 });
 
     if (!this.healthcheck()) {
       throw new Error('Cant connect');

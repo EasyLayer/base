@@ -4,7 +4,7 @@
   "version": "0.0.2-experimental.1",
   "description": "This is an example app for development",
   "scripts": {
-    "start:dev": "DEBUG=y ts-node src/main.ts",
+    "start:dev": "ts-node src/main.ts",
     "build": "tsc -p ./tsconfig.build.json",
     "start": "node src/main.ts",
     "clear": "yarn clear cache && rimraf dist && rimraf node_module",

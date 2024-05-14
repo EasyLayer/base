@@ -75,7 +75,10 @@ export class IndexTransactionsBatchCommandHandler
         await blockModel.commit();
         await networkModel.commit();
 
-        this.log.debug(`Block successfull indexed`, { block: lightweightBlock }, this.constructor.name);
+        this.log.info(`Block successfull indexed`, {
+          block: { height: lightweightBlock.height, hash: lightweightBlock.hash },
+          alreadyIndexedLength: networkModel.chain.size
+        }, this.constructor.name);
         return;
       }
 

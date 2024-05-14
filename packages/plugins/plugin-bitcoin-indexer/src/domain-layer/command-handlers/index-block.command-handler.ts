@@ -59,7 +59,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       const batches = [];
 
-      this.log.debug('Transactions lenght', { length: tx.length }, this.constructor.name);
+      this.log.info('Transactions lenght', { length: tx.length }, this.constructor.name);
 
       /* Create transactions batches */
       while (tx.length > 0) {
@@ -90,7 +90,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         batches.push(transactionBatch);
       }
 
-      this.log.debug('Batches lenght', { length: batches.length }, this.constructor.name);
+      this.log.info('Batches lenght', { length: batches.length }, this.constructor.name);
 
 
       if (batches.length === 1) {
