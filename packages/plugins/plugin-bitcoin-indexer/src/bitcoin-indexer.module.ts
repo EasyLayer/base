@@ -4,12 +4,14 @@ import { transformAndValidateSync } from 'class-transformer-validator';
 import { LoggerModule } from '@easylayer/logger';
 import { ArithmeticService } from '@easylayer/arithmetic';
 import { EventStoreModule } from '@easylayer/eventstore';
+import { ReadDatabaseModule } from '@easylayer/read-database';
 import { BitcoinNetworkProviderModule, QuickNodeProvider, SelfNodeProvider } from '@easylayer/bitcoin-network-provider';
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
 import { BitcoinIndexerService } from './bitcoin-indexer.service';
 import { AppConfig, ProvidersConfig } from './config';
 import { BlocksQueueService } from './application-layer/blocks-queue';
 import { IndexerSaga } from './application-layer/sagas';
+import { BlockViewModel, TransactionViewModel } from './domain-layer/view-models';
 import {
   BlocksCommandFactoryService,
   NetworkCommandFactoryService,
@@ -18,9 +20,12 @@ import {
 import {
   BlockModelFactoryService,
   NetworkModelFactoryService,
-  TransactionsBatchModelFactoryService
+  TransactionsBatchModelFactoryService,
+  BlocksReadService,
+  TransactionsReadService
 } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
+import { EventsHandlers } from './domain-layer/events-handlers';
 
 @Module({})
 export class BitcoinIndexerModule {
@@ -63,6 +68,15 @@ export class BitcoinIndexerModule {
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error. 
           // busyTimeout: 1000
+        }),
+        ReadDatabaseModule.forRoot({
+          type: 'sqlite',
+          name: 'indexer-read',
+          // database: '',
+          synchronize: true,
+          logging: true, // false
+          enableWAL: true,
+          entities: [BlockViewModel, TransactionViewModel]
         })
       ],
       providers: [
@@ -77,6 +91,8 @@ export class BitcoinIndexerModule {
           provide: ProvidersConfig,
           useValue: providersConfig,
         },
+        BlocksReadService,
+        TransactionsReadService,
         ArithmeticService,
         BitcoinIndexerService,
         BlocksQueueService,
@@ -87,7 +103,8 @@ export class BitcoinIndexerModule {
         BlockModelFactoryService,
         NetworkModelFactoryService,
         TransactionsBatchModelFactoryService,
-        ...CommandHandlers
+        ...CommandHandlers,
+        ...EventsHandlers
       ],
       exports: [],
     };
