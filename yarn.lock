@@ -684,8 +684,12 @@ __metadata:
     "@easylayer/utils": 0.0.2-experimental.1
     "@nestjs/common": 10.2.10
     "@nestjs/testing": 10.2.10
+    "@types/bignumber.js": 5.0.0
+    "@types/bn.js": 5.1.5
     "@types/jest": 29.5.11
     "@types/node": 20.10.4
+    bignumber.js: 9.1.2
+    bn.js: 5.2.1
     jest: 29.7.0
     ts-jest: 29.1.1
     ts-node: 10.9.2
@@ -2241,6 +2245,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bignumber.js@npm:5.0.0":
+  version: 5.0.0
+  resolution: "@types/bignumber.js@npm:5.0.0"
+  dependencies:
+    bignumber.js: "*"
+  checksum: f31a196da8b93d35c30879f4cc449e1099057ef27514554d2a5c80e2b1ba8cb8925919a2d92700d723ea959cb8b9d66f2917eea4f98a36f9f5d9e24c10c9c36f
+  languageName: node
+  linkType: hard
+
 "@types/bip32@npm:2.0.0":
   version: 2.0.0
   resolution: "@types/bip32@npm:2.0.0"
@@ -2265,6 +2278,15 @@ __metadata:
   dependencies:
     bitcoinjs-lib: "*"
   checksum: 84cade22952762f9eed677a4598ee4829caa2d39bbbdaee041f5ad7bb9ff55ec989bf4a50a645a99268b8911b108f5b9bb03a58f8bb1dbe2f1b4d7ae7f5403af
+  languageName: node
+  linkType: hard
+
+"@types/bn.js@npm:5.1.5":
+  version: 5.1.5
+  resolution: "@types/bn.js@npm:5.1.5"
+  dependencies:
+    "@types/node": "*"
+  checksum: c87b28c4af74545624f8a3dae5294b16aa190c222626e8d4b2e327b33b1a3f1eeb43e7a24d914a9774bca43d8cd6e1cb0325c1f4b3a244af6693a024e1d918e6
   languageName: node
   linkType: hard
 
@@ -3214,7 +3236,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bignumber.js@npm:^9.0.0":
+"bignumber.js@npm:*, bignumber.js@npm:9.1.2, bignumber.js@npm:^9.0.0":
   version: 9.1.2
   resolution: "bignumber.js@npm:9.1.2"
   checksum: 582c03af77ec9cb0ebd682a373ee6c66475db94a4325f92299621d544aa4bd45cb45fd60001610e94aef8ae98a0905fa538241d9638d4422d57abbeeac6fadaf
@@ -3295,6 +3317,13 @@ __metadata:
     inherits: ^2.0.4
     readable-stream: ^3.4.0
   checksum: 9e8521fa7e83aa9427c6f8ccdcba6e8167ef30cc9a22df26effcc5ab682ef91d2cbc23a239f945d099289e4bbcfae7a192e9c28c84c6202e710a0dfec3722662
+  languageName: node
+  linkType: hard
+
+"bn.js@npm:5.2.1":
+  version: 5.2.1
+  resolution: "bn.js@npm:5.2.1"
+  checksum: 3dd8c8d38055fedfa95c1d5fc3c99f8dd547b36287b37768db0abab3c239711f88ff58d18d155dd8ad902b0b0cee973747b7ae20ea12a09473272b0201c9edd3
   languageName: node
   linkType: hard
 

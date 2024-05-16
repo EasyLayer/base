@@ -13,6 +13,8 @@ type EventStoreConfig = TypeOrmModuleOptions & {
 
 @Module({})
 export class EventStoreModule {
+  // TODO: add sharding logic when we autocreating new connection after 100k inserts blocks
+
   static forRoot(config: EventStoreConfig): DynamicModule {
     const { name, ...restOptions } = config;
 

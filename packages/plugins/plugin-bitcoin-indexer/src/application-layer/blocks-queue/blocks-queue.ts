@@ -86,14 +86,16 @@ export class BlocksQueue<T extends Block> {
    * Dequeues the first block from the queue and resolves the block processing promise.
    */
   public dequeue(): void {
-      if (this.outStack.length === 0) {
-          this.transferItems();
-      }
-      if (this.outStack.length > 0) {
-          const item = this.outStack.pop();
-          // Resolve the promise, indicating that the block has been processed
-          this.resolveNextBlock();
-      }
+    if (this.outStack.length === 0) {
+      this.transferItems();
+    }
+    if (this.outStack.length > 0) {
+      this.outStack.pop();
+      // Resolve the promise, indicating that the block has been processed
+      this.resolveNextBlock();
+    }
+
+    console.timeEnd('block');
   }
 
   /**
@@ -111,7 +113,7 @@ export class BlocksQueue<T extends Block> {
       if (this.outStack.length === 0) {
         this.transferItems();
       }
-
+      console.time('block');
       // IMPORTANT: We make sure to clone the block so that modifications to the object
       // later in the process cannot affect the block in the queue.
       return Promise.resolve(this.outStack.length > 0 ? _.cloneDeep(this.outStack[this.outStack.length - 1]) : undefined);

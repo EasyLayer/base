@@ -80,6 +80,7 @@ npm-debug.log*
 *.db
 *.db-shm
 *.db-wal
+!apps/*/data
 
 ############################
 # OS X

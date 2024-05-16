@@ -58,7 +58,7 @@ export class BitcoinIndexerModule {
           name: 'indexer-write',
           // database: '',
           synchronize: true,
-          logging: true,
+          logging: false, // true
           enableWAL: true,
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error. 
