@@ -7,14 +7,17 @@ import {
   BitcoinTransactionsBatchWithIndexCreatedEvent,
   BitcoinTransactionsBatchIndexedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
-import { WalletsCommandFactoryService } from '../services';
+import { WalletsCommandFactoryService, SyncManagerService } from '../services';
 
 @Injectable()
 export class BalancesIndexerSaga {
   constructor(
-    private readonly walletsCommandFactory: WalletsCommandFactoryService
+    private readonly walletsCommandFactory: WalletsCommandFactoryService,
+    private readonly syncManagerService: SyncManagerService,
   ) {}
 
+  // Сага выполняеться на каждый батч, это означает что атм уже через очередь они идут 
+  // так что сама по себе очередь внутри сервиса сихронизации не нужна
   @SyncSaga()
   onBitcoinTransactionsBatchWithIndexCreatedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
@@ -22,12 +25,13 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinTransactionsBatchWithIndexCreatedEvent,
         command: ({ payload }) =>
-          this.walletsCommandFactory.index({ 
+          this.syncManagerService.push({
             batchId: payload.aggregateId,
             transactions: payload.transactions,
             blockHash: payload.blockHash,
             blockHeight: payload.blockHeight,
-            requestId: uuidv4() })
+            requestId: uuidv4()
+          })
       }),
       catchError((error) => {
         console.error(`Error handling <BitcoinTransactionsBatchWithIndexCreatedEvent> for event: ${error}`);
@@ -43,7 +47,7 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinTransactionsBatchIndexedEvent,
         command: ({ payload }) =>
-          this.walletsCommandFactory.index({
+          this.syncManagerService.push({
             batchId: payload.aggregateId,
             transactions: payload.transactions,
             blockHash: payload.blockHash,

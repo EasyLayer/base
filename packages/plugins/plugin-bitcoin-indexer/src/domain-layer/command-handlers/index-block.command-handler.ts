@@ -140,7 +140,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
         this.log.info(`Block successfull indexed`, {
           block: { height, hash },
-          alreadyIndexedLength: indexerModel.chain.size
+          alreadyIndexedLength: indexerModel.chain.lastBlockHeight
         }, this.constructor.name);
         return; 
       }

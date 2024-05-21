@@ -23,25 +23,14 @@ export class InitBalancesIndexerCommandHandler implements ICommandHandler<InitBa
       const { requestId } = payload;
 
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
-      await indexerModel.init();
+      await indexerModel.init({ requestId });
 
-      // Какие статусы будут у этого аггрегата? 
-      // - реорганизация точно , возможно и индексирование тоже добавить можно
-      
-      // Реорганизация может запуститься когда пришел ивент что индексер реорганизуеться? 
-      // пока балансы не придут в норму, я не должен реагировать на любые события, 
-      // это означает что мы должна закрыть статусом саги, назвать статус какой то "догоняем"
-      // Мы можем убрать нахер push?? В чем проблема? - в том что нас постоянно будет спамить ивентами в Сагах, 
-      // каждый раз нам придеться доставать состояние, чтобы сказать что не торопись, мы тут заняты другими вещами. 
-
-      // Еще можно подумать над тем чтобы толкьо на некоторые события подписаться, не на все напрмиер, 
-      // Может только на новый блок или что то такое
-
-      // if (indexerModel.status === 'indexing') {
-      //   // Publish last block event (if it exists)
-      //   const blockAggregateId = String(networkModel.chain.lastBlockHeight);
-      //   await this.blocksModelFactory.publishLastEvent(blockAggregateId);
-      // }
+      // Этот статус означает что еще не все батчи блока проиндексированы
+      if (indexerModel.status === 'indexing') {
+        // // Publish last block event (if it exists)
+        // const blockAggregateId = String(networkModel.chain.lastBlockHeight);
+        // await this.blocksModelFactory.publishLastEvent(blockAggregateId);
+      }
 
       // if (indexerModel.status === 'reorganisation') {
       //   // Publish last network event to process reorganisation

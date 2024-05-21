@@ -12,6 +12,7 @@ import { BalancesIndexerSaga } from './application-layer/sagas';
 import {
   WalletsCommandFactoryService,
   BalancesIndexerCommandFactoryService,
+  SyncManagerService
 } from './application-layer/services';
 import {
   BalancesIndexerModelFactoryService,
@@ -66,6 +67,7 @@ export class BitcoinBalancesIndexerModule {
           provide: ProvidersConfig,
           useValue: providersConfig,
         },
+        SyncManagerService,
         ArithmeticService,
         BitcoinBalancesIndexerService,
         BalancesIndexerSaga,

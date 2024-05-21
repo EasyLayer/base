@@ -24,9 +24,8 @@ type ChainNode = {
 class Blockchain {
   private head: ChainNode | null = null;
   private tail: ChainNode | null = null;
-  // IMPORTANT: the blockchain starts from block 0,
-  // so if there are no blocks at all, we use -1
-  private _size: bigint = -1n;
+  private _size: bigint = 0n;
+  private readonly _maxSize: bigint = 20n;
 
   get lastPrevBlockHash(): string {
     if (this.tail) {
@@ -48,6 +47,8 @@ class Blockchain {
     if (this.tail) {
       return this.tail.block.height;
     } else {
+      // IMPORTANT: the blockchain starts from block 0,
+      // so if there are no blocks at all, we use -1n
       return -1n;
     }
   }
@@ -57,7 +58,7 @@ class Blockchain {
   }
 
   isEmpty(): boolean {
-    return this.size === -1n;
+    return this.size === 0n;
   }
 
   // Adding a block to the end of the chain
@@ -80,24 +81,46 @@ class Blockchain {
     }
 
     this._size++;
+
+    // Remove the oldest block if the chain size exceeds the maximum allowed size
+    if (this._size > this._maxSize) {
+      this.removeFirst();
+    }
+
     return true;
   }
 
+  private removeFirst(): LightBlock | null {
+    if (!this.head) return null;
+
+    const block = this.head.block;
+    this.head = this.head.next;
+
+    if (this.head) {
+      this.head.prev = null;
+    } else {
+      this.tail = null;
+    }
+
+    this._size--;
+    return block;
+  }
+
   // Deleting the last block
-  removeLast(): LightBlock | null {
-      if (!this.tail) return null;
+  private removeLast(): LightBlock | null {
+    if (!this.tail) return null;
 
-      const block = this.tail.block;
-      this.tail = this.tail.prev;
+    const block = this.tail.block;
+    this.tail = this.tail.prev;
 
-      if (this.tail) {
-          this.tail.next = null;
-      } else {
-          this.head = null;
-      }
+    if (this.tail) {
+      this.tail.next = null;
+    } else {
+      this.head = null;
+    }
 
-      this._size--;
-      return block;
+    this._size--;
+    return block;
   }
 
   // Get the last block without deleting
@@ -205,8 +228,6 @@ class Blockchain {
         // Delete all blocks after the found block
         this.tail.next = null;
 
-        // Adjust the size of the chain
-        this._size = this.tail.block.height + 1n;
         found = true;
         break;
       }
@@ -217,7 +238,7 @@ class Blockchain {
     if (height === 0n && this.head) {
       this.head = null;
       this.tail = null;
-      this._size = -1n;
+      this._size = 0n;
       found = true;
     }
 
@@ -229,7 +250,7 @@ export class Indexer extends AggregateRoot {
   public aggregateId: string = 'indexer';
   public status!: string;
   public chain: Blockchain = new Blockchain();
- 
+
   // IMPORTANT: this method doing two things:
   // 1 - create Indexer if it's first creation
   // 2 - use already created params but still publish event

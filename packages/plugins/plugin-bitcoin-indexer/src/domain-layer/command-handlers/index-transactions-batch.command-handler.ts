@@ -74,7 +74,7 @@ export class IndexTransactionsBatchCommandHandler
 
         this.log.info(`Block successfull indexed`, {
           block: { height: lightweightBlock.height, hash: lightweightBlock.hash },
-          alreadyIndexedLength: indexerModel.chain.size
+          alreadyIndexedLength: indexerModel.chain.lastBlockHeight
         }, this.constructor.name);
         return;
       }
