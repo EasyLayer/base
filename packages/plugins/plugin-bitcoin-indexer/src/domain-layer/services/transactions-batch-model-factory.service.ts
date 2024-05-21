@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/cqrs';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { TransactionsBatch } from '../models/transactions-batch';
+import { TransactionsBatch } from '../models/transactions-batch.model';
 
 @Injectable()
 export class TransactionsBatchModelFactoryService {

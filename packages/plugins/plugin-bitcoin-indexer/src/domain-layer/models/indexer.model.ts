@@ -2,11 +2,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { AggregateRoot } from '@easylayer/cqrs';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import {
-  BitcoinNetworkInitializedEvent,
-  BitcoinNetworkBlockAddedEvent,
-  BitcoinNetworkReorganisationEvent,
-  BitcoinNetworkIndexBlockConfirmedEvent,
-  BitcoinNetworkBlockWithConfirmAddedEvent,
+  BitcoinIndexerInitializedEvent,
+  BitcoinIndexerBlockAddedEvent,
+  BitcoinIndexerReorganisationEvent,
+  BitcoinIndexerIndexBlockConfirmedEvent,
+  BitcoinIndexerBlockWithConfirmAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 type LightBlock = {
@@ -106,21 +106,21 @@ class Blockchain {
   }
 
   // Validates all blockchain
-  validateChain(): boolean {
-    let current = this.head;
-    while (current && current.next) {
-        // First check if the block heights increment by 1
-        if (current.next.block.height !== current.block.height + 1n) {
-          return false; // Height mismatch
-        }
-        // Then check if the hashes match
-        if (current.block.hash !== current.next.block.prevHash) {
-          return false; // Hash mismatch
-        }
-        current = current.next;
-    }
-    return true;
-  }
+  // validateChain(): boolean {
+  //   let current = this.head;
+  //   while (current && current.next) {
+  //       // First check if the block heights increment by 1
+  //       if (current.next.block.height !== current.block.height + 1n) {
+  //         return false; // Height mismatch
+  //       }
+  //       // Then check if the hashes match
+  //       if (current.block.hash !== current.next.block.prevHash) {
+  //         return false; // Hash mismatch
+  //       }
+  //       current = current.next;
+  //   }
+  //   return true;
+  // }
 
   validateNextBlock(height: bigint | string | number, prevHash: string): boolean {
     if (!this.tail) {
@@ -225,19 +225,19 @@ class Blockchain {
   }
 }
 
-export class Network extends AggregateRoot {
-  public aggregateId: string = 'network';
+export class Indexer extends AggregateRoot {
+  public aggregateId: string = 'indexer';
   public status!: string;
   public chain: Blockchain = new Blockchain();
  
   // IMPORTANT: this method doing two things:
-  // 1 - create Network if it's first creation
+  // 1 - create Indexer if it's first creation
   // 2 - use already created params but still publish event
   public async init({ requestId }: { requestId: string }) {
     const status = this.status || 'awaiting';
     const height = this.chain.lastBlockHeight;
 
-    await this.apply(new BitcoinNetworkInitializedEvent({
+    await this.apply(new BitcoinIndexerInitializedEvent({
       aggregateId: this.aggregateId,
       requestId,
       status,
@@ -258,7 +258,7 @@ export class Network extends AggregateRoot {
       throw new Error('Need reorganisation');
     }
 
-    await this.apply(new BitcoinNetworkBlockAddedEvent({
+    await this.apply(new BitcoinIndexerBlockAddedEvent({
       aggregateId: this.aggregateId,
       requestId,
       status: 'indexing',
@@ -279,7 +279,7 @@ export class Network extends AggregateRoot {
       throw new Error('Need reorganisation');
     }
 
-    await this.apply(new BitcoinNetworkBlockWithConfirmAddedEvent({
+    await this.apply(new BitcoinIndexerBlockWithConfirmAddedEvent({
       aggregateId: this.aggregateId,
       requestId,
       status: 'awaiting',
@@ -312,7 +312,7 @@ export class Network extends AggregateRoot {
       // Update our chain by truncate entries up to the matchedBlock
       this.chain.truncateToBlock(oldBlock.height);
 
-      await this.apply(new BitcoinNetworkReorganisationEvent({
+      await this.apply(new BitcoinIndexerReorganisationEvent({
         aggregateId: this.aggregateId,
         requestId,
         status: 'reorganisation',
@@ -336,7 +336,7 @@ export class Network extends AggregateRoot {
       throw new Error('Last block chain mismatch');
     }
 
-    await this.apply(new BitcoinNetworkIndexBlockConfirmedEvent({
+    await this.apply(new BitcoinIndexerIndexBlockConfirmedEvent({
       aggregateId: this.aggregateId,
       requestId,
       status: 'awaiting',
@@ -344,13 +344,13 @@ export class Network extends AggregateRoot {
     }));
   }
 
-  private onBitcoinNetworkInitializedEvent({ payload }: BitcoinNetworkInitializedEvent) {
+  private onBitcoinIndexerInitializedEvent({ payload }: BitcoinIndexerInitializedEvent) {
     const { aggregateId, status } = payload;
     this.aggregateId = aggregateId;
     this.status = status;
   }
 
-  private onBitcoinNetworkBlockAddedEvent({ payload }: BitcoinNetworkBlockAddedEvent) {
+  private onBitcoinIndexerBlockAddedEvent({ payload }: BitcoinIndexerBlockAddedEvent) {
     const { block, status } = payload;
 
     const { height, hash, previousblockhash } = block;
@@ -358,19 +358,19 @@ export class Network extends AggregateRoot {
     this.status = status;
   }
 
-  private onBitcoinNetworkReorganisationEvent({ payload }: BitcoinNetworkReorganisationEvent) {
+  private onBitcoinIndexerReorganisationEvent({ payload }: BitcoinIndexerReorganisationEvent) {
     const { block } = payload;
 
     const { height } = block;
     this.chain.truncateToBlock(height);
   }
 
-  private onBitcoinNetworkIndexBlockConfirmedEvent({ payload }: BitcoinNetworkIndexBlockConfirmedEvent) {
+  private onBitcoinIndexerIndexBlockConfirmedEvent({ payload }: BitcoinIndexerIndexBlockConfirmedEvent) {
     const { status } = payload;
     this.status = status;
   }
 
-  private onBitcoinNetworkBlockWithConfirmAddedEvent({ payload }: BitcoinNetworkBlockWithConfirmAddedEvent) {
+  private onBitcoinIndexerBlockWithConfirmAddedEvent({ payload }: BitcoinIndexerBlockWithConfirmAddedEvent) {
     const { block, status } = payload;
 
     const { height, hash, previousblockhash } = block;

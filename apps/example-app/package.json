@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@easylayer/core": "0.0.2-experimental.1",
+    "@easylayer/plugin-bitcoin-balances-indexer": "0.0.2-experimental.1",
     "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.1",
     "@easylayer/utils": "0.0.2-experimental.1"
   },

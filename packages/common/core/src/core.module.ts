@@ -3,6 +3,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { LoggerModule } from '@easylayer/logger';
 import { CqrsModule } from '@easylayer/cqrs';
 import { CqrsTransportModule } from '@easylayer/cqrs-transport';
+import { NetworkTransportModule } from '@easylayer/network-transport';
 import { CoreController } from './core.controller';
 import { AppConfig, DbConfig } from './config';
 
@@ -23,6 +24,7 @@ export class CoreModule {
         LoggerModule.forRoot({ name: appName, componentName: 'CoreModule' }),
         CqrsModule.forRoot({ isGlobal: true }),
         CqrsTransportModule,
+        NetworkTransportModule,
         ...plugins,
       ],
       controllers: [CoreController],

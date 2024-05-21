@@ -7,6 +7,7 @@ interface BitcoinTransactionsBatchWithIndexCreatedEventPayload {
   blockHeight: string;
   blockHash: string;
   status: string;
+  index: number;
 }
 
 export class BitcoinTransactionsBatchWithIndexCreatedEvent implements BasicEvent<BitcoinTransactionsBatchWithIndexCreatedEventPayload> {

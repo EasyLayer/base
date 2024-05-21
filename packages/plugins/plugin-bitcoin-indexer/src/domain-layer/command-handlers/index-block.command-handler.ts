@@ -8,12 +8,12 @@ import {
 } from '@easylayer/bitcoin-network-provider';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { Block } from '../models/block.model';
-import { Network } from '../models/network.model';
-import { TransactionsBatch } from '../models/transactions-batch';
+import { Indexer } from '../models/indexer.model';
+import { TransactionsBatch } from '../models/transactions-batch.model';
 import {
   BlockModelFactoryService,
   TransactionsBatchModelFactoryService,
-  NetworkModelFactoryService
+  IndexerModelFactoryService
 } from '../services';
 
 @CommandHandler(IndexBlockCommand)
@@ -21,7 +21,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   constructor(
     private readonly log: AppLogger,
     private readonly modelFactory: BlockModelFactoryService,
-    private readonly networkModelFactory: NetworkModelFactoryService,
+    private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
     private readonly eventStore: EventStoreRepository,
@@ -38,17 +38,17 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       const { tx, ...lightweightBlock } = block; 
       const { height, hash, previousblockhash } = lightweightBlock;
 
-      // TODO: Network should be in snapshot cache
-      const networkModel: Network = await this.networkModelFactory.initModel();
+      // TODO: Indexer should be in snapshot cache
+      const indexerModel: Indexer = await this.indexerModelFactory.initModel();
 
-      this.log.debug('Init Network model', { aggregateId: networkModel.aggregateId }, this.constructor.name);
+      this.log.debug('Init Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
       /* Reorganisation */
-      if (!networkModel.chain.validateNextBlock(height, previousblockhash)) {
-        await networkModel.reorganisation({ height, requestId, service: this.networkProviderService });
-        await this.eventStore.save(networkModel);
-        await networkModel.commit();
-        this.log.debug(`Network reorganisation started`, {}, this.constructor.name);
+      if (!indexerModel.chain.validateNextBlock(height, previousblockhash)) {
+        await indexerModel.reorganisation({ height, requestId, service: this.networkProviderService });
+        await this.eventStore.save(indexerModel);
+        await indexerModel.commit();
+        this.log.debug(`Indexer reorganisation started`, {}, this.constructor.name);
         return;
       }
 
@@ -64,6 +64,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       this.log.info('Transactions lenght', { length: tx.length }, this.constructor.name);
 
+      // Initialize the batch index starting with -n + 1
+      // IMPORTANT: index = 0 means that it is a last batch at the block
+      let index = -Math.ceil(tx.length / MAX_TRANSACTIONS_PER_BATCH) + 1;
+
       if (tx.lenght > MAX_TRANSACTIONS_PER_BATCH) {
         /* Slice transactions by batches and start index it */
         while (tx.length > 0) {
@@ -72,41 +76,32 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           // when splitting into batches we must follow this order!!
           const transactionSlice = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
   
-          // We create a Map to store transactions with a key - the transaction hash
           // TODO: add type
-          // IMPORTANT: Here we just get the hash and put them in the list of non-indexed transactions.
-          // Then, when we work with a specific batch, 
-          // we take specific transactions from the queue (by block) and work with them.
-          const transactionsMap: Map<string, any> = new Map(transactionSlice.map((transaction: { hash: string }) => [
-            transaction.hash, null
-          ]));
-  
+          // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
+          const transactionSliceIds: string[] = transactionSlice.map((transaction: { txid: string }) => transaction.txid);
           const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
           
           await transactionBatch.create({
             aggregateId: uuidv4(),
             requestId,
-            transactions: transactionsMap,
+            transactions: transactionSliceIds,
             blockHeight: height,
-            blockHash: hash
+            blockHash: hash,
+            index
           });
   
           batches.push(transactionBatch);
         }
       } else {
         /* Create with index batche */
-        const transactionsMap: Map<string, any> = new Map(tx.map((transaction: { hash: string }) => [
-          transaction.hash, null
-        ]));
-
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
-        
-        await transactionBatch.createWithIndex({
+        await transactionBatch.createWithIndexing({
           aggregateId: uuidv4(),
           requestId,
-          transactions: transactionsMap,
+          transactions: tx,
           blockHeight: height,
-          blockHash: hash
+          blockHash: hash,
+          index
         });
 
         batches.push(transactionBatch);
@@ -132,20 +127,20 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           requestId
         });
 
-        await networkModel.addBlockWithImmediatelyConfirm({ requestId, block: lightweightBlock });
+        await indexerModel.addBlockWithImmediatelyConfirm({ requestId, block: lightweightBlock });
 
-        await this.eventStore.save([...batches, networkModel, blockModel]);
+        await this.eventStore.save([...batches, indexerModel, blockModel]);
 
         for (let batch of batches) {
           await batch.commit();
         }
 
         await blockModel.commit();
-        await networkModel.commit();
+        await indexerModel.commit();
 
         this.log.info(`Block successfull indexed`, {
           block: { height, hash },
-          alreadyIndexedLength: networkModel.chain.size
+          alreadyIndexedLength: indexerModel.chain.size
         }, this.constructor.name);
         return; 
       }
@@ -157,8 +152,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         batchesMap.set(batch.aggregateId, 'created');
       });
 
-      await networkModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
-      this.log.debug('Network added new block', { aggregateId: networkModel.aggregateId, block: { height, hash, previousblockhash } }, this.constructor.name);
+      await indexerModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
+      this.log.debug('Indexer added new block', { aggregateId: indexerModel.aggregateId, block: { height, hash, previousblockhash } }, this.constructor.name);
 
       await blockModel.index({
         // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
@@ -168,9 +163,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         requestId
       });
 
-      await this.eventStore.save([...batches, networkModel, blockModel]);
+      await this.eventStore.save([...batches, indexerModel, blockModel]);
 
-      await networkModel.commit();
+      await indexerModel.commit();
       await blockModel.commit();
 
       this.log.debug('Block index started', { block: lightweightBlock }, this.constructor.name);

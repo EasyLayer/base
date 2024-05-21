@@ -14,12 +14,12 @@ import { IndexerSaga } from './application-layer/sagas';
 import { BlockViewModel, TransactionViewModel } from './domain-layer/view-models';
 import {
   BlocksCommandFactoryService,
-  NetworkCommandFactoryService,
+  IndexerCommandFactoryService,
   TransactionsCommandFactoryService
 } from './application-layer/services';
 import {
   BlockModelFactoryService,
-  NetworkModelFactoryService,
+  IndexerModelFactoryService,
   TransactionsBatchModelFactoryService,
   BlocksReadService,
   TransactionsReadService
@@ -98,10 +98,10 @@ export class BitcoinIndexerModule {
         BlocksQueueService,
         IndexerSaga,
         BlocksCommandFactoryService,
-        NetworkCommandFactoryService,
+        IndexerCommandFactoryService,
         TransactionsCommandFactoryService,
         BlockModelFactoryService,
-        NetworkModelFactoryService,
+        IndexerModelFactoryService,
         TransactionsBatchModelFactoryService,
         ...CommandHandlers,
         ...EventsHandlers

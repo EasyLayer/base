@@ -29,6 +29,7 @@
     "@easylayer/cqrs": "0.0.2-experimental.1",
     "@easylayer/cqrs-transport": "0.0.2-experimental.1",
     "@easylayer/logger": "0.0.2-experimental.1",
+    "@easylayer/network-transport": "0.0.2-experimental.1",
     "@easylayer/utils": "0.0.2-experimental.1",
     "@nestjs/common": "10.2.10",
     "@nestjs/core": "10.2.10",

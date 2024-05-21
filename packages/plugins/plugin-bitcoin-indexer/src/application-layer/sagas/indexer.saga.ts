@@ -4,11 +4,11 @@ import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SyncSaga, ICommand, ofType, execute } from '@easylayer/cqrs';
 import {
-  BitcoinNetworkInitializedEvent,
+  BitcoinIndexerInitializedEvent,
   BitcoinBlockIndexStartedEvent,
-  BitcoinNetworkIndexBlockConfirmedEvent,
+  BitcoinIndexerIndexBlockConfirmedEvent,
   BitcoinBlockBatchesUpdatedEvent,
-  BitcoinNetworkReorganisationEvent,
+  BitcoinIndexerReorganisationEvent,
   BitcoinBlockWithCompleteIndexedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 import { BlocksCommandFactoryService, TransactionsCommandFactoryService } from '../services';
@@ -22,32 +22,32 @@ export class IndexerSaga {
   ) {}
 
   @SyncSaga()
-  onBitcoinNetworkInitializedEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerInitializedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
-      ofType(BitcoinNetworkInitializedEvent),
+      ofType(BitcoinIndexerInitializedEvent),
       execute({
-        event: BitcoinNetworkInitializedEvent,
+        event: BitcoinIndexerInitializedEvent,
         command: ({ payload }) =>
           this.blocksQueueService.startBlocksLoading(payload.height)
       }),
       catchError((error) => {
-        console.error(`Error handling <BitcoinNetworkInitializedEvent> for event: ${error}`);
+        console.error(`Error handling <BitcoinIndexerInitializedEvent> for event: ${error}`);
         return of();
       })
     );
   }
 
   // @SyncSaga()
-  // onBitcoinNetworkReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
+  // onBitcoinIndexerReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
   //   return events$.pipe(
-  //     ofType(BitcoinNetworkReorganisationEvent),
+  //     ofType(BitcoinIndexerReorganisationEvent),
   //     execute({
-  //       event: BitcoinNetworkReorganisationEvent,
+  //       event: BitcoinIndexerReorganisationEvent,
   //       command: ({ payload }) =>
   //         this.blocksQueueService.reorganizeBlocks(payload.block.height)
   //     }),
   //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinNetworkReorganisationEvent> for event: ${error}`);
+  //       console.error(`Error handling <BitcoinIndexerReorganisationEvent> for event: ${error}`);
   //       return of();
   //     })
   //   );
@@ -74,17 +74,17 @@ export class IndexerSaga {
   }
 
   @SyncSaga()
-  onBitcoinNetworkIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
-      ofType(BitcoinNetworkIndexBlockConfirmedEvent),
+      ofType(BitcoinIndexerIndexBlockConfirmedEvent),
       execute({
-        event: BitcoinNetworkIndexBlockConfirmedEvent,
+        event: BitcoinIndexerIndexBlockConfirmedEvent,
         command: ({ payload }) =>
           // TODO: think do we need params block here?
           this.blocksQueueService.confirmIndexBlock()
       }),
       catchError((error) => {
-        console.error(`Error handling <BitcoinNetworkIndexBlockConfirmedEvent> for event: ${error}`);
+        console.error(`Error handling <BitcoinIndexerIndexBlockConfirmedEvent> for event: ${error}`);
         return of();
       })
     );

@@ -5,11 +5,11 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { IndexTransactionsBatchCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
 import { Block } from '../models/block.model';
-import { Network } from '../models/network.model';
-import { TransactionsBatch } from '../models/transactions-batch';
+import { Indexer } from '../models/indexer.model';
+import { TransactionsBatch } from '../models/transactions-batch.model';
 import {
   BlockModelFactoryService,
-  NetworkModelFactoryService,
+  IndexerModelFactoryService,
   TransactionsBatchModelFactoryService,
 } from '../services';
 
@@ -20,7 +20,7 @@ export class IndexTransactionsBatchCommandHandler
   constructor(
     private readonly log: AppLogger,
     private readonly blocksModelFactoryService: BlockModelFactoryService,
-    private readonly networkModelFactoryService: NetworkModelFactoryService,
+    private readonly indexerModelFactoryService: IndexerModelFactoryService,
     private readonly batchModelFactoryService: TransactionsBatchModelFactoryService,
     private readonly eventStore: EventStoreRepository,
   ) {}
@@ -64,17 +64,17 @@ export class IndexTransactionsBatchCommandHandler
 
         await blockModel.completeIndexBlock({ requestId });
 
-        const networkModel: Network = await this.networkModelFactoryService.initModel();
-        await networkModel.confirmIndexBlock({ requestId, block: lightweightBlock });
+        const indexerModel: Indexer = await this.indexerModelFactoryService.initModel();
+        await indexerModel.confirmIndexBlock({ requestId, block: lightweightBlock });
 
-        await this.eventStore.save([networkModel, blockModel]);
+        await this.eventStore.save([indexerModel, blockModel]);
 
         await blockModel.commit();
-        await networkModel.commit();
+        await indexerModel.commit();
 
         this.log.info(`Block successfull indexed`, {
           block: { height: lightweightBlock.height, hash: lightweightBlock.hash },
-          alreadyIndexedLength: networkModel.chain.size
+          alreadyIndexedLength: indexerModel.chain.size
         }, this.constructor.name);
         return;
       }
@@ -88,9 +88,9 @@ export class IndexTransactionsBatchCommandHandler
         // Filter the batch transactions Map to find transactions with hashes present in tx (O(1))
         // TODO: add type
         // TODO: optimise
-        const filteredTransactions = tx.filter((transaction: { hash: string }) => transactionsBatch.transactions.has(transaction.hash));
+        const filteredTransactions = tx.filter((transaction: { txid: string }) => transactionsBatch.transactions.has(transaction.txid));
 
-        await transactionsBatch.index({ transactions: filteredTransactions, requestId });
+        await transactionsBatch.indexing({ transactions: filteredTransactions, requestId });
 
         // TODO: this needs to be optimized
         updatedBatches.push(transactionsBatch);

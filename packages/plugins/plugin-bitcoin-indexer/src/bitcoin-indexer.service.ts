@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AppLogger, RuntimeTracker } from '@easylayer/logger';
-import { NetworkCommandFactoryService } from './application-layer/services/network-command-factory.service';
+import { IndexerCommandFactoryService } from './application-layer/services/indexer-command-factory.service';
 
 @Injectable()
 export class BitcoinIndexerService implements OnModuleInit {
   constructor(
     private readonly log: AppLogger,
-    private readonly networkCommandFactory: NetworkCommandFactoryService
+    private readonly indexerCommandFactory: IndexerCommandFactoryService
   ) {}
 
   async onModuleInit() {
@@ -22,7 +22,7 @@ export class BitcoinIndexerService implements OnModuleInit {
     this.log.info('Initialization all systems');
 
     try {
-      await this.networkCommandFactory.init({ requestId: uuidv4() });
+      await this.indexerCommandFactory.init({ requestId: uuidv4() });
     } catch (error) {
       this.log.error('initialization()', error, this.constructor.name);
       throw error;

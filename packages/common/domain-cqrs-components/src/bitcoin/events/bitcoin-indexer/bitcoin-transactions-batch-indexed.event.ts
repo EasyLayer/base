@@ -5,6 +5,8 @@ interface BitcoinTransactionsBatchIndexedEventPayload {
   requestId: string;
   status: string;
   transactions: any;
+  blockHash: string;
+  blockHeight: string;
 }
 
 export class BitcoinTransactionsBatchIndexedEvent implements BasicEvent<BitcoinTransactionsBatchIndexedEventPayload> {
