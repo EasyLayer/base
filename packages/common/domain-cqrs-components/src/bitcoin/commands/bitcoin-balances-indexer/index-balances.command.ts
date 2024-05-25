@@ -1,11 +1,8 @@
 export interface IIndexBalancesCommand {
-    blockHeight: string;
-    blockHash: string;
-    transactions: any;
+    batch: any;
     requestId: string;
-    batchId: string
 }
-  
+
 export class IndexBalancesCommand {
     constructor(public readonly payload: IIndexBalancesCommand) {}
 }

@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
   BitcoinBalancesIndexerInitializedEvent,
@@ -8,7 +8,6 @@ type Batch = {
   id: string;
   blockHash: string;
   blockHeight: bigint;
-  walletsAddresses: string[];
 }
 
 class Batchain {
@@ -19,14 +18,14 @@ class Batchain {
   // NOTE: to track the last index added
   private _lastBatchIndex: number = Number.MIN_SAFE_INTEGER;
   private _lastBlockHash: string = '';
-  private _size: bigint = 0n;
-  private _maxSize: bigint = 20n;
+  private _size: number = 0;
+  private _maxSize: number = 100;
 
   get blockCount(): number {
     return this.blocks.size;
   }
 
-  get size(): bigint {
+  get size(): number {
     return this._size;
   }
 
@@ -44,7 +43,9 @@ class Batchain {
 
   // Adding a batch to the block
   public addBatch(batch: Batch, index: number): boolean {
-    if (!this.validateNextBatch(batch, index)) {
+    const { blockHash, blockHeight } = batch;
+    
+    if (!this.validateNextBatch(blockHeight, blockHash, index)) {
       return false;
     }
 
@@ -80,9 +81,7 @@ class Batchain {
   }
 
   // Validation of the next batch
-  public validateNextBatch(batch: Batch, index: number): boolean {
-    const { blockHeight, blockHash } = batch;
-
+  public validateNextBatch(blockHeight: bigint | string | number, blockHash: string, index: number): boolean {
     if (blockHeight === this._lastBlockHeight && blockHash !== this._lastBlockHash) {
       console.error('Block hash mismatch due to reorganization.');
       return false;
@@ -184,7 +183,7 @@ export class BalancesIndexer extends AggregateRoot {
   public status!: string;
   public chain: Batchain = new Batchain();
 
-    // IMPORTANT: this method doing two things:
+  // IMPORTANT: this method doing two things:
   // 1 - create BalancesIndexer if it's first creation
   // 2 - use already created params but still publish event
   public async init({ requestId }: { requestId: string }) {
@@ -198,6 +197,46 @@ export class BalancesIndexer extends AggregateRoot {
       height: height.toString()
     }));
   }
+
+  // public async reorganisation(
+  //   { height, requestId } :
+  //   { height: bigint, requestId: string }
+  // ): Promise<void> {
+  //   if (this.status !== 'awaiting' && this.status !== 'reorganisation') {
+  //     throw new Error('reorganisation () Previous Block did not complete indexing');
+  //   }
+
+  //   const batches = this.chain.getBatchesByBlockHeight(height);
+  //   if (!batches) {
+  //     // If we haven’t found a block by height in the chain by height, 
+  //     // then this is an error, 
+  //     // we must go back all the way to the loader and try with another block
+  //     throw new Error('Block not found in local chain');
+  //   }
+
+  //   // IMPORTANT: реорганзиация должна тольок одно событие публиковать за раз. 
+  //   // Мы делаем откат на один блок и в событии передаем данные старого батча (кошельки)
+  //   // и высоту реорганизации
+
+
+
+  //   if (oldBlock.hash === localBlockNode.block.hash && oldBlock.previousblockhash === localBlockNode.block.prevHash) {
+  //     // Match found
+      
+  //     // Update our chain by truncate entries up to the matchedBlock
+  //     this.chain.truncateToBlock(oldBlock.height);
+
+  //     await this.apply(new BitcoinIndexerReorganisationEvent({
+  //       aggregateId: this.aggregateId,
+  //       requestId,
+  //       status: 'reorganisation',
+  //       block: oldBlock
+  //     }));
+  //   }
+
+  //   // Recursive check the previous block
+  //   return this.reorganisation({ height: oldBlock.height, requestId, service });
+  // }
 
   private onBitcoinBalancesIndexerInitializedEvent({ payload }: BitcoinBalancesIndexerInitializedEvent) {
     const { aggregateId, status } = payload;

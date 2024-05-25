@@ -1,5 +1,5 @@
-// import { BitcoinBlockWithCompleteIndexedEventHandler } from './block-with-complete-indexed.event-handler';
+import { BitcoinWalletsBatchOutputsIndexedEventHandler } from './outputs-indexed.event-handler';
 
-// export const EventsHandlers = [
-//     BitcoinBlockWithCompleteIndexedEventHandler
-// ];
+export const EventsHandlers = [
+    BitcoinWalletsBatchOutputsIndexedEventHandler
+];

@@ -16,6 +16,7 @@ import {
 } from './application-layer/services';
 import {
   BalancesIndexerModelFactoryService,
+  WalletModelFactoryService
 } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 // import { EventsHandlers } from './domain-layer/events-handlers';
@@ -71,6 +72,7 @@ export class BitcoinBalancesIndexerModule {
         ArithmeticService,
         BitcoinBalancesIndexerService,
         BalancesIndexerSaga,
+        WalletModelFactoryService,
         WalletsCommandFactoryService,
         BalancesIndexerCommandFactoryService,
         BalancesIndexerModelFactoryService,

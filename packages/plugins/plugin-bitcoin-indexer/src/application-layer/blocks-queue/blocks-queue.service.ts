@@ -85,7 +85,7 @@ export class BlocksQueueService implements OnModuleInit  {
    * Starts loading blocks up to a common height.
    * @param commonHeight The height from which to start loading blocks.
    */
-  public async startBlocksLoading(commonHeight: bigint | string): Promise<void> {
+  public async startBlocksLoading(commonHeight: bigint | string | number): Promise<void> {
     this.log.debug('startBlocksLoading()', { commonHeight }, this.constructor.name);
 
     if (this.isLoadingStarted) {
@@ -107,7 +107,7 @@ export class BlocksQueueService implements OnModuleInit  {
    * Handles blockchain reorganization by clearing the queue and setting a new starting height.
    * @param newStartHeight The new starting height for block loading.
    */
-  public async reorganizeBlocks(newStartHeight: bigint): Promise<void> {
+  public async reorganizeBlocks(newStartHeight: bigint | string | number): Promise<void> {
     this.log.debug('reorganizeBlocks()', { newStartHeight }, this.constructor.name);
     //  NOTE: We clear the entire queue
     // because if a reorganization has occurred, this means that all the blocks in the queue
@@ -117,7 +117,7 @@ export class BlocksQueueService implements OnModuleInit  {
     this.log.debug('Block Queue was clear', { newStartHeight }, this.constructor.name);
 
     // Set a new initial height for loading blocks
-    this.blockQueue.lastHeight = newStartHeight;
+    this.blockQueue.lastHeight = BigInt(newStartHeight);
   }
 
   /**

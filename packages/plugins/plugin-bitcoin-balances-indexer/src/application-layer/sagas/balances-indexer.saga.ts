@@ -5,7 +5,8 @@ import { catchError } from 'rxjs/operators';
 import { SyncSaga, ICommand, ofType, execute } from '@easylayer/cqrs';
 import {
   BitcoinTransactionsBatchWithIndexCreatedEvent,
-  BitcoinTransactionsBatchIndexedEvent
+  BitcoinTransactionsBatchIndexedEvent,
+  BitcoinBalancesIndexerInitializedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 import { WalletsCommandFactoryService, SyncManagerService } from '../services';
 
@@ -16,8 +17,22 @@ export class BalancesIndexerSaga {
     private readonly syncManagerService: SyncManagerService,
   ) {}
 
-  // Сага выполняеться на каждый батч, это означает что атм уже через очередь они идут 
-  // так что сама по себе очередь внутри сервиса сихронизации не нужна
+  @SyncSaga()
+  onBitcoinBalancesIndexerInitializedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBalancesIndexerInitializedEvent),
+      execute({
+        event: BitcoinBalancesIndexerInitializedEvent,
+        command: ({ payload }) =>
+          this.syncManagerService.initBlockHeight(payload.height)
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
+
   @SyncSaga()
   onBitcoinTransactionsBatchWithIndexCreatedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
@@ -61,4 +76,24 @@ export class BalancesIndexerSaga {
       })
     );
   }
+
+  @SyncSaga()
+  ontest(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBalancesIndexerInitializedEvent),
+      execute({
+        event: BitcoinBalancesIndexerInitializedEvent,
+        command: ({ payload }) =>
+          this.syncManagerService.reorganizeBlocks(payload.height, payload.batch)
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
+
+  // Тут события реорганизации
+
+  // тут события про инициализацию про проиндексированну высоту блока. 
 }

@@ -107,21 +107,21 @@ class Blockchain {
   }
 
   // Deleting the last block
-  private removeLast(): LightBlock | null {
-    if (!this.tail) return null;
+  // private removeLast(): LightBlock | null {
+  //   if (!this.tail) return null;
 
-    const block = this.tail.block;
-    this.tail = this.tail.prev;
+  //   const block = this.tail.block;
+  //   this.tail = this.tail.prev;
 
-    if (this.tail) {
-      this.tail.next = null;
-    } else {
-      this.head = null;
-    }
+  //   if (this.tail) {
+  //     this.tail.next = null;
+  //   } else {
+  //     this.head = null;
+  //   }
 
-    this._size--;
-    return block;
-  }
+  //   this._size--;
+  //   return block;
+  // }
 
   // Get the last block without deleting
   peekLast(): LightBlock | null {
@@ -340,6 +340,9 @@ export class Indexer extends AggregateRoot {
         block: oldBlock
       }));
     }
+
+    // TODO: think about add to all this blocks status = suspended 
+    // problem is that we don't want to send multiple event for same aggregate
 
     // Recursive check the previous block
     return this.reorganisation({ height: oldBlock.height, requestId, service });

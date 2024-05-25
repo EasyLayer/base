@@ -5,6 +5,7 @@ interface BitcoinBlockIndexCompletedEventPayload {
   status: string;
   requestId: string;
   batches: any;
+  block: any;
 }
 
 export class BitcoinBlockIndexCompletedEvent implements BasicEvent<BitcoinBlockIndexCompletedEventPayload> {
