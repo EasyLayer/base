@@ -53,7 +53,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       }
 
       /* Start indexing block */
-      // IMPORTANT: If a block with the current height already exists, 
+      // IMPORTANT: If a block with the current hash already exists, 
       // we will overwrite it with this state
       const blockModel: Block = this.modelFactory.createNewModel();
 
@@ -64,12 +64,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       this.log.info('Transactions lenght', { length: tx.length }, this.constructor.name);
 
-      // Initialize the batch index starting with -n + 1
-      // IMPORTANT: index = 0 means that it is a last batch at the block
-      let index = -Math.ceil(tx.length / MAX_TRANSACTIONS_PER_BATCH) + 1;
-
       if (tx.lenght > MAX_TRANSACTIONS_PER_BATCH) {
         /* Slice transactions by batches and start index it */
+        let index = 0;
+
         while (tx.length > 0) {
           // Extract a batch of transactions, removing them from the copy of the array
           // IMPORTANT: transactions in the block are arranged in order
@@ -78,8 +76,12 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   
           // TODO: add type
           // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
+          // that because we don't want to send all transactions by Transport, so we will get it from cache
           const transactionSliceIds: string[] = transactionSlice.map((transaction: { txid: string }) => transaction.txid);
           const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
+
+          // Check if this is the last batch
+          const isFinalBatch = tx.length === 0;
           
           await transactionBatch.create({
             aggregateId: uuidv4(),
@@ -87,13 +89,17 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
             transactions: transactionSliceIds,
             blockHeight: height,
             blockHash: hash,
-            index
+            index,
+            isFinalBatch
           });
   
           batches.push(transactionBatch);
+
+          index++;
         }
       } else {
-        /* Create with index batche */
+        // NOTE: Case when we have single batch
+        // we indexing it immediately 
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
         await transactionBatch.createWithIndexing({
           aggregateId: uuidv4(),
@@ -101,7 +107,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           transactions: tx,
           blockHeight: height,
           blockHash: hash,
-          index
+          isFinalBatch: true,
+          index: 0
         });
 
         batches.push(transactionBatch);
@@ -120,8 +127,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         });
 
         await blockModel.indexWithComplete({
-          // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
-          aggregateId: height || 'genesis',
+          aggregateId: hash,
           block: lightweightBlock,
           batches: batchesMap,
           requestId
@@ -156,8 +162,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('Indexer added new block', { aggregateId: indexerModel.aggregateId, block: { height, hash, previousblockhash } }, this.constructor.name);
 
       await blockModel.index({
-        // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
-        aggregateId: height || 'genesis',
+        aggregateId: hash,
         block: lightweightBlock,
         batches: batchesMap,
         requestId

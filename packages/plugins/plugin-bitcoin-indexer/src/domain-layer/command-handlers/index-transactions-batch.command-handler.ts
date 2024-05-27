@@ -38,7 +38,7 @@ export class IndexTransactionsBatchCommandHandler
 
       // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
       const blockModel: Block =
-        await this.blocksModelFactoryService.initExistingModel(block.height || 'genesis');
+        await this.blocksModelFactoryService.initExistingModel(block.hash);
 
         const { batches } = blockModel;
 

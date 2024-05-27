@@ -114,7 +114,7 @@ export class BlocksQueueService implements OnModuleInit  {
     // have already gone along the wrong chain
     this.blockQueue.clear();
 
-    this.log.debug('Block Queue was clear', { newStartHeight }, this.constructor.name);
+    this.log.debug('Block Queue was clear to height: ', { newStartHeight }, this.constructor.name);
 
     // Set a new initial height for loading blocks
     this.blockQueue.lastHeight = BigInt(newStartHeight);

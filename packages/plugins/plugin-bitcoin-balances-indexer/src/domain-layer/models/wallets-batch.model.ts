@@ -1,7 +1,7 @@
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
-  BitcoinWalletsBatchOutputsIndexedEvent,
-  BitcoinWalletsBatchOutputsRolledbackEvent,
+  BitcoinWalletsBatchBalancesIndexedEvent,
+  BitcoinWalletsBatchBalancesRolledbackEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 export enum OutputTypes {
@@ -63,7 +63,7 @@ export class WalletsBatch extends AggregateRoot {
     const structuredOutputs = this.structureOutputs(transactionType, outputs);
 
     // Опубликовать событие с новыми выходами
-    await this.apply(new BitcoinWalletsBatchOutputsIndexedEvent({ aggregateId, requestId, outputs: structuredOutputs }));
+    await this.apply(new BitcoinWalletsBatchBalancesIndexedEvent({ aggregateId, requestId, balances: structuredOutputs }));
   }
 
   public async rollback({
@@ -95,10 +95,10 @@ export class WalletsBatch extends AggregateRoot {
     const structuredOutputs = this.structureOutputs(transactionType, invertedOutputs);
 
     // Опубликовать событие с новыми выходами
-    await this.apply(new BitcoinWalletsBatchOutputsRolledbackEvent({ aggregateId, requestId, outputs: structuredOutputs }));
+    await this.apply(new BitcoinWalletsBatchBalancesRolledbackEvent({ aggregateId, requestId, balances: structuredOutputs }));
   }
 
-  private onBitcoinWalletsBatchOutputsIndexedEvent({ payload }: BitcoinWalletsBatchOutputsIndexedEvent) {
+  private onBitcoinWalletsBatchBalancesIndexedEvent({ payload }: BitcoinWalletsBatchBalancesIndexedEvent) {
     const { aggregateId, outputs } = payload;
     this.aggregateId = aggregateId;
 
@@ -106,7 +106,7 @@ export class WalletsBatch extends AggregateRoot {
     this.updateWallets(outputs);
   }
 
-  private onBitcoinWalletsBatchOutputsRolledbackEvent({ payload }: BitcoinWalletsBatchOutputsRolledbackEvent) {
+  private onBitcoinWalletsBatchBalancesRolledbackEvent({ payload }: BitcoinWalletsBatchBalancesRolledbackEvent) {
     const { aggregateId, outputs } = payload;
     this.aggregateId = aggregateId;
 

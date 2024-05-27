@@ -35,6 +35,7 @@ export class TransactionsBatch extends AggregateRoot {
   // IMPORTANT: 'index' - this is the batch's number in the block.
   // [-infinite 0]. 0 - means the last batch in the block
   public index!: number;
+  public isFinalBatch!: boolean;
 
   public async create({
     aggregateId,
@@ -42,14 +43,16 @@ export class TransactionsBatch extends AggregateRoot {
     transactions,
     blockHeight,
     blockHash,
-    index
+    index,
+    isFinalBatch
   }: {
     aggregateId: string;
     requestId: string,
     transactions: string[],
     blockHeight: bigint;
     blockHash: string;
-    index: number
+    index: number,
+    isFinalBatch: boolean
   }) {
 
     await this.apply(
@@ -60,7 +63,8 @@ export class TransactionsBatch extends AggregateRoot {
         blockHeight: blockHeight.toString(),
         blockHash,
         status: 'created',
-        index
+        index,
+        isFinalBatch
       })
     );
   }
@@ -71,7 +75,8 @@ export class TransactionsBatch extends AggregateRoot {
     transactions,
     blockHeight,
     blockHash,
-    index
+    index,
+    isFinalBatch
   }: {
     aggregateId: string;
     requestId: string,
@@ -79,6 +84,7 @@ export class TransactionsBatch extends AggregateRoot {
     blockHeight: bigint;
     blockHash: string;
     index: number;
+    isFinalBatch: boolean;
   }) {
 
     // Check transactions
@@ -92,7 +98,8 @@ export class TransactionsBatch extends AggregateRoot {
         blockHeight: blockHeight.toString(),
         blockHash,
         index,
-        status: 'completed'
+        status: 'completed',
+        isFinalBatch
       })
     );
   }

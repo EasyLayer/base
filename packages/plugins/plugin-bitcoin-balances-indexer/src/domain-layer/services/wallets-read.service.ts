@@ -28,4 +28,62 @@ export class WalletsReadService {
     const [blocks, total] = await this.readDb.findAndCount();
     return blocks;
   }
+
+  // Получить баланс нативной валюты по публичному ключу
+  async getNativeBalanceByPublicKey(publicKey: string): Promise<bigint> {
+    const wallet = await this.readDb.findOne({ 
+      where: { id: publicKey },
+      relations: ['addresses']
+    });
+
+    if (!wallet) return BigInt(0);
+
+    let balance = BigInt(0);
+    for (const address of wallet.addresses) {
+      for (const nativeCoin of Object.values(address.nativeCoins)) {
+        balance += nativeCoin.amount;
+      }
+    }
+    return balance;
+  }
+
+  // Получить общий баланс (нативные монеты, руны, NFT) по публичному ключу
+  async getTotalBalanceByPublicKey(publicKey: string): Promise<any> {
+    const wallet = await this.readDb.findOne({ 
+      where: { id: publicKey },
+      relations: ['addresses']
+    });
+    if (!wallet) return null;
+
+    let nativeBalance = BigInt(0);
+    const runes: { [key: string]: number } = {};
+    const nfts: { [key: string]: any } = {};
+
+    for (const address of wallet.addresses) {
+      // Суммируем нативные монеты
+      for (const nativeCoin of Object.values(address.nativeCoins)) {
+        nativeBalance += nativeCoin.amount;
+      }
+
+      // Суммируем руны
+      for (const [runeType, rune] of Object.entries(address.runes)) {
+        if (runes[runeType]) {
+          runes[runeType] += rune.value;
+        } else {
+          runes[runeType] = rune.value;
+        }
+      }
+
+      // Собираем NFT
+      for (const [tokenId, nft] of Object.entries(address.nfts)) {
+        nfts[tokenId] = nft;
+      }
+    }
+
+    return {
+      nativeBalance,
+      runes,
+      nfts
+    };
+  }
 }

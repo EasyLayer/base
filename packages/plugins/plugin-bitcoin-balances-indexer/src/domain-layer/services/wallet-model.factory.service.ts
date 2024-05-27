@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/cqrs';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { Wallet } from '../models/wallet.model';
+import { WalletsBatch } from '../models/wallets-batch.model';
 
 @Injectable()
 export class WalletModelFactoryService {
   constructor(
     private readonly publisher: EventPublisher,
-    private readonly blocksRepository: EventStoreRepository<Wallet>
+    private readonly blocksRepository: EventStoreRepository<WalletsBatch>
   ) {}
 
-  public createNewModel(): Wallet {
-    return this.publisher.mergeObjectContext(new Wallet());
+  public createNewModel(): WalletsBatch {
+    return this.publisher.mergeObjectContext(new WalletsBatch());
   }
 
-  public async initExistingModel(aggragatorId: string): Promise<Wallet> {
+  public async initExistingModel(aggragatorId: string): Promise<WalletsBatch> {
     const model = this.createNewModel();
     model.aggregateId = aggragatorId;
     return await this.blocksRepository.getOne(model);
@@ -27,7 +27,7 @@ export class WalletModelFactoryService {
     return model.publish(event);
   }
 
-  public async initAllModels(): Promise<Wallet[]> {
+  public async initAllModels(): Promise<WalletsBatch[]> {
     // TODO
     return [];
   }

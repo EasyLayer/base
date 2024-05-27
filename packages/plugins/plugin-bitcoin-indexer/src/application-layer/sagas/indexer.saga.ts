@@ -37,21 +37,21 @@ export class IndexerSaga {
     );
   }
 
-  // @SyncSaga()
-  // onBitcoinIndexerReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
-  //   return events$.pipe(
-  //     ofType(BitcoinIndexerReorganisationEvent),
-  //     execute({
-  //       event: BitcoinIndexerReorganisationEvent,
-  //       command: ({ payload }) =>
-  //         this.blocksQueueService.reorganizeBlocks(payload.block.height)
-  //     }),
-  //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinIndexerReorganisationEvent> for event: ${error}`);
-  //       return of();
-  //     })
-  //   );
-  // }
+  @SyncSaga()
+  onBitcoinIndexerReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinIndexerReorganisationEvent),
+      execute({
+        event: BitcoinIndexerReorganisationEvent,
+        command: ({ payload }) =>
+          this.blocksQueueService.reorganizeBlocks(payload.height)
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinIndexerReorganisationEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
 
   @SyncSaga()
   onBitcoinBlockIndexStartedEvent(events$: Observable<any>): Observable<ICommand> {
@@ -115,7 +115,8 @@ export class IndexerSaga {
         event: BitcoinBlockBatchesUpdatedEvent,
         command: ({ payload }) =>
           this.transactionsCommandFactoryService.indexTransactionsBatch({
-            blockHeight: payload.aggregateId,
+            // blockHash: payload.aggregateId, 
+            // blockHeight: payload.height,
             block: payload.block,
             requestId: uuidv4()
           }),

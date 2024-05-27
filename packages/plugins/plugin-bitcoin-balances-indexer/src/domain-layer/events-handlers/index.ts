@@ -1,5 +1,5 @@
-import { BitcoinWalletsBatchOutputsIndexedEventHandler } from './outputs-indexed.event-handler';
+import { BitcoinWalletsBatchBalancesIndexedEventHandler } from './balances-indexed.event-handler';
 
 export const EventsHandlers = [
-    BitcoinWalletsBatchOutputsIndexedEventHandler
+    BitcoinWalletsBatchBalancesIndexedEventHandler
 ];

@@ -24,7 +24,7 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinBalancesIndexerInitializedEvent,
         command: ({ payload }) =>
-          this.syncManagerService.initBlockHeight(payload.height)
+          this.syncManagerService.init(payload.blockHeight, payload.batchIndex)
       }),
       catchError((error) => {
         console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
@@ -40,7 +40,7 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinTransactionsBatchWithIndexCreatedEvent,
         command: ({ payload }) =>
-          this.syncManagerService.push({
+          this.syncManagerService.processBatch({
             batchId: payload.aggregateId,
             transactions: payload.transactions,
             blockHash: payload.blockHash,
@@ -62,7 +62,7 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinTransactionsBatchIndexedEvent,
         command: ({ payload }) =>
-          this.syncManagerService.push({
+          this.syncManagerService.processBatch({
             batchId: payload.aggregateId,
             transactions: payload.transactions,
             blockHash: payload.blockHash,
@@ -77,21 +77,21 @@ export class BalancesIndexerSaga {
     );
   }
 
-  @SyncSaga()
-  ontest(events$: Observable<any>): Observable<ICommand> {
-    return events$.pipe(
-      ofType(BitcoinBalancesIndexerInitializedEvent),
-      execute({
-        event: BitcoinBalancesIndexerInitializedEvent,
-        command: ({ payload }) =>
-          this.syncManagerService.reorganizeBlocks(payload.height, payload.batch)
-      }),
-      catchError((error) => {
-        console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
-        return of();
-      })
-    );
-  }
+  // @SyncSaga()
+  // ontest(events$: Observable<any>): Observable<ICommand> {
+  //   return events$.pipe(
+  //     ofType(BitcoinBalancesIndexerInitializedEvent),
+  //     execute({
+  //       event: BitcoinBalancesIndexerInitializedEvent,
+  //       command: ({ payload }) =>
+  //         this.syncManagerService.reorganizeBlocks(payload.height, payload.batch)
+  //     }),
+  //     catchError((error) => {
+  //       console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
+  //       return of();
+  //     })
+  //   );
+  // }
 
   // Тут события реорганизации
 

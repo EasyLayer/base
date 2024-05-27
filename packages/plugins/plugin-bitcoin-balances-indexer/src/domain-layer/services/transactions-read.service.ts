@@ -28,4 +28,15 @@ export class TransactionsReadService {
     const [blocks, total] = await this.readDb.findAndCount();
     return blocks;
   }
+
+  // Получить список адресов по ID транзакции
+  async getAddressesByTransactionId(transactionId: string): Promise<string[]> {
+    const transaction = await this.readDb.findOne({
+      where: { id: transactionId },
+      relations: ['address']
+    });
+    if (!transaction || !transaction.address) return [];
+
+    return [transaction.address.id];
+  }
 }

@@ -7,7 +7,7 @@ import {
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 export class Block extends AggregateRoot {
-  public aggregateId!: string; // block height
+  public aggregateId!: string; // block hash
   public block!: any; // without transactions (or just with transactions hashes)
   public status!: string; // indexing or completed
   public batches!: Map<string, string>; // { <aggregateId>:<status> }
@@ -84,7 +84,8 @@ export class Block extends AggregateRoot {
         aggregateId: this.aggregateId,
         requestId,
         batches: Object.fromEntries(this.batches),
-        status: 'completed'
+        status: 'completed',
+        block: this.block
       }));
     }
   }

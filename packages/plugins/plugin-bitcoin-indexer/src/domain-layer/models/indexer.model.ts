@@ -24,8 +24,8 @@ type ChainNode = {
 class Blockchain {
   private head: ChainNode | null = null;
   private tail: ChainNode | null = null;
-  private _size: bigint = 0n;
-  private readonly _maxSize: bigint = 20n;
+  private _size: number = 0;
+  private readonly _maxSize: number = 100;
 
   get lastPrevBlockHash(): string {
     if (this.tail) {
@@ -53,15 +53,12 @@ class Blockchain {
     }
   }
 
-  get size(): bigint {
+  get size(): number {
     return this._size;
   }
 
-  isEmpty(): boolean {
-    return this.size === 0n;
-  }
-
   // Adding a block to the end of the chain
+  // Сложность: O(1)
   addBlock(height: bigint | string | number, hash: string, prevHash: string): boolean {
     // Before adding a block, we validate it
     if (!this.validateNextBlock(height, prevHash)) {
@@ -90,6 +87,7 @@ class Blockchain {
     return true;
   }
 
+  // Сложность: O(1)
   private removeFirst(): LightBlock | null {
     if (!this.head) return null;
 
@@ -106,29 +104,14 @@ class Blockchain {
     return block;
   }
 
-  // Deleting the last block
-  // private removeLast(): LightBlock | null {
-  //   if (!this.tail) return null;
-
-  //   const block = this.tail.block;
-  //   this.tail = this.tail.prev;
-
-  //   if (this.tail) {
-  //     this.tail.next = null;
-  //   } else {
-  //     this.head = null;
-  //   }
-
-  //   this._size--;
-  //   return block;
-  // }
-
   // Get the last block without deleting
+  // Сложность: O(1)
   peekLast(): LightBlock | null {
     return this.tail ? this.tail.block : null;
   }
 
   // Validates all blockchain
+  // Сложность: O(n), где n - количество блоков в цепи
   // validateChain(): boolean {
   //   let current = this.head;
   //   while (current && current.next) {
@@ -145,6 +128,7 @@ class Blockchain {
   //   return true;
   // }
 
+  // Сложность: O(1)
   validateNextBlock(height: bigint | string | number, prevHash: string): boolean {
     if (!this.tail) {
       // If there's no blocks in the chain, we assume this is the first block.
@@ -173,6 +157,7 @@ class Blockchain {
    */
   // NOTE: This method is needed for the case when we confirm the indexing of a block
   // in another command to make sure that the block we are passing exactly matches the chain
+  // Сложность: O(1)
   validateLastBlock(height: bigint | string | number, hash: string, prevHash: string): boolean {
     if (!this.tail) {
       // If there's no blocks in the chain, we assume this is the first block.
@@ -198,6 +183,7 @@ class Blockchain {
   }
 
   // Method to find a block by height
+  // Сложность: O(n), где n - количество блоков в цепи
   findBlockByHeight(height: bigint): ChainNode | null {
     let currentNode = this.tail;
     while (currentNode) {
@@ -214,6 +200,7 @@ class Blockchain {
    * @param {bigint} height - The height before which the chain should be truncated.
    * @returns {boolean} Returns true if truncation was successful, false if the block was not found.
    */
+  // Сложность: O(n), где n - количество блоков в цепи
   truncateToBlock(height: bigint): boolean {
     let currentNode = this.tail;
     let found = false;
@@ -238,7 +225,7 @@ class Blockchain {
     if (height === 0n && this.head) {
       this.head = null;
       this.tail = null;
-      this._size = 0n;
+      this._size = 0;
       found = true;
     }
 
@@ -256,13 +243,13 @@ export class Indexer extends AggregateRoot {
   // 2 - use already created params but still publish event
   public async init({ requestId }: { requestId: string }) {
     const status = this.status || 'awaiting';
-    const height = this.chain.lastBlockHeight;
+    const height = this.chain.lastBlockHeight.toString();
 
     await this.apply(new BitcoinIndexerInitializedEvent({
       aggregateId: this.aggregateId,
       requestId,
       status,
-      height: height.toString()
+      height
     }));
   }
 
@@ -309,8 +296,8 @@ export class Indexer extends AggregateRoot {
   }
 
   public async reorganisation(
-    { height, requestId, service } :
-    { height: bigint, requestId: string, service: BitcoinNetworkProviderService }
+    { height, requestId, service, blocks } :
+    { height: bigint, requestId: string, service: BitcoinNetworkProviderService, blocks: any[] }
   ): Promise<void> {
     if (this.status !== 'awaiting' && this.status !== 'reorganisation') {
       throw new Error('reorganisation () Previous Block did not complete indexing');
@@ -329,23 +316,22 @@ export class Indexer extends AggregateRoot {
 
     if (oldBlock.hash === localBlockNode.block.hash && oldBlock.previousblockhash === localBlockNode.block.prevHash) {
       // Match found
-      
-      // Update our chain by truncate entries up to the matchedBlock
-      this.chain.truncateToBlock(oldBlock.height);
-
       await this.apply(new BitcoinIndexerReorganisationEvent({
         aggregateId: this.aggregateId,
         requestId,
         status: 'reorganisation',
-        block: oldBlock
+        height: localBlockNode.block.height.toString(), // Высота реорганизации (последнего правильного блока)
+        blocks: blocks
       }));
     }
 
     // TODO: think about add to all this blocks status = suspended 
     // problem is that we don't want to send multiple event for same aggregate
 
+    const newBlocks = [ ...blocks, oldBlock ];
+
     // Recursive check the previous block
-    return this.reorganisation({ height: oldBlock.height, requestId, service });
+    return this.reorganisation({ height: oldBlock.height, requestId, service, blocks: newBlocks });
   }
   
   public async confirmIndexBlock({ block, requestId }: { block: any, requestId: string }) {
@@ -383,10 +369,8 @@ export class Indexer extends AggregateRoot {
   }
 
   private onBitcoinIndexerReorganisationEvent({ payload }: BitcoinIndexerReorganisationEvent) {
-    const { block } = payload;
-
-    const { height } = block;
-    this.chain.truncateToBlock(height);
+    const { height } = payload;
+    this.chain.truncateToBlock(BigInt(height));
   }
 
   private onBitcoinIndexerIndexBlockConfirmedEvent({ payload }: BitcoinIndexerIndexBlockConfirmedEvent) {

@@ -3,8 +3,9 @@ import { BasicEvent } from '../../../base.event';
 interface BitcoinIndexerReorganisationEventPayload {
   aggregateId: string;
   requestId: string;
-  block: any;
   status: string;
+  blocks: any[];
+  height: string;
 }
 
 export class BitcoinIndexerReorganisationEvent implements BasicEvent<BitcoinIndexerReorganisationEventPayload> {

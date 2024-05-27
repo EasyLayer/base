@@ -35,17 +35,17 @@ export class IndexBalancesCommandHandler
 
       this.log.debug('Init Balances Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
-      // /* Reorganisation */
-      // if (!indexerModel.chain.validateNextBatch(blockHeight, blockHash, index)) {
-      //   // Тут мы делаем все тоже самое только балансы должны обновить? Потому как это блок который уже был? 
-        
+      /* Reorganisation */
+      if (!indexerModel.chain.validateNextBatch(batch)) {
 
-      //   await indexerModel.reorganisation({ height, requestId, service: this.networkProviderService });
-      //   await this.eventStore.save(indexerModel);
-      //   await indexerModel.commit();
-      //   this.log.debug(`Balances Indexer reorganisation started`, {}, this.constructor.name);
-      //   return;
-      // }
+        // Мы тут выдаем ивент реорганизации, в который кладем блок и батч реорганизации. 
+
+        await indexerModel.reorganisation({ height: blockHeight, requestId });
+        await this.eventStore.save(indexerModel);
+        await indexerModel.commit();
+        this.log.debug(`Balances Indexer reorganisation started`, {}, this.constructor.name);
+        return;
+      }
 
 
       /* Batch Indexing */

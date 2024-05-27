@@ -4,7 +4,9 @@ interface BitcoinBalancesIndexerInitializedEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
-  height: string;
+  blockHeight: string;
+  blockHash: string;
+  batchIndex: number;
 }
 
 export class BitcoinBalancesIndexerInitializedEvent implements BasicEvent<BitcoinBalancesIndexerInitializedEventPayload> {

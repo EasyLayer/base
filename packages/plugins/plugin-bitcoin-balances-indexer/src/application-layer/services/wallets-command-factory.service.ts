@@ -11,7 +11,7 @@ export class WalletsCommandFactoryService {
     await this.commandBus.execute(new IndexBalancesCommand(dto));
   }
 
-  public async rollbackBalances(dto: any): Promise<void> {
+  public async rollback(dto: any): Promise<void> {
     await this.commandBus.execute(new RollbackBalancesCommand(dto));
   }
 }
