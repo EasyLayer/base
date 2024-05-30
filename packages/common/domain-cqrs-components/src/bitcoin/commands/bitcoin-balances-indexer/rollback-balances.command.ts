@@ -1,6 +1,9 @@
 export interface IRollbackBalancesCommand {
-    batch: any;
+    batches: any;
+    reorganisationHeight: bigint;
     requestId: string;
+    blockHeight: bigint;
+    blockHash: string;
 }
 
 export class RollbackBalancesCommand {

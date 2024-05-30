@@ -4,7 +4,7 @@ import { BitcoinBlockWithCompleteIndexedEvent } from '@easylayer/domain-cqrs-com
 import { BlocksReadService } from '../services';
 
 @EventsHandler(BitcoinBlockWithCompleteIndexedEvent)
-export class BitcoinBlockWithCompleteIndexedEventHandler
+export class BlockWithCompleteIndexedEventHandler
   implements IEventHandler<BitcoinBlockWithCompleteIndexedEvent> {
     constructor(
       private readonly log: AppLogger,

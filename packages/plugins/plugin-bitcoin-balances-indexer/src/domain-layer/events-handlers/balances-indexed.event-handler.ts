@@ -1,5 +1,6 @@
 import { EventsHandler , IEventHandler} from '@easylayer/cqrs';
 import { AppLogger } from '@easylayer/logger';
+import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { BitcoinWalletsBatchBalancesIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin';
 import { WalletsReadService, AddresesReadService, TransactionsReadService } from '../services';
 import { WalletViewModel, AddressViewModel, TransactionViewModel } from '../view-models';
@@ -14,16 +15,12 @@ export class BitcoinWalletsBatchBalancesIndexedEventHandler
       private readonly transactionsReadService: TransactionsReadService,
     ) {}
 
-    // Add @Transctional()
+    @Transactional()
     async handle(event: BitcoinWalletsBatchBalancesIndexedEvent) {
-      const { aggregateId, balances } = event.payload;
-      this.log.debug('handle()', event.payload, this.constructor.name);
-  
-      // const queryRunner = this.dataSource.createQueryRunner();
-      // await queryRunner.connect();
-      // await queryRunner.startTransaction();
-  
       try {
+        const { balances } = event.payload;
+        this.log.debug('handle()', event.payload, this.constructor.name);
+
         const walletsToSave: WalletViewModel[] = [];
         const addressesToSave: AddressViewModel[] = [];
         const transactionsToSave: TransactionViewModel[] = [];
@@ -79,21 +76,21 @@ export class BitcoinWalletsBatchBalancesIndexedEventHandler
           }
   
           // Создаем записи транзакций
-          walletData.nativeCoins.forEach((_, addressKey) => {
+          walletData.nativeCoins.forEach((_: any, addressKey: any) => {
             const transaction = new TransactionViewModel();
             transaction.id = addressKey;
             transaction.address = addr;
             transactionsToSave.push(transaction);
           });
   
-          walletData.nfts.forEach((_, tokenId) => {
+          walletData.nfts.forEach((_: any, tokenId: any) => {
             const transaction = new TransactionViewModel();
             transaction.id = tokenId;
             transaction.address = addr;
             transactionsToSave.push(transaction);
           });
   
-          walletData.runes.forEach((_, runeType) => {
+          walletData.runes.forEach((_: any, runeType: any) => {
             const transaction = new TransactionViewModel();
             transaction.id = runeType;
             transaction.address = addr;
@@ -101,14 +98,10 @@ export class BitcoinWalletsBatchBalancesIndexedEventHandler
           });
         }
   
-        // Сохраняем обновленные WalletViewModel, AddressViewModel и TransactionViewModel
-        // await queryRunner.manager.save(WalletViewModel, walletsToSave);
-        // await queryRunner.manager.save(AddressViewModel, addressesToSave);
-        // await queryRunner.manager.save(TransactionViewModel, transactionsToSave);
-  
-        // await queryRunner.commitTransaction();
+        await this.walletsReadService.update(walletsToSave);
+        await this.addresesReadService.update(addressesToSave);
+        await this.transactionsReadService.update(transactionsToSave);
       } catch (error) {
-        // await queryRunner.rollbackTransaction();
         this.log.error('handle()', error, this.constructor.name);
       }
     }

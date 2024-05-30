@@ -1,6 +1,7 @@
 export interface IIndexTransactionsBatchCommand {
   requestId: string;
   block: any;
+  batches: any;
 }
 
 export class IndexTransactionsBatchCommand {

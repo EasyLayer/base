@@ -15,9 +15,9 @@ export class WalletsReadService {
     return await this.readDb.save({ hash, id });
   }
 
-  async update(walletViewModel: WalletViewModel): Promise<WalletViewModel> {
+  async update(walletsViewModel: WalletViewModel[]): Promise<WalletViewModel[]> {
     // TODO: check first or not??
-    return await this.readDb.save(walletViewModel);
+    return await this.readDb.save(walletsViewModel);
   }
 
   async findOneById(id: string): Promise<WalletViewModel> {
@@ -41,7 +41,7 @@ export class WalletsReadService {
     let balance = BigInt(0);
     for (const address of wallet.addresses) {
       for (const nativeCoin of Object.values(address.nativeCoins)) {
-        balance += nativeCoin.amount;
+        balance += (nativeCoin as any)?.amount;
       }
     }
     return balance;
@@ -62,15 +62,15 @@ export class WalletsReadService {
     for (const address of wallet.addresses) {
       // Суммируем нативные монеты
       for (const nativeCoin of Object.values(address.nativeCoins)) {
-        nativeBalance += nativeCoin.amount;
+        nativeBalance += (nativeCoin as any)?.amount;
       }
 
       // Суммируем руны
-      for (const [runeType, rune] of Object.entries(address.runes)) {
+      for (const [runeType, value] of Object.entries(address.runes)) {
         if (runes[runeType]) {
-          runes[runeType] += rune.value;
+          runes[runeType] += value as any;
         } else {
-          runes[runeType] = rune.value;
+          runes[runeType] = value as any;
         }
       }
 

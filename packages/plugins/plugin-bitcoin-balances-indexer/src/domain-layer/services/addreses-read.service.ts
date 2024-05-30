@@ -15,7 +15,7 @@ export class AddresesReadService {
     return await this.readDb.save({ hash, id });
   }
 
-  async update(addressViewModel: AddressViewModel): Promise<AddressViewModel> {
+  async update(addressViewModel: AddressViewModel[]): Promise<AddressViewModel[]> {
     // TODO: check first or not??
     return await this.readDb.save(addressViewModel);
   }

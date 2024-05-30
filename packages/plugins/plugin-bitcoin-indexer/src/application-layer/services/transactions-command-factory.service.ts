@@ -14,7 +14,7 @@ export class TransactionsCommandFactoryService {
   ) {}
 
   public async indexTransactionsBatch(dto: any): Promise<void> {
-    const { block ,batches } = dto;
+    const { block } = dto;
 
     // Get block with transactions from cache
     const blockWithTransactions = await this.blocksQueueService.getOneBlockByHeight(block.height);

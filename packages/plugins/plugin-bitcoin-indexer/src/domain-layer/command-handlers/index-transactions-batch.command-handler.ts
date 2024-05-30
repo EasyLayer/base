@@ -30,26 +30,25 @@ export class IndexTransactionsBatchCommandHandler
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { block, requestId } = payload;
+      const { block, requestId, batches } = payload;
 
       // TODO: we can have here transactions not all but "from to"
       // for this we need to fetch block from cache with not all tranactions
-      const { tx, ...lightweightBlock } = block;
-
-      // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
-      const blockModel: Block =
-        await this.blocksModelFactoryService.initExistingModel(block.hash);
-
-        const { batches } = blockModel;
+      const { tx, ...blockWithoutTx } = block;
 
       // TODO: move to env
       const MAX_INDEXING_BATCH_PER_ONE_TIME = 1;
 
-      /* Find no indexed batches */
+      // Find no indexed batches
       const notIndexedBatches = []; // TODO: add type
       for (let [id, status] of batches) {
         if (status === 'created') {
           notIndexedBatches.push(id);
+          // NOTE: We update the status to 'completed', 
+          // this is necessary to update batches in a block 
+          // without restoring the block from its state
+          batches.set(id, 'completed');
+
           if (notIndexedBatches.length === MAX_INDEXING_BATCH_PER_ONE_TIME) {
             // NOTE: The loop exits immediately after the required number of elements is found. 
             // This means that it is not always necessary to process all the elements of the collection.
@@ -58,26 +57,35 @@ export class IndexTransactionsBatchCommandHandler
         }
       }
 
-      /* Complete block index logic */
+      /* Confirm block index (all batches already has been indexed)*/
       if (notIndexedBatches.length === 0) {
         this.log.debug('No batches for indexing', { notIndexedBatches }, this.constructor.name);
 
-        await blockModel.completeIndexBlock({ requestId });
+        // IMPORTANT: We restore the state of the block to make sure it can be completed
+        const restoredBlockModel: Block = await this.blocksModelFactoryService.initExistingModel(blockWithoutTx.height);
+
+        await restoredBlockModel.completeIndexBlock({ requestId });
 
         const indexerModel: Indexer = await this.indexerModelFactoryService.initModel();
-        await indexerModel.confirmIndexBlock({ requestId, block: lightweightBlock });
+        await indexerModel.confirmIndexBlock({ requestId, block: blockWithoutTx });
 
-        await this.eventStore.save([indexerModel, blockModel]);
+        await this.eventStore.save([indexerModel, restoredBlockModel]);
 
-        await blockModel.commit();
+        await restoredBlockModel.commit();
         await indexerModel.commit();
 
         this.log.info(`Block successfull indexed`, {
-          block: { height: lightweightBlock.height, hash: lightweightBlock.hash },
+          block: { height: blockWithoutTx.height, hash: blockWithoutTx.hash },
           alreadyIndexedLength: indexerModel.chain.lastBlockHeight
         }, this.constructor.name);
         return;
       }
+
+      // TODO: add logic if there is only ONE batch left we confirm block index here
+
+      /* Complete batch index logic */
+      const newBlockModel: Block = this.blocksModelFactoryService.createNewModel();
+      newBlockModel.aggregateId = block.hash;
 
       const updatedBatches = [];
 
@@ -85,7 +93,7 @@ export class IndexTransactionsBatchCommandHandler
         // Get transactionsBatch aggregate
         const transactionsBatch: TransactionsBatch = await this.batchModelFactoryService.initExistingModel(batchId);
 
-        // Filter the batch transactions Map to find transactions with hashes present in tx (O(1))
+        // Filter the batch transactions Map to find transactions with hashes present in tx
         // TODO: add type
         // TODO: optimise
         const filteredTransactions = tx.filter((transaction: { txid: string }) => transactionsBatch.transactions.has(transaction.txid));
@@ -97,9 +105,9 @@ export class IndexTransactionsBatchCommandHandler
       }
 
       // Update batches in block model
-      await blockModel.updateBatches({ batchesHashes: updatedBatches.map(item => item.aggregateId), requestId });
+      await newBlockModel.updateBatches({ batches, requestId });
 
-      await this.eventStore.save([...updatedBatches, blockModel]);
+      await this.eventStore.save([...updatedBatches, newBlockModel]);
 
       // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
       // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы
@@ -110,7 +118,7 @@ export class IndexTransactionsBatchCommandHandler
         await batch.commit();
       }
 
-      await blockModel.commit();
+      await newBlockModel.commit();
 
       this.log.debug(`Transactions Batch successfull indexed`, { batches: notIndexedBatches }, this.constructor.name);
     } catch (error) {

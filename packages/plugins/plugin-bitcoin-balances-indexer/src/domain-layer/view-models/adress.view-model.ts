@@ -2,11 +2,15 @@ import { Entity, PrimaryColumn, Column, Unique, Index, ManyToOne, OneToMany } fr
 import { WalletViewModel } from './wallet.view-model';
 import { TransactionViewModel } from './transaction.view-model';
 
+
+
 @Entity('address_viewmodel')
 @Index(['id'], { unique: true })
 export class AddressViewModel {
     @PrimaryColumn({ type: 'varchar' })
     public id!: string; // address
+
+    // public publicKey!: 
 
     @ManyToOne(() => WalletViewModel, wallet => wallet.addresses)
     public wallet!: WalletViewModel;

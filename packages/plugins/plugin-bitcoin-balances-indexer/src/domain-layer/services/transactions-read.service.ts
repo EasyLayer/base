@@ -15,7 +15,7 @@ export class TransactionsReadService {
     return await this.readDb.save({ hash, id });
   }
 
-  async update(transactionViewModel: TransactionViewModel): Promise<TransactionViewModel> {
+  async update(transactionViewModel: TransactionViewModel[]): Promise<TransactionViewModel[]> {
     // TODO: check first or not??
     return await this.readDb.save(transactionViewModel);
   }

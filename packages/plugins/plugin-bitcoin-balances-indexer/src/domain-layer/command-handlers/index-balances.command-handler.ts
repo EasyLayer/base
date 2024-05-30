@@ -1,15 +1,18 @@
-// import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { IndexBalancesCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
+import { WalletsBatch, Balance, Rune, NFT, NativeCoin, OutputTypes } from '../models/wallets-batch.model';
 import { Wallet } from '../models/wallet.model';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import {
-  WalletModelFactoryService,
+  WalletsBatchModelFactoryService,
   BalancesIndexerModelFactoryService,
+  WalletModelFactoryService
 } from '../services';
+
 
 @CommandHandler(IndexBalancesCommand)
 export class IndexBalancesCommandHandler
@@ -17,9 +20,10 @@ export class IndexBalancesCommandHandler
 {
   constructor(
     private readonly log: AppLogger,
-    private readonly walletModelFactory: WalletModelFactoryService,
+    private readonly walletsBatchModelFactory: WalletsBatchModelFactoryService,
     private readonly balancesIndexerModelFactory: BalancesIndexerModelFactoryService,
     private readonly eventStore: EventStoreRepository,
+    private readonly walletModelFactory: WalletModelFactoryService
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
@@ -27,117 +31,124 @@ export class IndexBalancesCommandHandler
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { batch, requestId } = payload;
-      const { blockHash, blockHeight, index, status, ...restBatch } = batch;
+      const { batch, blockHash, blockHeight, requestId } = payload;
+      const { transactions, index, isFinalBatch } = batch;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
 
       this.log.debug('Init Balances Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
-      /* Reorganisation */
-      if (!indexerModel.chain.validateNextBatch(batch)) {
-
-        // Мы тут выдаем ивент реорганизации, в который кладем блок и батч реорганизации. 
-
-        await indexerModel.reorganisation({ height: blockHeight, requestId });
+      /* Check Reorganisation / Synchronisation */
+      if (!indexerModel.chain.validateNextBatch(batch, blockHash, blockHeight)) {
+        await indexerModel.updateChain({ batch, blockHash, blockHeight, requestId });
         await this.eventStore.save(indexerModel);
         await indexerModel.commit();
-        this.log.debug(`Balances Indexer reorganisation started`, {}, this.constructor.name);
         return;
       }
 
+      /* Index Balances */
+      const wallets: Wallet[] = [];
 
-      /* Batch Indexing */
+      transactions.forEach((transaction: any) => {
+        const wallet: Wallet = this.walletModelFactory.createNewModel();
 
-
-      /* Batch Indexing with confirmation */
-
-
-      // TODO: we can have here transactions not all but "from to"
-      // for this we need to fetch block from cache with not all tranactions
-      const { tx, ...lightweightBlock } = block;
-
-      // NOTE: JS treats the 0 heigth as false, so we call it 'genesis'
-      const blockModel: Block =
-        await this.blocksModelFactoryService.initExistingModel(block.height || 'genesis');
-
-        const { batches } = blockModel;
-
-      // TODO: move to env
-      const MAX_INDEXING_BATCH_PER_ONE_TIME = 1;
-
-      /* Find no indexed batches */
-      const notIndexedBatches = []; // TODO: add type
-      for (let [id, status] of batches) {
-        if (status === 'created') {
-          notIndexedBatches.push(id);
-          if (notIndexedBatches.length === MAX_INDEXING_BATCH_PER_ONE_TIME) {
-            // NOTE: The loop exits immediately after the required number of elements is found. 
-            // This means that it is not always necessary to process all the elements of the collection.
-            break;
-          }
+        const newBalances = this.createBalancesFromTransaction(transaction);
+        if (newBalances) {
+          balances.push(...newBalances);
         }
-      }
 
-      /* Complete block index logic */
-      if (notIndexedBatches.length === 0) {
-        this.log.debug('No batches for indexing', { notIndexedBatches }, this.constructor.name);
+        await wallet.add({ aggregateId: '', requestId });
+      });
 
-        await blockModel.completeIndexBlock({ requestId });
+      await indexerModel.addBatch({ batch, blockHash, blockHeight, requestId });
 
-        const indexerModel: Indexer = await this.indexerModelFactoryService.initModel();
-        await indexerModel.confirmIndexBlock({ requestId, block: lightweightBlock });
+      const walletsBatch: WalletsBatch = this.walletsBatchModelFactory.createNewModel();
+      await walletsBatch.index({ aggregateId: uuidv4(), requestId, balances });
 
-        await this.eventStore.save([indexerModel, blockModel]);
+      await this.eventStore.save([indexerModel, walletsBatch, wallets]);
 
-        await blockModel.commit();
-        await indexerModel.commit();
+      // for (let wallet of wallets) 
+        // Мы сохранили события в базу но не публикуем их все, а публикуем только walletsBatch
+      // Может и не нужно явно вызывать этот метод. 
+        // await wallet.uncommit();
+      // }
+      await indexerModel.commit();
+      await walletsBatch.commit();
 
-        this.log.info(`Block successfull indexed`, {
-          block: { height: lightweightBlock.height, hash: lightweightBlock.hash },
-          alreadyIndexedLength: indexerModel.chain.lastBlockHeight
-        }, this.constructor.name);
-        return;
-      }
-
-      const updatedBatches = [];
-
-      for (const batchId of notIndexedBatches) {
-        // Get transactionsBatch aggregate
-        const transactionsBatch: TransactionsBatch = await this.batchModelFactoryService.initExistingModel(batchId);
-
-        // Filter the batch transactions Map to find transactions with hashes present in tx (O(1))
-        // TODO: add type
-        // TODO: optimise
-        const filteredTransactions = tx.filter((transaction: { txid: string }) => transactionsBatch.transactions.has(transaction.txid));
-
-        await transactionsBatch.indexing({ transactions: filteredTransactions, requestId });
-
-        // TODO: this needs to be optimized
-        updatedBatches.push(transactionsBatch);
-      }
-
-      // Update batches in block model
-      await blockModel.updateBatches({ batchesHashes: updatedBatches.map(item => item.aggregateId), requestId });
-
-      await this.eventStore.save([...updatedBatches, blockModel]);
-
-      // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
-      // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы
-      // и проверить не будет ли там исключения. 
-      // Поэтому мы тут в массиве публикуем ивенты всех батчей(может и один он будет)
-      // (Отдельно транзакции не будут публиковаться никогда)
-      for (let batch of updatedBatches) {
-        await batch.commit();
-      }
-
-      await blockModel.commit();
-
-      this.log.debug(`Transactions Batch successfull indexed`, { batches: notIndexedBatches }, this.constructor.name);
+      this.log.debug(`Wallets Batch successfull indexed`, { batches: walletsBatch }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;
     }
+  }
+
+  // TODO: Вынести в Провайдер
+  private createBalancesFromTransaction(transaction: any): Balance[] {
+    const balances: Balance[] = [];
+  
+    // Создаем отрицательные балансы для входов (vin)
+    transaction.vin.forEach((input: any) => {
+      const transactionType = this.determineTransactionType(input);
+      if (transactionType) {
+        const balance = this.createBalanceFromInput(transactionType, input);
+        if (balance) {
+          balances.push(balance);
+        }
+      }
+    });
+  
+    // Создаем положительные балансы для выходов (vout)
+    transaction.vout.forEach((output: any) => {
+      const transactionType = this.determineTransactionType(output);
+      if (transactionType) {
+        const balance = this.createBalanceFromOutput(transactionType, output);
+        if (balance) {
+          balances.push(balance);
+        }
+      }
+    });
+  
+    return balances;
+  }
+
+  // TODO: Вынести в Провайдер
+  private createBalanceFromOutput(type: OutputTypes, output: any): Balance | undefined {
+    switch (type) {
+      case OutputTypes.NATIVE:
+        return new NativeCoin(output.publicKey, output.address, BigInt(output.amount));
+      case OutputTypes.NFT:
+        return new NFT(output.publicKey, output.address, output.name, output.metadata);
+      case OutputTypes.RUNE:
+        return new Rune(output.publicKey, output.address, output.type, output.value);
+      default:
+        return undefined;
+    }
+  }
+
+  // TODO: Вынести в Провайдер
+  private createBalanceFromInput(type: OutputTypes, input: any): Balance | undefined {
+    switch (type) {
+      case OutputTypes.NATIVE:
+        return new NativeCoin(input.publicKey, input.address, -BigInt(input.amount));
+      case OutputTypes.NFT:
+        return new NFT(input.publicKey, input.address, input.name, input.metadata, true);
+      case OutputTypes.RUNE:
+        return new Rune(input.publicKey, input.address, input.type, -input.value);
+      default:
+        return undefined;
+    }
+  }
+
+  // TODO: move to Provider package
+  private determineTransactionType(outputs: any[]): OutputTypes | undefined {
+    if (outputs.some(output => output.tokenType === 'rune')) {
+      return OutputTypes.RUNE;
+    } else if (outputs.some(output => output.contractAddress && output.tokenId)) {
+      return OutputTypes.NFT;
+    } else if (outputs.some(output => output.amount && output.address)) {
+      return OutputTypes.NATIVE;
+    }
+    return undefined;
   }
 }

@@ -6,15 +6,17 @@ import { SyncSaga, ICommand, ofType, execute } from '@easylayer/cqrs';
 import {
   BitcoinTransactionsBatchWithIndexCreatedEvent,
   BitcoinTransactionsBatchIndexedEvent,
-  BitcoinBalancesIndexerInitializedEvent
+  BitcoinBalancesIndexerInitializedEvent,
+  BitcoiBalancesIndexerReorganisationEvent,
+  BitcoinBalancesIndexerSynchronisationEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
-import { WalletsCommandFactoryService, SyncManagerService } from '../services';
+import { WalletsBatchCommandFactoryService, SyncManagerService } from '../services';
 
 @Injectable()
 export class BalancesIndexerSaga {
   constructor(
-    private readonly walletsCommandFactory: WalletsCommandFactoryService,
     private readonly syncManagerService: SyncManagerService,
+    private readonly walletsBatchCommandFactory: WalletsBatchCommandFactoryService
   ) {}
 
   @SyncSaga()
@@ -24,10 +26,56 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinBalancesIndexerInitializedEvent,
         command: ({ payload }) =>
-          this.syncManagerService.init(payload.blockHeight, payload.batchIndex)
+          this.syncManagerService.sync({
+            indexedBlockHeight: payload.blockHeight,
+            indexedBatchIndex: payload.batchIndex,
+            requestId: uuidv4()
+          })
       }),
       catchError((error) => {
         console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
+
+  @SyncSaga()
+  onBitcoiBalancesIndexerReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoiBalancesIndexerReorganisationEvent),
+      execute({
+        event: BitcoiBalancesIndexerReorganisationEvent,
+        command: ({ payload }) =>
+          this.walletsBatchCommandFactory.rollback({
+            batches: payload.blockBatches,
+            blockHeight: payload.blockHeight,
+            blockHash: payload.blockHash,
+            reorganisationHeight: payload.reorganisationHeight,
+            requestId: uuidv4()
+          })
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoiBalancesIndexerReorganisationEvent> for event: ${error}`);
+        return of();
+      })
+    );
+  }
+
+  @SyncSaga()
+  onBitcoinBalancesIndexerSynchronisationEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      ofType(BitcoinBalancesIndexerSynchronisationEvent),
+      execute({
+        event: BitcoinBalancesIndexerSynchronisationEvent,
+        command: ({ payload }) =>
+          this.syncManagerService.sync({
+            indexedBlockHeight: payload.blockHeight,
+            indexedBatchIndex: payload.batchIndex,
+            requestId: uuidv4()
+          })
+      }),
+      catchError((error) => {
+        console.error(`Error handling <BitcoinBalancesIndexerSynchronisationEvent> for event: ${error}`);
         return of();
       })
     );
@@ -40,9 +88,8 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinTransactionsBatchWithIndexCreatedEvent,
         command: ({ payload }) =>
-          this.syncManagerService.processBatch({
-            batchId: payload.aggregateId,
-            transactions: payload.transactions,
+          this.syncManagerService.onTransactionsBatch({
+            batch: payload.batch,
             blockHash: payload.blockHash,
             blockHeight: payload.blockHeight,
             requestId: uuidv4()
@@ -62,9 +109,8 @@ export class BalancesIndexerSaga {
       execute({
         event: BitcoinTransactionsBatchIndexedEvent,
         command: ({ payload }) =>
-          this.syncManagerService.processBatch({
-            batchId: payload.aggregateId,
-            transactions: payload.transactions,
+          this.syncManagerService.onTransactionsBatch({
+            batch: payload.batch,
             blockHash: payload.blockHash,
             blockHeight: payload.blockHeight,
             requestId: uuidv4()
@@ -76,24 +122,4 @@ export class BalancesIndexerSaga {
       })
     );
   }
-
-  // @SyncSaga()
-  // ontest(events$: Observable<any>): Observable<ICommand> {
-  //   return events$.pipe(
-  //     ofType(BitcoinBalancesIndexerInitializedEvent),
-  //     execute({
-  //       event: BitcoinBalancesIndexerInitializedEvent,
-  //       command: ({ payload }) =>
-  //         this.syncManagerService.reorganizeBlocks(payload.height, payload.batch)
-  //     }),
-  //     catchError((error) => {
-  //       console.error(`Error handling <BitcoinBalancesIndexerInitializedEvent> for event: ${error}`);
-  //       return of();
-  //     })
-  //   );
-  // }
-
-  // Тут события реорганизации
-
-  // тут события про инициализацию про проиндексированну высоту блока. 
 }

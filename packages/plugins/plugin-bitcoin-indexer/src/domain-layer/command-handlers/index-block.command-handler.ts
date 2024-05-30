@@ -35,8 +35,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       const { block, requestId } = payload;
 
       // TODO: For this command, you need to get a block in which only hashes will be transferred.
-      const { tx, ...lightweightBlock } = block; 
-      const { height, hash, previousblockhash } = lightweightBlock;
+      const { tx, ...blockWithoutTx } = block; 
+      const { height, hash, previousblockhash } = blockWithoutTx;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
@@ -44,8 +44,15 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.debug('Init Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
       /* Reorganisation */
+      // IMPORTANT: We do this check here, and not inside the aggregate,
+      // because we don’t want to throw an error and process it
       if (!indexerModel.chain.validateNextBlock(height, previousblockhash)) {
-        await indexerModel.reorganisation({ height, requestId, service: this.networkProviderService });
+        await indexerModel.reorganisation({
+          height,
+          requestId,
+          service: this.networkProviderService,
+          blocks: []
+        });
         await this.eventStore.save(indexerModel);
         await indexerModel.commit();
         this.log.debug(`Indexer reorganisation started`, {}, this.constructor.name);
@@ -53,8 +60,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       }
 
       /* Start indexing block */
-      // IMPORTANT: If a block with the current hash already exists, 
-      // we will overwrite it with this state
+      // IMPORTANT: We do not check whether a block with such a hash exists in the state,
+      // but overwrite the state if so
       const blockModel: Block = this.modelFactory.createNewModel();
 
       // TODO: move into env
@@ -64,14 +71,14 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       this.log.info('Transactions lenght', { length: tx.length }, this.constructor.name);
 
+      // Slice transactions by batches and start index it
       if (tx.lenght > MAX_TRANSACTIONS_PER_BATCH) {
-        /* Slice transactions by batches and start index it */
         let index = 0;
 
         while (tx.length > 0) {
           // Extract a batch of transactions, removing them from the copy of the array
           // IMPORTANT: transactions in the block are arranged in order
-          // when splitting into batches we must follow this order!!
+          // when splitting into batches we must follow this order. 
           const transactionSlice = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
   
           // TODO: add type
@@ -86,7 +93,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           await transactionBatch.create({
             aggregateId: uuidv4(),
             requestId,
-            transactions: transactionSliceIds,
+            transactionIds: transactionSliceIds,
             blockHeight: height,
             blockHash: hash,
             index,
@@ -128,12 +135,12 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
         await blockModel.indexWithComplete({
           aggregateId: hash,
-          block: lightweightBlock,
+          block: blockWithoutTx,
           batches: batchesMap,
           requestId
         });
 
-        await indexerModel.addBlockWithImmediatelyConfirm({ requestId, block: lightweightBlock });
+        await indexerModel.addBlockWithImmediatelyConfirm({ requestId, block: blockWithoutTx });
 
         await this.eventStore.save([...batches, indexerModel, blockModel]);
 
@@ -159,11 +166,12 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       });
 
       await indexerModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
+      
       this.log.debug('Indexer added new block', { aggregateId: indexerModel.aggregateId, block: { height, hash, previousblockhash } }, this.constructor.name);
 
       await blockModel.index({
         aggregateId: hash,
-        block: lightweightBlock,
+        block: blockWithoutTx,
         batches: batchesMap,
         requestId
       });
@@ -173,7 +181,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       await indexerModel.commit();
       await blockModel.commit();
 
-      this.log.debug('Block index started', { block: lightweightBlock }, this.constructor.name);
+      this.log.debug('Block index started', { block: blockWithoutTx }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;

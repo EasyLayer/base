@@ -7,6 +7,7 @@ interface BitcoinBalancesIndexerInitializedEventPayload {
   blockHeight: string;
   blockHash: string;
   batchIndex: number;
+  isFinalBatch: boolean;
 }
 
 export class BitcoinBalancesIndexerInitializedEvent implements BasicEvent<BitcoinBalancesIndexerInitializedEventPayload> {

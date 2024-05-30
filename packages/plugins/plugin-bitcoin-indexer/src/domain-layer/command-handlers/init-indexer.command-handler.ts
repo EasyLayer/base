@@ -28,7 +28,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
 
       if (indexerModel.status === 'indexing') {
         // Publish last block event (if it exists)
-        const blockAggregateId = String(indexerModel.chain.lastBlockHeight);
+        const blockAggregateId = String(indexerModel.chain.lastBlockHash);
         await this.blocksModelFactory.publishLastEvent(blockAggregateId);
       }
 

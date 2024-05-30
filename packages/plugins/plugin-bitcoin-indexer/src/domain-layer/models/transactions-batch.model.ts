@@ -5,24 +5,50 @@ import {
   BitcoinTransactionsBatchWithIndexCreatedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
-interface Vin {
+interface Input {
+  txid: string;
   vout: number;
-  scriptSig: string;
+  scriptSig: {
+    asm: string;
+    hex: string;
+  };
+  sequence: number;
 }
 
-interface Vout {
-  value: number;
+interface Output {
+  value: number; // The value in BTC (e.g., 0.0001 BTC)
   n: number;
   scriptPubKey: {
-    addresses: string[];
+    asm: string;
+    hex: string;
+    reqSigs?: number;
+    type: string;
+    addresses?: string[];
   };
 }
 
-export interface LightweightTransaction {
+interface Transaction {
   txid: string;
   hash: string;
-  vin: Vin;
-  vout: Vout;
+  version: number;
+  size: number;
+  vsize: number;
+  weight: number;
+  locktime: number;
+  vin: Input[];
+  vout: Output[];
+  hex: string;
+  blockhash?: string; // Optional, might not be available if transaction is unconfirmed
+  confirmations?: number; // Optional, might not be available if transaction is unconfirmed
+  time?: number; // Optional, might not be available if transaction is unconfirmed
+  blocktime?: number; // Optional, might not be available if transaction is unconfirmed
+}
+
+type TransactionsMap = Map<string, Omit<Transaction, 'txid'> | null>;
+
+enum BatchStatuses {
+  COMPLETED = 'completed',
+  CREATED = 'created'
 }
 
 export class TransactionsBatch extends AggregateRoot {
@@ -30,17 +56,17 @@ export class TransactionsBatch extends AggregateRoot {
   public blockHeight!: bigint;
   public blockHash!: string;
   // IMPORTANT: 'transactions' has Map structure to find transactions with hashes present in tx (O(1))
-  public transactions!: Map<string, Omit<LightweightTransaction, 'txid'> | null>; //lightweightTransaction изначально lightweightTransaction будет null
+  public transactions!: TransactionsMap;
   public status!: string;
   // IMPORTANT: 'index' - this is the batch's number in the block.
-  // [-infinite 0]. 0 - means the last batch in the block
+  // [0, infinite]. 0 - means the first batch in the block
   public index!: number;
   public isFinalBatch!: boolean;
 
   public async create({
     aggregateId,
     requestId,
-    transactions,
+    transactionIds,
     blockHeight,
     blockHash,
     index,
@@ -48,7 +74,7 @@ export class TransactionsBatch extends AggregateRoot {
   }: {
     aggregateId: string;
     requestId: string,
-    transactions: string[],
+    transactionIds: string[],
     blockHeight: bigint;
     blockHash: string;
     index: number,
@@ -59,10 +85,10 @@ export class TransactionsBatch extends AggregateRoot {
       new BitcoinTransactionsBatchCreatedEvent({
         aggregateId,
         requestId,
-        transactions,
+        transactionIds,
         blockHeight: blockHeight.toString(),
         blockHash,
-        status: 'created',
+        status: BatchStatuses.CREATED,
         index,
         isFinalBatch
       })
@@ -80,7 +106,7 @@ export class TransactionsBatch extends AggregateRoot {
   }: {
     aggregateId: string;
     requestId: string,
-    transactions: LightweightTransaction[],
+    transactions: Transaction[],
     blockHeight: bigint;
     blockHash: string;
     index: number;
@@ -89,76 +115,81 @@ export class TransactionsBatch extends AggregateRoot {
 
     // Check transactions
     // Make sure that the sum of the inputs equals the sum of the outputs plus the commission.
-
+    const batch = {
+      transactions,
+      index,
+      isFinalBatch
+    }
     await this.apply(
       new BitcoinTransactionsBatchWithIndexCreatedEvent({
         aggregateId,
         requestId,
-        transactions,
+        batch,
         blockHeight: blockHeight.toString(),
         blockHash,
-        index,
-        status: 'completed',
-        isFinalBatch
+        status: BatchStatuses.COMPLETED,
       })
     );
   }
 
   public async indexing({ transactions, requestId }: {
-    transactions: LightweightTransaction[],
+    transactions: Transaction[],
     requestId: string
   }) {
 
     // Check transactions
     // Make sure that the sum of the inputs equals the sum of the outputs plus the commission.
-
+    const batch = {
+      transactions,
+      index: this.index,
+      isFInalBatch: this.isFinalBatch
+    }
     await this.apply(new BitcoinTransactionsBatchIndexedEvent({
       aggregateId: this.aggregateId,
-      status: 'completed',
+      status: BatchStatuses.COMPLETED,
       requestId,
-      transactions,
+      batch,
       blockHash: this.blockHash,
       blockHeight: this.blockHeight.toString()
     }));
   }
 
   private onBitcoinTransactionsBatchCreatedEvent({ payload }: BitcoinTransactionsBatchCreatedEvent) {
-    const { aggregateId, transactions, blockHeight, blockHash, status, index } = payload;
+    const { aggregateId, transactionIds, blockHeight, blockHash, status, index } = payload;
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
     this.blockHash = blockHash;
     this.status = status;
     this.index = index;
-    this.transactions = new Map(transactions.map((txid: string) => [
+    this.transactions = new Map(transactionIds.map((txid: string) => [
       txid, null
     ]));
   }
 
   private onBitcoinTransactionsBatchIndexedEvent({ payload }: BitcoinTransactionsBatchIndexedEvent) {
-    const { status, transactions } = payload;
+    const { status, batch, blockHash, blockHeight } = payload;
+    const { transactions, index, isFInalBatch } = batch;
     this.status = status;
-    this.transactions = new Map(transactions.map((transaction: LightweightTransaction) => [
-      transaction.txid, {
-        hash: transaction.hash,
-        vin: transaction.vin,
-        vout: transaction.vout
-      }
+    this.transactions = new Map(transactions.map((transaction: Transaction) => [
+      transaction.txid, { ...transaction, txid: null }
     ]));
+    this.index = index;
+    this.isFinalBatch = isFInalBatch;
+    this.blockHash = blockHash;
+    this.blockHeight = BigInt(blockHeight);
   }
 
   private onBitcoinTransactionsBatchWithIndexCreatedEvent({ payload }: BitcoinTransactionsBatchWithIndexCreatedEvent) {
-    const { aggregateId, transactions, blockHeight, blockHash, status, index } = payload;
+    const { aggregateId, blockHeight, blockHash, status, batch } = payload;
+    const { transactions, index, isFinalBatch } = batch;
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
     this.blockHash = blockHash;
     this.status = status;
     this.index = index;
-    this.transactions = new Map(transactions.map((transaction: LightweightTransaction) => [
-      transaction.txid, {
-        hash: transaction.hash,
-        vin: transaction.vin,
-        vout: transaction.vout
-      }
+    this.isFinalBatch = isFinalBatch;
+    this.transactions = new Map(transactions.map((transaction: Transaction) => [
+      transaction.txid, { ...transaction, txid: null }
     ]));
   }
 }

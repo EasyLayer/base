@@ -4,7 +4,7 @@ interface BitcoinTransactionsBatchIndexedEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
-  transactions: any;
+  batch: any; //: { transactions, index, isFinalBatch }
   blockHash: string;
   blockHeight: string;
 }

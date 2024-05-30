@@ -25,17 +25,10 @@ export class InitBalancesIndexerCommandHandler implements ICommandHandler<InitBa
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
       await indexerModel.init({ requestId });
 
-      // Этот статус означает что еще не все батчи блока проиндексированы
-      if (indexerModel.status === 'indexing') {
-        // // Publish last block event (if it exists)
-        // const blockAggregateId = String(networkModel.chain.lastBlockHeight);
-        // await this.blocksModelFactory.publishLastEvent(blockAggregateId);
+      if (indexerModel.status === 'reorganisation' || indexerModel.status === 'synchronisation') {
+        // Publish last network event to process reorganisation
+        await this.balancesIndexerModelFactory.publishLastEvent();
       }
-
-      // if (indexerModel.status === 'reorganisation') {
-      //   // Publish last network event to process reorganisation
-      //   await this.balancesIndexerModelFactory.publishLastEvent();
-      // }
 
       await this.eventStore.save(indexerModel);
       await indexerModel.commit();

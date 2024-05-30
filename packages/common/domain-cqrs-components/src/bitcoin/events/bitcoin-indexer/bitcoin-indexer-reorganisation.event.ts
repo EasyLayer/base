@@ -4,7 +4,7 @@ interface BitcoinIndexerReorganisationEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
-  blocks: any[];
+  blocksHashes: any[];
   height: string;
 }
 

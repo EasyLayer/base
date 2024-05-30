@@ -11,7 +11,7 @@ import {
   BitcoinIndexerReorganisationEvent,
   BitcoinBlockWithCompleteIndexedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
-import { BlocksCommandFactoryService, TransactionsCommandFactoryService } from '../services';
+import { TransactionsCommandFactoryService } from '../services';
 import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
 
 @Injectable()
@@ -61,7 +61,7 @@ export class IndexerSaga {
         event: BitcoinBlockIndexStartedEvent,
         command: ({ payload }) =>
           this.transactionsCommandFactoryService.indexTransactionsBatch({
-            blockHeight: payload.aggregateId,
+            batches: payload.batches,
             block: payload.block,
             requestId: uuidv4()
           }),
@@ -115,8 +115,7 @@ export class IndexerSaga {
         event: BitcoinBlockBatchesUpdatedEvent,
         command: ({ payload }) =>
           this.transactionsCommandFactoryService.indexTransactionsBatch({
-            // blockHash: payload.aggregateId, 
-            // blockHeight: payload.height,
+            batches: payload.batches,
             block: payload.block,
             requestId: uuidv4()
           }),

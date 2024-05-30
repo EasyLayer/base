@@ -6,16 +6,45 @@ import {
   BitcoinBlockWithCompleteIndexedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
+enum BlockStatuses {
+  COMPLETED = 'completed',
+  INDEXING = 'indexing'
+}
+
+interface BitcoinBlock {
+  hash: string;
+  confirmations: number;
+  strippedsize: number;
+  size: number;
+  weight: number;
+  height: number;
+  version: number;
+  versionHex: string;
+  merkleroot: string;
+  time: number;
+  mediantime: number;
+  nonce: number;
+  bits: string;
+  difficulty: number;
+  chainwork: string;
+  previousblockhash?: string; // Optional, might not be available for the genesis block
+  nextblockhash?: string; // Optional, might not be available if this is the latest block
+}
+
+type BlockType = BitcoinBlock; // full block object without tx key
+
 export class Block extends AggregateRoot {
   public aggregateId!: string; // block hash
-  public block!: any; // without transactions (or just with transactions hashes)
-  public status!: string; // indexing or completed
+  public block!: BlockType; // without transactions (or just with transactions hashes)
+  public status!: BlockStatuses; // indexing or completed
   public batches!: Map<string, string>; // { <aggregateId>:<status> }
 
   // This is create aggregate method
-  public async index({ aggregateId, block, batches, requestId }: { aggregateId: string; block: any, requestId: string, batches: Map<string, string> }) {
+  public async index(
+    { aggregateId, block, batches, requestId }:
+    { aggregateId: string; block: BlockType, requestId: string, batches: Map<string, string> }) {
     // QUESTION: if the status does not match, should I throw an error or just skip it?
-    if (this.status === 'indexing') {
+    if (this.status === BlockStatuses.INDEXING) {
       throw new Error('Block already start indexing');
     }
 
@@ -24,12 +53,14 @@ export class Block extends AggregateRoot {
       block,
       batches: Object.fromEntries(batches),
       requestId,
-      status: 'indexing'
+      status: BlockStatuses.INDEXING
     }));
   }
 
   // This is create aggregate method
-  public async indexWithComplete({ aggregateId, block, batches, requestId }: { aggregateId: string; block: any, requestId: string, batches: Map<string, string> }) {
+  public async indexWithComplete(
+    { aggregateId, block, batches, requestId }:
+    { aggregateId: string; block: BlockType, requestId: string, batches: Map<string, string> }) {
     // QUESTION: if the status does not match, should I throw an error or just skip it?
     if (this.status === 'indexing') {
       throw new Error('Block already start indexing');
@@ -50,30 +81,27 @@ export class Block extends AggregateRoot {
     }));
   }
 
-  public async updateBatches({ batchesHashes, requestId }: { batchesHashes: string[], requestId: string }) {
-
-    for (let batchId of batchesHashes) {
-      if (!this.batches.has(batchId)) {
-        throw new Error('');
-      }
-
-      this.batches.set(batchId, 'completed');
-    }
-
+  public async updateBatches(
+    { batches, requestId }:
+    { batches: Map<string, string>, requestId: string }
+  ){
+    // IMPORTANT: here we all the time rewrite all batches
+    // that is because we optimaze resoring state
     await this.apply(new BitcoinBlockBatchesUpdatedEvent({
       aggregateId: this.aggregateId,
       requestId,
-      batches: Object.fromEntries(this.batches),
+      batches: Object.fromEntries(batches),
       block: this.block
     }));
   }
 
+  // NOTE: this method needs for complete transactions between all batches
   public async completeIndexBlock({
     requestId,
   }: {
     requestId: string;
   }) {
-    if (this.status === 'indexing') {
+    if (this.status === BlockStatuses.INDEXING) {
       for (let [id, status] of this.batches) {
         if (status !== 'completed') {
           throw new Error('Not all transactions batches have been indexed');
@@ -84,7 +112,7 @@ export class Block extends AggregateRoot {
         aggregateId: this.aggregateId,
         requestId,
         batches: Object.fromEntries(this.batches),
-        status: 'completed',
+        status: BlockStatuses.COMPLETED,
         block: this.block
       }));
     }
@@ -94,14 +122,18 @@ export class Block extends AggregateRoot {
     const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
     this.block = block;
-    this.status = status;
     this.batches = new Map(Object.entries(batches));
+    if (status) {
+      this.status = status as BlockStatuses;
+    }
   }
 
   private onBitcoinBlockIndexCompletedEvent({ payload }: BitcoinBlockIndexCompletedEvent) {
     const { status, batches } = payload;
-    this.status = status;
     this.batches = new Map(Object.entries(batches));
+    if (status) {
+      this.status = status as BlockStatuses;
+    }
   }
 
   private onBitcoinBlockBatchesUpdatedEvent({ payload }: BitcoinBlockBatchesUpdatedEvent) {
@@ -113,7 +145,9 @@ export class Block extends AggregateRoot {
     const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
     this.block = block;
-    this.status = status;
     this.batches = new Map(Object.entries(batches));
+    if (status) {
+      this.status = status as BlockStatuses;
+    }
   }
 }
