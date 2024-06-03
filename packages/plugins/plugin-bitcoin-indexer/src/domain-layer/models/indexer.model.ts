@@ -32,7 +32,7 @@ type ChainNode = {
  * Each block contains a height, hash, and a previous hash. The blockchain has a fixed maximum size,
  * and automatically removes the oldest blocks when new blocks are added beyond this size.
  */
-class Blockchain {
+export class Blockchain {
   private head: ChainNode | null = null;
   private tail: ChainNode | null = null;
   private _size: number = 0;
@@ -167,19 +167,27 @@ class Blockchain {
    */
   public validateChain(): boolean {
     let current = this.head;
+    
+    if (!current) {
+      return true; // Пустая цепочка считается валидной
+    }
+  
     while (current && current.next) {
       // First check if the block heights increment by 1
       if (current.next.block.height !== current.block.height + 1n) {
         return false; // Height mismatch
       }
       // Then check if the hashes match
-      if (current.block.hash !== current.next.block.prevHash) {
+      if (current.next.block.prevHash !== current.block.hash) {
         return false; // Hash mismatch
       }
       current = current.next;
     }
-    return true;
+  
+    // Если цикл завершился и current указывает на последний блок (this.tail)
+    return current === this.tail;
   }
+  
 
   /**
    * Validates that the provided block data matches the last block in the chain.
@@ -251,6 +259,9 @@ class Blockchain {
 
         // Delete all blocks after the found block
         this.tail.next = null;
+
+        // Update the size
+        this._size = Number(this.tail.block.height + 1n);
 
         found = true;
         break;
