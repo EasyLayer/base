@@ -8,18 +8,9 @@ import { Block } from './interfaces';
 export class BlocksQueue<T extends Block> {
   private inStack: T[] = [];
   private outStack: T[] = [];
-  private blockProcessedPromise!: Promise<void>;
-  private resolveNextBlock!: () => void;
   // IMPORTANT: the blockchain starts from block 0,
   // so if there are no blocks at all, we use -1n
   private _lastHeight: bigint = -1n;
-
-  /**
-   * Initializes a new instance of BlocksQueue and sets up the initial block processing promise.
-   */
-  constructor() {
-    this.initBlockProcessedPromise();
-  }
 
   /**
    * Gets the current length of the queue.
@@ -37,86 +28,81 @@ export class BlocksQueue<T extends Block> {
     return this._lastHeight;
   }
 
-  /**
-   * Sets the height of the last block in the queue.
-   * @param height The new height value as a bigint.
-   */
   public set lastHeight(height: bigint) {
     this._lastHeight = height;
   }
 
   /**
-   * Fetches a block by its height from the queue.
+   * Fetches a block by its height from the inStack using binary search.
    * @param height The height of the block to be retrieved.
-   * @returns The block with the specified height.
-   * @throws Error if no block is found with the specified height.
+   * @returns The block with the specified height or undefined if not found.
+   * @complexity O(log n)
    */
-  public fetchBlockByHeight(height: bigint): T {
-    const block = this.inStack.concat(this.outStack).find(item => BigInt(item.height) === height);
-    if (block) {
-      return block;
-    } else {
-      throw new Error(`No block found with height ${height.toString()}`);
-    }
+  public fetchBlockFromInStack(height: bigint): T | undefined {
+    return this.binarySearch(this.inStack, height, true);
   }
 
-  public onError() {
-    // NOTE: This method is needed in case of an emergency 
-    // to release a promise without manipulating the queue
-    this.resolveNextBlock();
+  /**
+   * Fetches a block by its height from the outStack using binary search.
+   * @param height The height of the block to be retrieved.
+   * @returns The block with the specified height or undefined if not found.
+   * @complexity O(log n)
+   */
+  public fetchBlockFromOutStack(height: bigint): T | undefined {
+    return this.binarySearch(this.outStack, height, false);
   }
 
   /**
    * Enqueues a block to the queue if its height is exactly one more than the height of the last block.
    * @param item The block to be added to the queue.
    * @returns Boolean indicating success or failure of the enqueue operation.
+   * @complexity O(1)
    */
   // TODO: remove BigInt when add Block constructor class in service. 
   // This queue have to works only with Block interface
   public enqueue(item: T): boolean {
-      if (BigInt(item.height) !== this._lastHeight + 1n) {
-          return false;
-      }
-      this.inStack.push(item);
-      this._lastHeight = BigInt(item.height);
-      return true;
+    if (BigInt(item.height) !== this._lastHeight + 1n) {
+      return false;
+    }
+    this.inStack.push(item);
+    this._lastHeight = BigInt(item.height);
+    return true;
   }
 
   /**
-   * Dequeues the first block from the queue and resolves the block processing promise.
+   * Dequeues the first block from the queue.
+   * @returns The dequeued block or undefined if the queue is empty.
    */
-  public dequeue(): void {
+  public dequeue(): T | undefined {
     if (this.outStack.length === 0) {
       this.transferItems();
     }
+
+    const block = this.outStack.pop();
+
     if (this.outStack.length > 0) {
-      this.outStack.pop();
-      // Resolve the promise, indicating that the block has been processed
-      this.resolveNextBlock();
+      this._lastHeight = this.outStack[this.outStack.length - 1].height;
+    } else if (this.inStack.length > 0) {
+      this._lastHeight = this.inStack[0].height;
+    } else {
+      this._lastHeight = -1n;
     }
 
-    console.timeEnd('block');
+    return block;
   }
 
   /**
-   * Peeks at the first block in the queue and waits for the block processing promise to resolve before proceeding.
+   * Peeks at the first block in the queue.
    * @returns A promise that resolves to the first block in the queue or undefined if the queue is empty.
    */
-  public async peekFirstBlock(): Promise<T | undefined> {
-      // NOTE: Before processing the next block from the queue,
-      // we wait for the resolving of the promise of the previous block
-      await this.blockProcessedPromise;
+  public peekFirstBlock(): Promise<T | undefined> {
+    if (this.outStack.length === 0) {
+      this.transferItems();
+    }
 
-      // Init the promise for the next wait
-      this.initBlockProcessedPromise();
-
-      if (this.outStack.length === 0) {
-        this.transferItems();
-      }
-      console.time('block');
-      // IMPORTANT: We make sure to clone the block so that modifications to the object
-      // later in the process cannot affect the block in the queue.
-      return Promise.resolve(this.outStack.length > 0 ? _.cloneDeep(this.outStack[this.outStack.length - 1]) : undefined);
+    // IMPORTANT: We make sure to clone the block so that modifications to the object
+    // later in the process cannot affect the block in the queue.
+    return Promise.resolve(this.outStack.length > 0 ? _.cloneDeep(this.outStack[this.outStack.length - 1]) : undefined);
   }
 
   /**
@@ -126,27 +112,54 @@ export class BlocksQueue<T extends Block> {
     // Clear the entire queue
     this.inStack = [];
     this.outStack = [];
-    // Resolve the promise, indicating that the block has been processed
-    this.resolveNextBlock();
-    // Init the promise for the next wait
-    this.initBlockProcessedPromise();
+    this._lastHeight = -1n;
   }
 
   /**
-   * Initializes the block processing promise.
+   * Transfers items from the inStack to the outStack.
+   * @complexity O(n)
    */
-  private initBlockProcessedPromise(): void {
-      this.blockProcessedPromise = new Promise<void>(resolve => {
-          this.resolveNextBlock = resolve;
-      });
-      if (this.length === 0) {
-          this.resolveNextBlock();
-      }
-  }
-
   private transferItems() {
     while (this.inStack.length > 0) {
       this.outStack.push(this.inStack.pop()!);
     }
   }
+
+   /**
+ * Performs binary search to find a block by height.
+ * @param stack The stack to search within.
+ * @param height The height of the block to find.
+ * @param isInStack Boolean indicating if the search is in the inStack.
+ * @returns The block if found, otherwise undefined.
+ * @complexity O(log n)
+ */
+private binarySearch(stack: T[], height: bigint, isInStack: boolean): T | undefined {
+  let left = 0;
+  let right = stack.length - 1;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const midHeight = BigInt(stack[mid].height);
+
+    if (midHeight === height) {
+      return stack[mid];
+    } else if (isInStack) {
+      if (midHeight < height) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    } else {
+      if (midHeight > height) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+
 }

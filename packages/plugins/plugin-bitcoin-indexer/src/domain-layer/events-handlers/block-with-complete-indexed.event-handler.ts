@@ -16,11 +16,11 @@ export class BlockWithCompleteIndexedEventHandler
     try {
       this.log.debug('handle()', payload, this.constructor.name);
 
-      const { aggregateId, block } = payload;
+      const { aggregateId, block, status } = payload;
 
-      this.log.info('Aggregete Id Handle: ', { aggregateId, block }, this.constructor.name);
+      this.log.info('Aggregete Id Handle: ', { aggregateId, block, status }, this.constructor.name);
 
-      return await this.service.create({ id: aggregateId, hash: block.hash });
+      return await this.service.create({ id: aggregateId, hash: block.hash, status });
     } catch(error) {
       this.log.error('handle()', error, this.constructor.name);
     }

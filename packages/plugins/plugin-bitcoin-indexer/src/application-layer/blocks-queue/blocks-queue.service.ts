@@ -4,6 +4,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import Piscina from 'piscina';
 import { AppLogger } from '@easylayer/logger';
 import { ConnectionManager } from '@easylayer/bitcoin-network-provider';
+import { SystemConfig } from '../../config';
 import { BlocksQueue } from './blocks-queue';
 import { Block } from './interfaces';
 import { BlocksCommandFactoryService } from '../services/blocks-command-factory.service';
@@ -14,23 +15,31 @@ import { BlocksCommandFactoryService } from '../services/blocks-command-factory.
 @Injectable()
 export class BlocksQueueService implements OnModuleInit  {
   private blockQueue = new BlocksQueue<Block>();
-  // IMPORTANT: We specify the same values for minThreads and maxThreads.
-  // We do this so that the workers in the pool are created once and then reused,
-  // but if we specify minThreads < maxThreads,
-  // then we will recreate the workers each time until the maxThreads
-  private workerPool: Piscina = new Piscina({
-    filename: join(__dirname, 'worker.js'),
-    minThreads: 1,
-    maxThreads: 1 // TODO: max threads = cpu * 2 - 2
-  });
-  private maxQueueSize: number = 100; // TODO: move into env
+  private workerPool: Piscina;
+  private maxQueueSize: number;
   private isLoadingStarted = false;
+  private blockProcessedPromise!: Promise<void>;
+  private resolveNextBlock!: () => void;
 
   constructor(
     private readonly log: AppLogger,
+    private readonly systemConfig: SystemConfig,
     private readonly blocksCommandFactory: BlocksCommandFactoryService,
     private readonly connectionManager: ConnectionManager,
-  ) {}
+  ) {
+    // IMPORTANT: We specify the same values for minThreads and maxThreads.
+    // We do this so that the workers in the pool are created once and then reused,
+    // but if we specify minThreads < maxThreads,
+    // then we will recreate the workers each time
+    this.workerPool = new Piscina({
+      filename: join(__dirname, 'worker.js'),
+      minThreads: systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
+      maxThreads: systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM
+    });
+    this.maxQueueSize = systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_SIZE;
+
+    this.initBlockProcessedPromise();
+  }
 
   /**
    * Initializes the queue iteratting on module initialization.
@@ -45,13 +54,18 @@ export class BlocksQueueService implements OnModuleInit  {
    * @returns A promise that resolves to the block if found.
    */
   public async getOneBlockByHeight(height: bigint | string | number): Promise<Block> {
-    return this.blockQueue.fetchBlockByHeight(BigInt(height));
+    const block =  this.blockQueue.fetchBlockFromOutStack(BigInt(height));
+    if (!block) {
+      throw new Error('No block found with height ${height.toString()}');
+    }
+
+    return block;
   }
 
   private async *blocksIterator(): AsyncGenerator<Block, void, unknown> {
     while (true) {
       if (this.blockQueue.length > 0) {
-        const block = await this.blockQueue.peekFirstBlock();
+        const block = await this.peekFirstBlock();
         if (block) {
           yield block;
         }
@@ -59,6 +73,26 @@ export class BlocksQueueService implements OnModuleInit  {
         // TODO: add description about why we use setImmediate() here
         await new Promise(resolve => setImmediate(resolve));
       }
+    }
+  }
+
+  private async peekFirstBlock(): Promise<Block | undefined> {
+    // NOTE: Before processing the next block from the queue,
+    // we wait for the resolving of the promise of the previous block
+    await this.blockProcessedPromise;
+
+    // Init the promise for the next wait
+    this.initBlockProcessedPromise();
+
+    return this.blockQueue.peekFirstBlock();
+  }
+
+  private initBlockProcessedPromise(): void {
+    this.blockProcessedPromise = new Promise<void>(resolve => {
+        this.resolveNextBlock = resolve;
+    });
+    if (this.blockQueue.length === 0) {
+        this.resolveNextBlock();
     }
   }
 
@@ -76,7 +110,8 @@ export class BlocksQueueService implements OnModuleInit  {
 
         // IMPORTANT: We call this to resolve queue promise 
         // that we can try same block one more time
-        this.blockQueue.onError();
+        // this.blockQueue.onError();
+        this.resolveNextBlock();
       }
     }
   }
@@ -98,8 +133,18 @@ export class BlocksQueueService implements OnModuleInit  {
     // (NOT the next one)
     this.blockQueue.lastHeight = BigInt(commonHeight);
 
+    let exponentialBackoff = 100; // Начальная задержка для экспоненциального бэкоффа
+
     while (true) {
-      await this.loading();
+      if (this.blockQueue.length < this.maxQueueSize) {
+        await this.loading();
+        exponentialBackoff = 100; // Сбрасываем задержку после успешной загрузки
+      } else {
+        // Ждем, пока не появится место в очереди
+        this.log.debug('Queue is full, waiting for space...', {}, this.constructor.name);
+        await new Promise(resolve => setTimeout(resolve, exponentialBackoff));
+        exponentialBackoff = Math.min(exponentialBackoff * 2, 10000); // Экспоненциально увеличиваем задержку, но ограничиваем максимумом
+      }
     }
   }
   
@@ -114,10 +159,15 @@ export class BlocksQueueService implements OnModuleInit  {
     // have already gone along the wrong chain
     this.blockQueue.clear();
 
-    this.log.debug('Block Queue was clear to height: ', { newStartHeight }, this.constructor.name);
-
     // Set a new initial height for loading blocks
     this.blockQueue.lastHeight = BigInt(newStartHeight);
+
+    // Resolve the promise, indicating that the block has been processed
+    this.resolveNextBlock();
+    // Init the promise for the next wait
+    this.initBlockProcessedPromise();
+
+    this.log.debug('Block Queue was clear to height: ', { newStartHeight }, this.constructor.name);
   }
 
   /**
@@ -126,13 +176,20 @@ export class BlocksQueueService implements OnModuleInit  {
   public async confirmIndexBlock(): Promise<void> {
     this.log.debug(`dequeue()`, {}, this.constructor.name);
 
-    return this.blockQueue.dequeue();
+    const block = this.blockQueue.dequeue();
+    if (!block) {
+      throw new Error('The block cannot be confirmed');
+    }
+
+    // TODO: think about do we need check exectly confirmed block?
+    this.resolveNextBlock();
   }
 
   private async loading(): Promise<void> {
     // IMPORTANT: This is a temp array 
     // it needs to calculate blocks from parallel threds before enqueue
     let blocksBatch: Block[] = [];
+    let retryDelay = 100; // Начальная задержка для повторных попыток загрузки блоков
 
     this.log.info('Blocks Queue Length', { length: this.blockQueue.length }, this.constructor.name);
 
@@ -161,10 +218,18 @@ export class BlocksQueueService implements OnModuleInit  {
         if (this.enqueueBlocksBatch(blocksBatch)) {
           // Clear temp array after successful enqueue
           blocksBatch = [];
+          retryDelay = 100; // Сбрасываем задержку после успешной загрузки
         } else {
           // TODO: think about this case
           blocksBatch = [];
+          this.log.debug('Failed to enqueue blocks batch. Retrying...');
+          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          retryDelay = Math.min(retryDelay * 2, 10000); // Экспоненциально увеличиваем задержку, но ограничиваем максимумом
         }
+      } else {
+        this.log.debug('Incomplete blocks batch. Waiting for new blocks...');
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        retryDelay = Math.min(retryDelay * 2, 10000); // Экспоненциально увеличиваем задержку, но ограничиваем максимумом
       }
     }
   }

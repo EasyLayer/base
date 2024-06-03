@@ -1,55 +1,156 @@
 import { BlocksQueue } from '../blocks-queue';
-import { Block } from '../interfaces';
+import { Block, Transaction } from '../interfaces';
+
+class TestBlock implements Block {
+  height: bigint;
+  hash: string;
+  tx: Transaction[];
+
+  constructor(height: bigint) {
+    this.height = height;
+    this.hash = '';
+    this.tx = [];
+  }
+}
 
 describe('BlocksQueue', () => {
-  let queue: BlocksQueue<Block>;
+  let queue: BlocksQueue<TestBlock>;
 
   beforeEach(() => {
-    queue = new BlocksQueue();
+    queue = new BlocksQueue<TestBlock>();
   });
 
-  test('enqueue should add an item and sort the queue', () => {
-    const block1 = { height: 2, hash: 'hash2', tx: [] };
-    const block2 = { height: 1, hash: 'hash1', tx: [] };
-    queue.enqueue(block1);
-    queue.enqueue(block2);
-    expect(queue.length).toBe(2);
-    expect(queue['items'][0].height).toBe(1);
+  test('should initialize with empty queue', () => {
+    expect(queue.length).toBe(0);
+    expect(queue.lastHeight).toBe(-1n);
   });
 
-  test('dequeue should return the first item in the queue', async () => {
-    const block1 = { height: 1, hash: 'hash1', tx: [] };
-    const block2 = { height: 2, hash: 'hash2', tx: [] };
-    queue.enqueue(block1);
-    queue.enqueue(block2);
-    const dequeuedItem = await queue.dequeue();
-    expect(dequeuedItem).toEqual(block1);
+  test('should enqueue block with correct height', () => {
+    const block = new TestBlock(0n);
+    const result = queue.enqueue(block);
+    expect(result).toBe(true);
     expect(queue.length).toBe(1);
+    expect(queue.lastHeight).toBe(0n);
   });
 
-  test('dequeue should wait for an item if the queue is empty', async () => {
-    setTimeout(() => queue.enqueue({ height: 1, hash: 'hash1', tx: [] }), 50);
-    const dequeuedItem = await queue.dequeue();
-    expect(dequeuedItem.height).toBe(1);
+  test('should not enqueue block with incorrect height', () => {
+    const block = new TestBlock(1n);
+    const result = queue.enqueue(block);
+    expect(result).toBe(false);
+    expect(queue.length).toBe(0);
   });
 
-  test('requeue should add an item to the front of the queue', () => {
-    const block1 = { height: 1, hash: 'hash1', tx: [] };
-    const block2 = { height: 2, hash: 'hash2', tx: [] };
+  test('should dequeue block', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
     queue.enqueue(block1);
-    queue.requeue(block2);
-    expect(queue['items'][0].height).toBe(2);
+    queue.enqueue(block2);
+    queue.dequeue();
+    expect(queue.length).toBe(1);
+    expect(queue.lastHeight).toBe(1n);
   });
 
-  test('clear should empty the queue and reject all pending promises', () => {
-    const rejectSpy = jest.fn();
+  test('should peek first block', async () => {
+    const block1 = new TestBlock(0n);
+    queue.enqueue(block1);
+    const firstBlock = await queue.peekFirstBlock();
+    expect(firstBlock?.height).toBe(0n);
+  });
 
-    queue['waitingResolvers'].push(rejectSpy);
-    queue['waitingResolvers'].push(rejectSpy);
-    
+  test('should clear the queue', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
+    queue.enqueue(block1);
+    queue.enqueue(block2);
     queue.clear();
     expect(queue.length).toBe(0);
-    expect(queue['waitingResolvers'].length).toBe(0);
-    expect(rejectSpy).toHaveBeenCalledTimes(2);
+    expect(queue.lastHeight).toBe(-1n);
+  });
+
+  test('should handle multiple enqueues correctly', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
+    const block3 = new TestBlock(2n);
+    queue.enqueue(block1);
+    queue.enqueue(block2);
+    queue.enqueue(block3);
+    expect(queue.length).toBe(3);
+    expect(queue.lastHeight).toBe(2n);
+  });
+
+  test('should return undefined when dequeuing from empty queue', () => {
+    const dequeuedBlock = queue.dequeue();
+    expect(dequeuedBlock).toBeUndefined();
+    expect(queue.length).toBe(0);
+    expect(queue.lastHeight).toBe(-1n);
+  });
+
+  test('should fetch a block by height from inStack using binary search', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
+    queue.enqueue(block1);
+    queue.enqueue(block2);
+    const result = queue.fetchBlockFromInStack(1n);
+    expect(result).toBe(block2);
+  });
+
+  test('should return undefined if block is not found in inStack using binary search', () => {
+    const block = new TestBlock(0n);
+    queue.enqueue(block);
+    const result = queue.fetchBlockFromInStack(1n);
+    expect(result).toBeUndefined();
+  });
+
+  test('should fetch a block by height from outStack using binary search', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
+    queue.enqueue(block1);
+    queue.enqueue(block2);
+    queue.dequeue(); // Transfer all items to outStack and pop()
+    const result = queue.fetchBlockFromOutStack(1n);
+    expect(result).toBe(block2);
+  });
+
+  test('should return undefined if block is not found in outStack using binary search', () => {
+    const block = new TestBlock(0n);
+    queue.enqueue(block);
+    queue.dequeue(); // Transfer all items to outStack
+    const result = queue.fetchBlockFromOutStack(1n);
+    expect(result).toBeUndefined();
+  });
+
+  test('should handle a large number of blocks correctly', () => {
+    const blocks = [];
+    for (let i = 0; i < 1000; i++) {
+      blocks.push(new TestBlock(BigInt(i)));
+    }
+    blocks.forEach(block => queue.enqueue(block));
+    expect(queue.length).toBe(1000);
+    expect(queue.lastHeight).toBe(999n);
+    blocks.forEach(() => queue.dequeue());
+    expect(queue.length).toBe(0);
+    expect(queue.lastHeight).toBe(-1n);
+  });
+
+  test('should maintain order after transferItems', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
+    queue.enqueue(block1);
+    queue.enqueue(block2);
+    queue['transferItems'](); // Manually trigger transferItems
+    expect(queue['outStack'][0]).toBe(block2);
+    expect(queue['outStack'][1]).toBe(block1);
+  });
+
+  test('should fetch blocks correctly after transferItems', () => {
+    const block1 = new TestBlock(0n);
+    const block2 = new TestBlock(1n);
+    queue.enqueue(block1);
+    queue.enqueue(block2);
+    queue['transferItems'](); // Manually trigger transferItems
+    const resultInStack = queue.fetchBlockFromInStack(0n);
+    const resultOutStack = queue.fetchBlockFromOutStack(0n);
+    expect(resultInStack).toBeUndefined();
+    expect(resultOutStack).toBe(block1);
   });
 });

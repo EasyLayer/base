@@ -12,5 +12,5 @@ module.exports = {
     testPathIgnorePatterns: baseConfig.testPathIgnorePatterns.concat([
         "<rootDir>/node_modules",
         "<rootDir>/dist"
-    ])
+    ]),
 };

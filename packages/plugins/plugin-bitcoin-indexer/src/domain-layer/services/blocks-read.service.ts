@@ -11,8 +11,8 @@ export class BlocksReadService {
     private readDb: Repository<BlockViewModel>
   ) {}
 
-  async create({ id, hash }: { id: string, hash: string }): Promise<BlockViewModel> {
-    return await this.readDb.save({ hash, id });
+  async create({ id, hash, status }: { id: string, hash: string, status: string }): Promise<BlockViewModel> {
+    return await this.readDb.save({ hash, id, status });
   }
 
   async update(blockViewModel: BlockViewModel): Promise<BlockViewModel> {

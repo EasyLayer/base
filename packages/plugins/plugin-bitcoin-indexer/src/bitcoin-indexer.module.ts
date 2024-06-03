@@ -8,7 +8,6 @@ import { ReadDatabaseModule } from '@easylayer/read-database';
 import { BitcoinNetworkProviderModule, QuickNodeProvider, SelfNodeProvider } from '@easylayer/bitcoin-network-provider';
 import { BitcoinIndexerController } from './bitcoin-indexer.controller';
 import { BitcoinIndexerService } from './bitcoin-indexer.service';
-import { AppConfig, ProvidersConfig } from './config';
 import { BlocksQueueService } from './application-layer/blocks-queue';
 import { IndexerSaga } from './application-layer/sagas';
 import { BlockViewModel, TransactionViewModel } from './domain-layer/view-models';
@@ -26,6 +25,7 @@ import {
 } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 import { EventsHandlers } from './domain-layer/events-handlers';
+import { AppConfig, ProvidersConfig, SystemConfig } from './config';
 
 @Module({})
 export class BitcoinIndexerModule {
@@ -80,6 +80,13 @@ export class BitcoinIndexerModule {
         })
       ],
       providers: [
+        {
+          provide: SystemConfig,
+          useValue: transformAndValidateSync(SystemConfig, process.env, {
+            transformer: { enableImplicitConversion: true },
+            validator: { whitelist: true },
+          }),
+        },
         {
           provide: AppConfig,
           useValue: transformAndValidateSync(AppConfig, process.env, {
