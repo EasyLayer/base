@@ -1,8 +1,9 @@
 import { resolve } from 'node:path';
 import { Module, DynamicModule } from '@nestjs/common';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions, getDataSourceToken } from '@nestjs/typeorm';
 import { addTransactionalDataSource } from 'typeorm-transactional';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { ReadDatabaseService } from './read-database.service';
 
 type ReadDatabaseModuleConfig = TypeOrmModuleOptions & {
   type: 'sqlite' | 'postgres' | 'mysql' | 'mongodb';
@@ -21,10 +22,13 @@ export class ReadDatabaseModule {
     return {
       module: ReadDatabaseModule,
       imports: [
+        // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same 
+        // so as not to get confused. It must be unique to the one module connection. 
         TypeOrmModule.forRootAsync({
           name,
           useFactory: () => ({
             ...restOptions,
+            name,
             database,
             entities,
           }),
@@ -32,18 +36,32 @@ export class ReadDatabaseModule {
             if (!options) {
               throw new Error('Invalid options passed');
             }
+            const dataSource = new DataSource(options);
+            await dataSource.initialize();
+
             // Add a DataSource with a unique name
-            return addTransactionalDataSource({
+            // IMPORTANT: name use in @Transactional() decorator
+            addTransactionalDataSource({
               name,
               dataSource: new DataSource(options),
             });
+
+            return dataSource;
           },
         }),
         // 
         TypeOrmModule.forFeature(entities, name),
       ],
-      providers: [],
-      exports: [TypeOrmModule],
+      providers: [
+        {
+          provide: ReadDatabaseService,
+          useFactory: async (dataSource: DataSource) => {
+            return new ReadDatabaseService(dataSource);
+          },
+          inject: [getDataSourceToken(name)],
+        },
+      ],
+      exports: [TypeOrmModule, ReadDatabaseService],
     };
   }
 }

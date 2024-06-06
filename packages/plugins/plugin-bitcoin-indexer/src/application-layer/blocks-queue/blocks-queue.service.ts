@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { v4 as uuidv4 } from 'uuid';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import Piscina from 'piscina';
 import { AppLogger } from '@easylayer/logger';
 import { ConnectionManager } from '@easylayer/bitcoin-network-provider';
@@ -13,11 +13,12 @@ import { BlocksCommandFactoryService } from '../services/blocks-command-factory.
  * A service that manages a queue of blockchain blocks and processes them using a worker pool.
  */
 @Injectable()
-export class BlocksQueueService implements OnModuleInit  {
+export class BlocksQueueService implements OnModuleDestroy {
   private blockQueue = new BlocksQueue<Block>();
   private workerPool: Piscina;
-  private maxQueueSize: number;
-  private isLoadingStarted = false;
+  private _maxQueueSize: number;
+  private _isLoading = false;
+  private _maxBlockHeight: bigint;
   private blockProcessedPromise!: Promise<void>;
   private resolveNextBlock!: () => void;
 
@@ -33,20 +34,34 @@ export class BlocksQueueService implements OnModuleInit  {
     // then we will recreate the workers each time
     this.workerPool = new Piscina({
       filename: join(__dirname, 'worker.js'),
-      minThreads: systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
-      maxThreads: systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM
+      minThreads: this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
+      maxThreads: this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM
     });
-    this.maxQueueSize = systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_SIZE;
+    this._maxQueueSize = this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_SIZE;
+    this._maxBlockHeight = this.systemConfig.BITCOIN_INDEXER_MAX_BLOCK_HEIGHT;
 
     this.initBlockProcessedPromise();
+    this.startQueueIteratting();
   }
 
-  /**
-   * Initializes the queue iteratting on module initialization.
-   */
-  async onModuleInit() {
-    await this.startQueueIteratting();
+  
+  public get isLoading() : boolean {
+    return this._isLoading;
   }
+  
+
+  async onModuleDestroy() {
+    if (this.workerPool) {
+      await this.workerPool.destroy();
+    }
+
+    this.resolveNextBlock();
+  }
+
+  // public async init(commonHeight: bigint | string | number) {
+  //   // await this.startBlocksLoading(BigInt(commonHeight));
+  //   await this.startQueueIteratting();
+  // }
 
   /**
    * Retrieves a block by its height from the queue.
@@ -89,10 +104,10 @@ export class BlocksQueueService implements OnModuleInit  {
 
   private initBlockProcessedPromise(): void {
     this.blockProcessedPromise = new Promise<void>(resolve => {
-        this.resolveNextBlock = resolve;
+      this.resolveNextBlock = resolve;
     });
     if (this.blockQueue.length === 0) {
-        this.resolveNextBlock();
+      this.resolveNextBlock();
     }
   }
 
@@ -102,7 +117,7 @@ export class BlocksQueueService implements OnModuleInit  {
   private async startQueueIteratting(): Promise<void> {
     this.log.debug('startQueueIteratting()', {}, this.constructor.name);
 
-    for await (const block of this.blocksIterator()) {
+    for await (const block of this.blocksIterator()) {      
       try {
         await this.blocksCommandFactory.indexBlock({ block, requestId: uuidv4() });
       } catch (error) {
@@ -120,15 +135,15 @@ export class BlocksQueueService implements OnModuleInit  {
    * Starts loading blocks up to a common height.
    * @param commonHeight The height from which to start loading blocks.
    */
-  public async startBlocksLoading(commonHeight: bigint | string | number): Promise<void> {
+  public async startBlocksLoading(commonHeight: bigint | number | string): Promise<void> {
     this.log.debug('startBlocksLoading()', { commonHeight }, this.constructor.name);
 
-    if (this.isLoadingStarted) {
+    if (this._isLoading) {
       // Loading Blocks already started
       return;
     }
 
-    this.isLoadingStarted = true;
+    this._isLoading = true;
     // INPORTANT: Here we indicate the height that was actually the last processed
     // (NOT the next one)
     this.blockQueue.lastHeight = BigInt(commonHeight);
@@ -136,7 +151,13 @@ export class BlocksQueueService implements OnModuleInit  {
     let exponentialBackoff = 100; // Начальная задержка для экспоненциального бэкоффа
 
     while (true) {
-      if (this.blockQueue.length < this.maxQueueSize) {
+      if (this.systemConfig.isTEST() && this.blockQueue.lastHeight >= this._maxBlockHeight) {
+        this._isLoading = false;
+        this.log.debug('Reached max block height, stopping loading...', {}, this.constructor.name);
+        break;
+      }
+      
+      if (this.blockQueue.length < this._maxQueueSize) {
         await this.loading();
         exponentialBackoff = 100; // Сбрасываем задержку после успешной загрузки
       } else {
@@ -165,7 +186,7 @@ export class BlocksQueueService implements OnModuleInit  {
     // Resolve the promise, indicating that the block has been processed
     this.resolveNextBlock();
     // Init the promise for the next wait
-    this.initBlockProcessedPromise();
+    // this.initBlockProcessedPromise();
 
     this.log.debug('Block Queue was clear to height: ', { newStartHeight }, this.constructor.name);
   }
@@ -174,7 +195,7 @@ export class BlocksQueueService implements OnModuleInit  {
    * Confirms that a block has been already indexed by dequeuing it.
    */
   public async confirmIndexBlock(): Promise<void> {
-    this.log.debug(`dequeue()`, {}, this.constructor.name);
+    this.log.debug(`confirmIndexBlock()`, {}, this.constructor.name);
 
     const block = this.blockQueue.dequeue();
     if (!block) {
@@ -191,9 +212,12 @@ export class BlocksQueueService implements OnModuleInit  {
     let blocksBatch: Block[] = [];
     let retryDelay = 100; // Начальная задержка для повторных попыток загрузки блоков
 
-    this.log.info('Blocks Queue Length', { length: this.blockQueue.length }, this.constructor.name);
+    while (this.blockQueue.length < this._maxQueueSize) {
+      if (this.systemConfig.isTEST() && this.blockQueue.lastHeight >= this._maxBlockHeight) {
+        this.log.debug('Reached max block height, stopping loading...', {}, this.constructor.name);
+        break;
+      }
 
-    while (this.blockQueue.length < this.maxQueueSize) {
       const promises = [];
 
       for (let i = 0; i < this.workerPool.options.maxThreads; i++) {

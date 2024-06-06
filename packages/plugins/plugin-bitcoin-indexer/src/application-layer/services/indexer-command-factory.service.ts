@@ -9,7 +9,7 @@ export class IndexerCommandFactoryService {
     private readonly commandBus: CommandBus
   ) {}
 
-  public async init(dto: { requestId: string }): Promise<void> {
+  public async init(dto: any): Promise<void> {
     return await this.commandBus.execute(
       new InitIndexerCommand(dto)
     );

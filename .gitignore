@@ -48,6 +48,7 @@ package-lock.json
 
 test-apps
 coverage
+report.xml
 
 ############################
 # Builds
@@ -75,7 +76,6 @@ npm-debug.log*
 ############################
 
 .postgres-cache
-*.sql
 *.sqlite
 *.db
 *.db-shm

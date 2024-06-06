@@ -5,6 +5,7 @@ import { addTransactionalDataSource } from 'typeorm-transactional';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { EventDataModel } from './event-data.model';
 import { EventStoreRepository } from './eventstore.repository';
+import { EventStoreService } from './eventstore.service';
 
 type EventStoreConfig = TypeOrmModuleOptions & {
   type: 'sqlite' | 'postgres' | 'mysql';
@@ -24,10 +25,13 @@ export class EventStoreModule {
     return {
       module: EventStoreModule,
       imports: [
+        // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same 
+        // so as not to get confused. It must be unique to the one module connection. 
         TypeOrmModule.forRootAsync({
           name,
           useFactory: () => ({
             ...restOptions,
+            name,
             database,
             entities: [EventDataModel],
           }),
@@ -35,23 +39,36 @@ export class EventStoreModule {
             if (!options) {
               throw new Error('Invalid options passed');
             }
+            const dataSource = new DataSource(options);
+            await dataSource.initialize();
+
             // Add a DataSource with a unique name
-            return addTransactionalDataSource({
+            // IMPORTANT: name use in @Transactional() decorator
+            addTransactionalDataSource({
               name,
-              dataSource: new DataSource(options),
+              dataSource,
             });
+
+            return dataSource;
           },
         }),
       ],
       providers: [
         EventStoreRepository,
         {
+          provide: EventStoreService,
+          useFactory: async (dataSource: DataSource) => {
+            return new EventStoreService(dataSource);
+          },
+          inject: [getDataSourceToken(name)],
+        },
+        {
           provide: 'EVENT_DATA_MODEL_REPOSITORY',
           useFactory: async (dataSource: DataSource) => dataSource.getRepository(EventDataModel),
           inject: [getDataSourceToken(name)],
         },
       ],
-      exports: [EventStoreRepository],
+      exports: [EventStoreRepository, EventStoreService],
     };
   }
 }

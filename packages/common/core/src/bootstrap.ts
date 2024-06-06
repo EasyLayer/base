@@ -2,19 +2,25 @@ import 'reflect-metadata';
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
+import { DynamicModule } from '@nestjs/common';
 import { NestLogger } from '@easylayer/logger';
 import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
 import { importPlugins, setupSwaggerServer } from './utils';
 
+export interface RegisterablePlugin {
+  register: () => DynamicModule | Promise<DynamicModule>;
+}
+
 export interface BootstrapOptions {
   appName?: string;
+  plugins?: RegisterablePlugin[];
 }
 
 initializeTransactionalContext();
 
-export const bootstrap = async ({ appName }: BootstrapOptions) => {
+export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => {
   const logger = new NestLogger();
 
   const basePath = resolve(process.cwd());
@@ -23,12 +29,20 @@ export const bootstrap = async ({ appName }: BootstrapOptions) => {
   // It have to be before import all plugins.
   config({ path: resolve(process.cwd(), '.env') });
 
-  const plugins = await importPlugins(basePath);
+  const externalPlugins = [];
+  // Это можно в метод вынести
+  for (let plugin of plugins) {
+    const registeredPlugin = await plugin.register();
+    externalPlugins.push(registeredPlugin);
+  }
+
+  // TODO: это пусть загружает только плагины с папки node_modules
+  // const internalPlugins = await importPlugins(basePath);
 
   // Create a root app module that already includes dynamic modules
   const rootModule = CoreModule.forRoot({
     appName: appName || 'easylayer starter',
-    plugins,
+    plugins: [...externalPlugins],
   });
 
   // Create a Nest application
@@ -37,8 +51,8 @@ export const bootstrap = async ({ appName }: BootstrapOptions) => {
   const appConfig = app.get(AppConfig);
 
   // app.useGlobalFilters(new ExceptionFilterMiddleware());
-
-  if (appConfig.NODE_ENV === 'development') {
+  
+  if (appConfig.isDEVELOPMENT()) {
     setupSwaggerServer(app, {
       title: appName ? appName : 'default',
       description: 'Description',

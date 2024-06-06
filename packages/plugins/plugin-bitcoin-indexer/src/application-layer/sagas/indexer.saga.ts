@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { SyncSaga, ICommand, ofType, execute } from '@easylayer/cqrs';
@@ -18,7 +18,7 @@ import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
 export class IndexerSaga {
   constructor(
     private readonly transactionsCommandFactoryService: TransactionsCommandFactoryService,
-    private readonly blocksQueueService: BlocksQueueService,
+    @Inject('BlocksQueueService') private readonly blocksQueueService: BlocksQueueService,
   ) {}
 
   @SyncSaga()

@@ -1,5 +1,5 @@
 // import { v4 as uuidv4 } from 'uuid';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { CommandBus } from '@easylayer/cqrs';
 import {
   IndexTransactionsBatchCommand,
@@ -10,7 +10,7 @@ import { BlocksQueueService } from '../blocks-queue';
 export class TransactionsCommandFactoryService {
   constructor(
     private readonly commandBus: CommandBus,
-    private readonly blocksQueueService: BlocksQueueService
+    @Inject('BlocksQueueService') private readonly blocksQueueService: BlocksQueueService
   ) {}
 
   public async indexTransactionsBatch(dto: any): Promise<void> {

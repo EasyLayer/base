@@ -9,9 +9,14 @@ const isDynamicModule = (object: any): object is DynamicModule => {
 };
 
 export const importPlugins = async (basePath: string): Promise<DynamicModule[]> => {
+  // resolve package.json файл 
+  // findEasylayePlugins in this file (wich start from @easylayer/plugin-)
+
   const nodeModulesPath = resolveNodeModulesPath(basePath);
   const customPluginsPath = resolveCustomPluginsPath(basePath);
 
+  // Тепреь нужно найти конкретно те плагины что есть в package.json найти их в node_modules
+  
   const easylayerPlugins = await findEasylayerPlugins(nodeModulesPath);
   const customPlugins = await findCustomPlugins(customPluginsPath);
 

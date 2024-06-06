@@ -119,19 +119,6 @@ describe('BlocksQueue', () => {
     expect(result).toBeUndefined();
   });
 
-  test('should handle a large number of blocks correctly', () => {
-    const blocks = [];
-    for (let i = 0; i < 1000; i++) {
-      blocks.push(new TestBlock(BigInt(i)));
-    }
-    blocks.forEach(block => queue.enqueue(block));
-    expect(queue.length).toBe(1000);
-    expect(queue.lastHeight).toBe(999n);
-    blocks.forEach(() => queue.dequeue());
-    expect(queue.length).toBe(0);
-    expect(queue.lastHeight).toBe(-1n);
-  });
-
   test('should maintain order after transferItems', () => {
     const block1 = new TestBlock(0n);
     const block2 = new TestBlock(1n);

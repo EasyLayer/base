@@ -3,7 +3,9 @@
     "apps/*",
     "apps/*/*",
     "packages/*",
-    "packages/*/*"
+    "packages/*/*",
+    "e2e-tests/*",
+    "e2e-tests/*/*"
   ],
   "version": "0.0.2-experimental.1",
   "npmClient": "yarn"

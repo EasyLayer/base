@@ -1,1 +1,1 @@
-export { initializeTransactionalContext, Transactional, addTransactionalDataSource } from 'typeorm-transactional';
+export { initializeTransactionalContext, Transactional, addTransactionalDataSource, getDataSourceByName } from 'typeorm-transactional';

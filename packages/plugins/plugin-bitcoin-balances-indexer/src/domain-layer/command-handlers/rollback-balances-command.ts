@@ -54,13 +54,22 @@ export class RollbackBalancesCommandHandler
       /* Rollback balances */
       const walletsBatches: WalletsBatch[] = [];
 
+      // Проходимся по всем батчам (в реорганизации их несколько так как мы весь блок откатываем)
       for (let batch of batches) {
+        // По aggregateId мы поймем какую модель батча нужно перезаписать
+        // Мы не достаем состояние а только перезаписываем ему статус (но передаем ему кошлеьки чтобы опубликовать их)
         const { aggregateId, transactions } = batch;
 
         const wallets: Wallet[] = [];
 
+        // Сдесь мы получаем Map<pubklicKey, BalanceWithAddress[]>
+        // true - означает что это rollback и входы идут со знаком плюс а выходы со знаком минус
         const walletsBalances = createWalletBalances(transactions, true);
 
+        // На каждый публичный ключ у нас свой кошелек
+        // мы также не достаем кошельки с состояния, мы перезаписываем им балансы 
+        // Балансы перезаписываються за счет методов обновления состояния когда мы не перезаписываем стурктуру
+        // а проверяем есть ли там запись и если есть то плюсуем просто
         for (const [publicKey, balances] of walletsBalances) {
           const wallet: Wallet = this.walletModelFactory.createNewModel();
           await wallet.add({ aggregateId: publicKey, requestId, balances });

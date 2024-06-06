@@ -11,21 +11,26 @@ type Wallets = string[];
 
 // В этом батче я уже посчитаю балансы для каждого кошелька тут
 export class WalletsBatch extends AggregateRoot {
-  public aggregateId!: string; // ??? может сделать тем же самым что и transactionBatch - нет, потому чт ов кейсе когда мы не рабоатем с индексером у нас нет айди конкретных батчей
+  public aggregateId!: string;
   public wallets!: Wallets;
   public status!: string;
 
   public async index({
     aggregateId,
     requestId,
-    balances
+    wallets
   }: {
     aggregateId: string;
     requestId: string;
-    balances: Balance[];
+    wallets: Wallet[];
   }) {
     this.aggregateId = aggregateId;
-    await this.apply(new BitcoinWalletsBatchBalancesIndexedEvent({ aggregateId, requestId, balances, status: 'indexed' }));
+    await this.apply(new BitcoinWalletsBatchBalancesIndexedEvent({
+      aggregateId,
+      requestId,
+      wallets: wallets.map(item => ({ aggregateId: item.aggregateId, walletBalances: item.walletBalances })), // Нужно ли это серилизовать? 
+      status: 'indexed'
+    }));
   }
 
   public async rollback({
@@ -42,16 +47,17 @@ export class WalletsBatch extends AggregateRoot {
     await this.apply(new BitcoinWalletsBatchBalancesRolledbackEvent({
       aggregateId,
       requestId,
-      wallets: wallets.map(item => ({ aggregateId: item.aggregateId, addressBalances: item.addressBalances })), // Нужно ли это серилизовать? 
+      wallets: wallets.map(item => ({ aggregateId: item.aggregateId, walletBalances: item.walletBalances })), // Нужно ли это серилизовать? 
       status: 'suspended'
     }));
   }
 
   private onBitcoinWalletsBatchBalancesIndexedEvent({ payload }: BitcoinWalletsBatchBalancesIndexedEvent) {
-    const { aggregateId, balances, status } = payload;
+    const { aggregateId, wallets, status } = payload;
+    // IMPORTANT: так как мы хотим событием перезаписать эти данные, то мы и сетим aggregtaeId повторно
     this.aggregateId = aggregateId;
     this.status = status;
-    this.wallets = Object.keys(balances);
+    this.wallets = Object.keys(wallets);
   }
 
   private onBitcoinWalletsBatchBalancesRolledbackEvent({ payload }: BitcoinWalletsBatchBalancesRolledbackEvent) {

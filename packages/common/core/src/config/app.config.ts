@@ -22,4 +22,8 @@ export class AppConfig {
   @Max(65535)
   @JSONSchema({ description: 'Server port' })
   PORT!: number;
+
+  isDEVELOPMENT(): boolean {
+    return process.env.NODE_ENV === 'development';
+  }
 }

@@ -1,7 +1,6 @@
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
-  BitcoinWalletsBatchBalancesIndexedEvent,
-  BitcoinWalletsBatchBalancesRolledbackEvent,
+  BitcoinWalletBalancesAddedEvent
 } from '@easylayer/domain-cqrs-components/bitcoin';
 
 export abstract class Balance {
@@ -54,7 +53,7 @@ export class NativeCoin extends Balance {
   }
 }
 
-export class AddressedBalance<T extends Balance> {
+export class BalanceWithAddress<T extends Balance> {
   constructor(
     public readonly address: Address,
     public readonly balance: T
@@ -80,19 +79,18 @@ class BalanceFactory {
     return new Rune(runeType, value);
   }
 
-  static createAddressedNativeCoin(amount: bigint, address: string): AddressedBalance<NativeCoin> {
-    return new AddressedBalance(address, this.createNativeCoin(amount));
+  static createAddressedNativeCoin(amount: bigint, address: string): BalanceWithAddress<NativeCoin> {
+    return new BalanceWithAddress(address, this.createNativeCoin(amount));
   }
 
-  static createAddressedNFT(name: string, metadata: any, isRemoved: boolean = false, address: string): AddressedBalance<NFT> {
-    return new AddressedBalance(address, this.createNFT(name, metadata, isRemoved));
+  static createAddressedNFT(name: string, metadata: any, isRemoved: boolean = false, address: string): BalanceWithAddress<NFT> {
+    return new BalanceWithAddress(address, this.createNFT(name, metadata, isRemoved));
   }
 
-  static createAddressedRune(runeType: string, value: number, address: string): AddressedBalance<Rune> {
-    return new AddressedBalance(address, this.createRune(runeType, value));
+  static createAddressedRune(runeType: string, value: number, address: string): BalanceWithAddress<Rune> {
+    return new BalanceWithAddress(address, this.createRune(runeType, value));
   }
 }
-
 
 export class Wallet extends AggregateRoot {
   public aggregateId!: string; //publicKey
@@ -105,7 +103,7 @@ export class Wallet extends AggregateRoot {
   }: {
     aggregateId: string;
     requestId: string;
-    balances: AddressedBalance<Balance>[];
+    balances: BalanceWithAddress<Balance>[];
   }) {
     this.aggregateId = aggregateId;
 
@@ -113,7 +111,7 @@ export class Wallet extends AggregateRoot {
     // Так как мы по публичному ключу перезаписываем модели кошлеьков (чтобы не восстанавливать их)
     // то мы должны взять теперь массив со всеми моделями и сгруппировать по aggregateId
 
-    // Группируем балансы по адресам
+    // Группируем балансы по адресам и получаем WalletBalances(наша основная стурктура)
     const walletBalances = this.groupBalancesByAddress(balances);
 
     await this.apply(new BitcoinWalletBalancesAddedEvent({ aggregateId, requestId, walletBalances }));
@@ -141,7 +139,7 @@ export class Wallet extends AggregateRoot {
       const existingBalance = this.walletBalances.get(address)!;
 
       // Обновляем native coins
-      existingBalance.nativeCoins.amount += balances.nativeCoins.amount;
+      existingBalance.nativeCoins.addAmount(balances.nativeCoins.amount);
 
       // Обновляем NFTs
       balances.nfts.forEach(nft => {
@@ -159,7 +157,7 @@ export class Wallet extends AggregateRoot {
       balances.runes.forEach(rune => {
         const existingRuneIndex = existingBalance.runes.findIndex(existingRune => existingRune.runeType === rune.runeType);
         if (existingRuneIndex >= 0) {
-          existingBalance.runes[existingRuneIndex].value += rune.value;
+          existingBalance.runes[existingRuneIndex].addValue(rune.value);
         } else {
           existingBalance.runes.push(rune);
         }
@@ -167,7 +165,7 @@ export class Wallet extends AggregateRoot {
     });
   }
 
-  private groupBalancesByAddress(balances: AddressedBalance<Balance>[]): WalletBalances {
+  private groupBalancesByAddress(balances: BalanceWithAddress<Balance>[]): WalletBalances {
     const walletBalancesMap: WalletBalances = new Map();
   
     balances.forEach(item => {
@@ -211,8 +209,8 @@ export class Wallet extends AggregateRoot {
   
 }
 
-export const createWalletBalances = (transactions: any[], isRollback: boolean = false): Map<PublicKey, AddressedBalance<Balance>[]> => {
-  const balanceMap: Map<PublicKey, AddressedBalance<Balance>[]> = new Map();
+export const createWalletBalances = (transactions: any[], isRollback: boolean = false): Map<PublicKey, BalanceWithAddress<Balance>[]> => {
+  const balanceMap: Map<PublicKey, BalanceWithAddress<Balance>[]> = new Map();
 
   transactions.forEach(transaction => {
     transaction.vin.forEach((input: any) => {
@@ -239,14 +237,14 @@ export const createWalletBalances = (transactions: any[], isRollback: boolean = 
   return balanceMap;
 }
 
-const addBalanceToMap = (balanceMap: Map<PublicKey, AddressedBalance<Balance>[]>, publicKey: PublicKey, addressedBalance: AddressedBalance<Balance>): void => {
+const addBalanceToMap = (balanceMap: Map<PublicKey, BalanceWithAddress<Balance>[]>, publicKey: PublicKey, balanceWithAddress: BalanceWithAddress<Balance>): void => {
   if (!balanceMap.has(publicKey)) {
     balanceMap.set(publicKey, []);
   }
-  balanceMap.get(publicKey)!.push(addressedBalance);
+  balanceMap.get(publicKey)!.push(balanceWithAddress);
 }
 
-const createBalanceFromInput = (type: OutputTypes, input: any, isRollback: boolean): AddressedBalance<Balance> | undefined => {
+const createBalanceFromInput = (type: OutputTypes, input: any, isRollback: boolean): BalanceWithAddress<Balance> | undefined => {
   switch (type) {
     case OutputTypes.NATIVE:
       return BalanceFactory.createAddressedNativeCoin(BigInt(input.amount) * (isRollback ? 1n : -1n), input.address);
@@ -259,7 +257,7 @@ const createBalanceFromInput = (type: OutputTypes, input: any, isRollback: boole
   }
 }
 
-const createBalanceFromOutput = (type: OutputTypes, output: any, isRollback: boolean): AddressedBalance<Balance> | undefined => {
+const createBalanceFromOutput = (type: OutputTypes, output: any, isRollback: boolean): BalanceWithAddress<Balance> | undefined => {
   switch (type) {
     case OutputTypes.NATIVE:
       return BalanceFactory.createAddressedNativeCoin(BigInt(output.amount) * (isRollback ? -1n : 1n), output.address);

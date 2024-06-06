@@ -3,7 +3,7 @@ import { BasicEvent } from '../../../base.event';
 interface BitcoinWalletsBatchBalancesIndexedEventPayload {
   aggregateId: string;
   requestId: string;
-  balances: any;
+  wallets: any;
   status: string;
 }
 

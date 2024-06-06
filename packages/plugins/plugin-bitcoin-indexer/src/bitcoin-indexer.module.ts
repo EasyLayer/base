@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Module, DynamicModule } from '@nestjs/common';
-import { transformAndValidateSync } from 'class-transformer-validator';
+import { transformAndValidate } from 'class-transformer-validator';
 import { LoggerModule } from '@easylayer/logger';
 import { ArithmeticService } from '@easylayer/arithmetic';
 import { EventStoreModule } from '@easylayer/eventstore';
@@ -29,22 +29,24 @@ import { AppConfig, ProvidersConfig, SystemConfig } from './config';
 
 @Module({})
 export class BitcoinIndexerModule {
-  static register(): DynamicModule {
-    const providersConfig = transformAndValidateSync(ProvidersConfig, process.env, {
+  static async register(): Promise<DynamicModule> {
+    const providersConfig = await transformAndValidate(ProvidersConfig, process.env, {
       transformer: { enableImplicitConversion: true },
       validator: { whitelist: true },
     });
     
     // Create QuickNode providers
     const quickNodeProviders = [];
-    for (const quickNodeProviderOption of providersConfig.QUICK_NODE_BASE_URLS) {
-      quickNodeProviders.push({
-        useFactory: () =>
-          new QuickNodeProvider({
-            uniqName: uuidv4(),
-            baseUrl: quickNodeProviderOption,
-          }), 
-      });
+    if (providersConfig.QUICK_NODE_BASE_URLS) {
+      for (const quickNodeProviderOption of providersConfig.QUICK_NODE_BASE_URLS) {
+        quickNodeProviders.push({
+          useFactory: () =>
+            new QuickNodeProvider({
+              uniqName: uuidv4(),
+              baseUrl: quickNodeProviderOption,
+            }), 
+        });
+      }
     }
 
     return {
@@ -74,7 +76,7 @@ export class BitcoinIndexerModule {
           name: 'indexer-read',
           // database: '',
           synchronize: true,
-          logging: true, // false
+          logging: false, // true
           enableWAL: true,
           entities: [BlockViewModel, TransactionViewModel]
         })
@@ -82,27 +84,30 @@ export class BitcoinIndexerModule {
       providers: [
         {
           provide: SystemConfig,
-          useValue: transformAndValidateSync(SystemConfig, process.env, {
-            transformer: { enableImplicitConversion: true },
-            validator: { whitelist: true },
+          useFactory: async () => transformAndValidate(SystemConfig, process.env, {
+            validator: { whitelist: true }
           }),
         },
         {
           provide: AppConfig,
-          useValue: transformAndValidateSync(AppConfig, process.env, {
-            transformer: { enableImplicitConversion: true },
-            validator: { whitelist: true },
+          useFactory: async () => transformAndValidate(AppConfig, process.env, {
+            validator: { whitelist: true }
           }),
         },
         {
           provide: ProvidersConfig,
           useValue: providersConfig,
         },
+        {
+          // IMPORTANT: We use such provider connections for services 
+          // to which we will need access in the future for service override by string token.
+          provide: 'BlocksQueueService',
+          useClass: BlocksQueueService,
+        },
         BlocksReadService,
         TransactionsReadService,
         ArithmeticService,
         BitcoinIndexerService,
-        BlocksQueueService,
         IndexerSaga,
         BlocksCommandFactoryService,
         IndexerCommandFactoryService,

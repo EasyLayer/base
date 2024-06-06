@@ -7,24 +7,28 @@ export class ProvidersConfig {
   @Transform(({ value }) => value ?? '0.0.0.0')
   @IsString()
   @IsOptional()
-  SELF_NODE_HOST!: string;
+  SELF_NODE_HOST?: string;
 
   @Transform(({ value }) => value ?? 'testnet')
   @IsString()
   @IsOptional()
-  SELF_NODE_NETWORK!: string;
+  SELF_NODE_NETWORK?: string;
 
+  // @Transform(({ value }) => parseInt(value, 10) ?? 3000)
   @IsNumber()
-  SELF_NODE_PORT!: number;
+  @IsOptional()
+  SELF_NODE_PORT?: number;
 
   @IsString()
-  SELF_NODE_PASSWORD!: string;
+  @IsOptional()
+  SELF_NODE_PASSWORD?: string;
 
   @IsString()
-  SELF_NODE_USERNAME!: string;
+  @IsOptional()
+  SELF_NODE_USERNAME?: string;
 
   @Transform(({ value }) => (value ? value.split('|') : []))
   @IsArray()
   @IsOptional()
-  QUICK_NODE_BASE_URLS!: string[];
+  QUICK_NODE_BASE_URLS?: string[];
 }

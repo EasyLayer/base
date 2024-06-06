@@ -6,5 +6,5 @@ import { IsString } from 'class-validator';
 export class AppConfig {
   @Transform(({ value }) => value ?? 'BitcoinIndexer')
   @IsString()
-  BITCOIN_INDEXER_MODULE_NAME!: string;
+  BITCOIN_INDEXER_MODULE_NAME: string = 'BitcoinIndexer';
 }

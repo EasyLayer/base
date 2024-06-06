@@ -80,14 +80,6 @@ export class BlocksQueue<T extends Block> {
 
     const block = this.outStack.pop();
 
-    if (this.outStack.length > 0) {
-      this._lastHeight = this.outStack[this.outStack.length - 1].height;
-    } else if (this.inStack.length > 0) {
-      this._lastHeight = this.inStack[0].height;
-    } else {
-      this._lastHeight = -1n;
-    }
-
     return block;
   }
 

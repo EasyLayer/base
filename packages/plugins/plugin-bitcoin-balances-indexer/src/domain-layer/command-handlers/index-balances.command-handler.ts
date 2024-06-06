@@ -4,8 +4,8 @@ import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { IndexBalancesCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
-import { WalletsBatch, Balance, Rune, NFT, NativeCoin, OutputTypes } from '../models/wallets-batch.model';
-import { Wallet } from '../models/wallet.model';
+import { WalletsBatch } from '../models/wallets-batch.model';
+import { Wallet, createWalletBalances } from '../models/wallet.model';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import {
   WalletsBatchModelFactoryService,
@@ -50,29 +50,29 @@ export class IndexBalancesCommandHandler
       /* Index Balances */
       const wallets: Wallet[] = [];
 
-      transactions.forEach((transaction: any) => {
+      const walletsBalances = createWalletBalances(transactions);
+
+      for (const [publicKey, balances] of walletsBalances) {
         const wallet: Wallet = this.walletModelFactory.createNewModel();
-
-        const newBalances = this.createBalancesFromTransaction(transaction);
-        if (newBalances) {
-          balances.push(...newBalances);
-        }
-
-        await wallet.add({ aggregateId: '', requestId });
-      });
-
-      await indexerModel.addBatch({ batch, blockHash, blockHeight, requestId });
+        await wallet.add({ aggregateId: publicKey, requestId, balances });
+        wallets.push(wallet);
+      }
 
       const walletsBatch: WalletsBatch = this.walletsBatchModelFactory.createNewModel();
-      await walletsBatch.index({ aggregateId: uuidv4(), requestId, balances });
+      // NOTE: генерируем новый aggregateId 
+      // TODO: может сделать тем же самым что и transactionBatch - нет, 
+      // потому что в кейсе когда мы не рабоатем с индексером у нас нет айди конкретных батчей
+      await walletsBatch.index({ aggregateId: uuidv4(), requestId, wallets });
+      await indexerModel.addBatch({ batch, blockHash, blockHeight, requestId });
 
-      await this.eventStore.save([indexerModel, walletsBatch, wallets]);
+      await this.eventStore.save([indexerModel, walletsBatch, ...wallets]);
 
-      // for (let wallet of wallets) 
+      for (let wallet of wallets) {
         // Мы сохранили события в базу но не публикуем их все, а публикуем только walletsBatch
-      // Может и не нужно явно вызывать этот метод. 
-        // await wallet.uncommit();
-      // }
+        // Может и не нужно явно вызывать этот метод. 
+        wallet.uncommit();
+      }
+
       await indexerModel.commit();
       await walletsBatch.commit();
 
@@ -81,74 +81,5 @@ export class IndexBalancesCommandHandler
       this.log.error('execute()', error, this.constructor.name);
       throw error;
     }
-  }
-
-  // TODO: Вынести в Провайдер
-  private createBalancesFromTransaction(transaction: any): Balance[] {
-    const balances: Balance[] = [];
-  
-    // Создаем отрицательные балансы для входов (vin)
-    transaction.vin.forEach((input: any) => {
-      const transactionType = this.determineTransactionType(input);
-      if (transactionType) {
-        const balance = this.createBalanceFromInput(transactionType, input);
-        if (balance) {
-          balances.push(balance);
-        }
-      }
-    });
-  
-    // Создаем положительные балансы для выходов (vout)
-    transaction.vout.forEach((output: any) => {
-      const transactionType = this.determineTransactionType(output);
-      if (transactionType) {
-        const balance = this.createBalanceFromOutput(transactionType, output);
-        if (balance) {
-          balances.push(balance);
-        }
-      }
-    });
-  
-    return balances;
-  }
-
-  // TODO: Вынести в Провайдер
-  private createBalanceFromOutput(type: OutputTypes, output: any): Balance | undefined {
-    switch (type) {
-      case OutputTypes.NATIVE:
-        return new NativeCoin(output.publicKey, output.address, BigInt(output.amount));
-      case OutputTypes.NFT:
-        return new NFT(output.publicKey, output.address, output.name, output.metadata);
-      case OutputTypes.RUNE:
-        return new Rune(output.publicKey, output.address, output.type, output.value);
-      default:
-        return undefined;
-    }
-  }
-
-  // TODO: Вынести в Провайдер
-  private createBalanceFromInput(type: OutputTypes, input: any): Balance | undefined {
-    switch (type) {
-      case OutputTypes.NATIVE:
-        return new NativeCoin(input.publicKey, input.address, -BigInt(input.amount));
-      case OutputTypes.NFT:
-        return new NFT(input.publicKey, input.address, input.name, input.metadata, true);
-      case OutputTypes.RUNE:
-        return new Rune(input.publicKey, input.address, input.type, -input.value);
-      default:
-        return undefined;
-    }
-  }
-
-  // TODO: move to Provider package
-  private determineTransactionType(outputs: any[]): OutputTypes | undefined {
-    if (outputs.some(output => output.tokenType === 'rune')) {
-      return OutputTypes.RUNE;
-    } else if (outputs.some(output => output.contractAddress && output.tokenId)) {
-      return OutputTypes.NFT;
-    } else if (outputs.some(output => output.amount && output.address)) {
-      return OutputTypes.NATIVE;
-    }
-    return undefined;
   }
 }
