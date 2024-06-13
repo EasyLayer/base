@@ -178,9 +178,6 @@ describe('/Index One Block with Immediately Confirm Read State Checkin', () => {
     const fetchedBlock: any = await dbService.all(`SELECT * FROM blocks WHERE hash = ?`, [expectedBlock.hash]);
     const fetchedTransactions: any = await dbService.all(`SELECT * FROM transactions WHERE blockHash = ?`, [expectedBlock.hash]);
   
-    console.log('fetchedBlock\n\n\n\n', fetchedBlock);
-    console.log('fetchedTransactions\n\n\n\n', fetchedTransactions);
-  
     // Verify the number of fetched transactions
     expect(fetchedTransactions.length).toBe(1);
   

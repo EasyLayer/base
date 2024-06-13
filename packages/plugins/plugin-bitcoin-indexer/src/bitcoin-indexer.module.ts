@@ -14,7 +14,8 @@ import { BlockViewModel, TransactionViewModel } from './domain-layer/view-models
 import {
   BlocksCommandFactoryService,
   IndexerCommandFactoryService,
-  TransactionsCommandFactoryService
+  TransactionsCommandFactoryService,
+  ReadStateExceptionHandlerService
 } from './application-layer/services';
 import {
   BlockModelFactoryService,
@@ -129,6 +130,7 @@ export class BitcoinIndexerModule {
         BlockModelFactoryService,
         IndexerModelFactoryService,
         TransactionsBatchModelFactoryService,
+        ReadStateExceptionHandlerService,
         ...CommandHandlers,
         ...EventsHandlers
       ],

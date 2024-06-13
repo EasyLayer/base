@@ -1,12 +1,13 @@
 import PQueue from 'p-queue';
-import { Subject } from 'rxjs';
-import { Injectable, Inject } from '@nestjs/common';
+import { Subject, Subscription } from 'rxjs';
+import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { IEvent, IMessageSource, EventBus, CustomEventBus } from '@easylayer/cqrs';
 import { Publisher } from './publisher';
 
 @Injectable()
-export class Subscriber implements IMessageSource {
+export class Subscriber implements IMessageSource, OnModuleDestroy {
   private bridge!: Subject<IEvent>;
+  private subscription!: Subscription;
   private queueSingleConcurrency = new PQueue({ concurrency: 1 });
 
   constructor(
@@ -18,8 +19,14 @@ export class Subscriber implements IMessageSource {
     this.initialize();
   }
 
+  onModuleDestroy() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+  }
+
   private initialize(): void {
-    this.publisher.events$.subscribe((event) => {
+    this.subscription = this.publisher.events$.subscribe((event) => {
       if (this.bridge) {
         this.queueSingleConcurrency
           .add(() => this.asyncTask(event)

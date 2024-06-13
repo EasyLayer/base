@@ -27,6 +27,7 @@ export class CustomCqrsModule<EventBase extends IEvent = IEvent> implements OnMo
       providers: [
         CommandBus,
         QueryBus,
+        UnhandledExceptionBus,
         {
           provide: CustomExplorerService,
           useFactory: (modulesContainer) => {
@@ -48,7 +49,7 @@ export class CustomCqrsModule<EventBase extends IEvent = IEvent> implements OnMo
           inject: [CommandBus, ModuleRef, UnhandledExceptionBus],
         },
       ],
-      exports: [CommandBus, QueryBus, EventBus, EventPublisher, EventBus],
+      exports: [CommandBus, QueryBus, EventBus, EventPublisher, EventBus, UnhandledExceptionBus],
     };
   }
 
