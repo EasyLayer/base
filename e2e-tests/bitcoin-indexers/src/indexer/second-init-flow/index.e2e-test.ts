@@ -12,18 +12,20 @@ import { initializeTransactionalContext } from '@easylayer/eventstore/transactio
 import { SQLiteService } from '../../helpers/sqlite/sqlite.service';
 import { mockIndexerEvent } from './mocks/indexer-event';
 
-describe('/Second Initialization Application', () => {
+
+describe('/Second Initialization Application Write State Checkin', () => {
   let app: INestApplication;
   let dbService: SQLiteService;
 
   beforeAll(async () => {
+    jest.useFakeTimers();
     const eventEmitter = new EventEmitter();
 
-    // Mock the BlocksQueueService with startBlocksLoading() method
+    // Mock the BlocksQueueService with runQueue() method
     const mockBlocksQueueService = {
-        startBlocksLoading: jest.fn().mockImplementation(async (height: bigint | string | number) => {
-        // Emit an event to signal that startBlocksLoading was called
-        eventEmitter.emit('startBlocksLoadingCalled');
+      runQueue: jest.fn().mockImplementation(async (height: bigint | string | number) => {
+        // Emit an event to signal that runQueue was called
+        eventEmitter.emit('runQueueCalled');
         }),
     };
 
@@ -69,14 +71,16 @@ describe('/Second Initialization Application', () => {
 
     // Create a promise to wait for the event
     // Set up the event listener before app.init()
-    const startBlocksLoadingCalled = new Promise<void>((resolve) => {
-      eventEmitter.once('startBlocksLoadingCalled', resolve);
+    const runQueueCalled = new Promise<void>((resolve) => {
+      eventEmitter.once('runQueueCalled', resolve);
     });
 
     await app.init();
+    
+    jest.runAllTimersAsync();
 
     // Wait for the startBlocksLoading() method
-    await startBlocksLoadingCalled;
+    await runQueueCalled;
 
     // We wait until startBlocksLoadingCalled() will be executed
     // This is because we want to test an app that has already initialized and stopped

@@ -1,15 +1,29 @@
-import { Entity, PrimaryColumn, Column, Unique, Index } from '@easylayer/read-database';
+import { Entity, PrimaryColumn, Column, Index, OneToMany } from '@easylayer/read-database';
+import { TransactionViewModel } from './transaction.view-model';
 
-@Entity('block_viewmodel')
-// @Unique(['requestId', 'id'])
-@Index(['id'], { unique: true })
+@Entity('blocks')
+@Index(['hash'], { unique: true })
 export class BlockViewModel {
-    @PrimaryColumn({ type: 'varchar' })
-    public id!: string; // aggregateId (block hash)
 
-    @Column({ type: 'varchar' })
+    // TODO: add id column
+
+    @PrimaryColumn({ type: 'varchar' })
     public hash!: string;
 
-    @Column({ type: 'varchar' })
+    @Column({ type: 'varchar', nullable: true })
     public status!: string;
+
+    @OneToMany(() => TransactionViewModel, transaction => transaction.block, {
+        cascade: true
+    })
+    public transactions!: TransactionViewModel[];
+
+    constructor(params?: any) {
+
+        if (!params) return;
+
+        this.hash = params.hash;
+        this.status = params.status;
+        this.transactions = Array.isArray(params.transations) ? params.transaction : [];
+    }
 }

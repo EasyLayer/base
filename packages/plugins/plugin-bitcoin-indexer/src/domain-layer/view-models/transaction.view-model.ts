@@ -1,12 +1,27 @@
-import { Entity, PrimaryColumn, Column, Unique, Index } from '@easylayer/read-database';
+import { Entity, PrimaryColumn, Column, ManyToOne, Index } from '@easylayer/read-database';
+import { BlockViewModel } from './block.view-model';
 
-@Entity('transaction_viewmodel')
-// @Unique(['requestId', 'id'])
-@Index(['id'], { unique: true })
+@Entity('transactions')
+@Index(['txid'], { unique: true })
 export class TransactionViewModel {
-    @PrimaryColumn({ type: 'varchar' })
-    public id!: string; // txid
 
-    @Column({ type: 'varchar' })
-    public hash!: string;
+    // TODO: add id column
+
+    @PrimaryColumn({ type: 'varchar' })
+    public txid!: string;
+
+    @Column({ type: 'varchar', nullable: true })
+    public status!: string;
+
+    @ManyToOne(() => BlockViewModel, block => block.transactions)
+    public block!: BlockViewModel;
+
+    constructor(params?: any) {
+
+        if (!params) return;
+
+        this.txid = params.txid;
+        this.status = params.status;
+        this.block = params.block;
+    }
 }

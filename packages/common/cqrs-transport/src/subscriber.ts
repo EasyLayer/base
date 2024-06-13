@@ -14,25 +14,32 @@ export class Subscriber implements IMessageSource {
     @Inject(EventBus)
     private readonly eventBus: CustomEventBus
   ) {
-    this.initialize();
     this.bridgeEventsTo();
+    this.initialize();
   }
 
   private initialize(): void {
     this.publisher.events$.subscribe((event) => {
       if (this.bridge) {
         this.queueSingleConcurrency
-          .add(async () => {
-            // await new Promise((resolve) => setTimeout(resolve, 1));
-
-            this.bridge.next(event);
-          })
-          .catch((error) => console.error(error));
+          .add(() => this.asyncTask(event)
+        )
+      } else {
+        throw new Error('Subscriber error - subject is empty');
       }
     });
   }
 
   bridgeEventsTo(): void {
     this.bridge = this.eventBus.subject$;
+  }
+
+  private async asyncTask<T extends IEvent>(event: T): Promise<void> {
+    // IMPORTANT: There may be a potential problem here 
+    // when the insertion error into the Read database is so fast in this particular transport 
+    // that the events do not have time to be stored in the EventStore. 
+    // They then commit, but they may simply not have time to insert into the database.
+    await new Promise(resolve => setTimeout(resolve, 0));
+    this.bridge.next(event);
   }
 }

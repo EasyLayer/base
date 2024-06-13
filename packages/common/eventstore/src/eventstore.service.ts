@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 @Injectable()
-export class EventStoreService {//implements OnModuleDestroy {
+export class EventStoreService {// implements OnModuleDestroy {
   constructor(private dataSource: DataSource) {}
 
   // async onModuleDestroy() {

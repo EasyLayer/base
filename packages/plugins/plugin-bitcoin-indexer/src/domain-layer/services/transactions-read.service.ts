@@ -11,8 +11,23 @@ export class TransactionsReadService {
     private readDb: Repository<TransactionViewModel>
   ) {}
 
-  async create({ id, ...dto }: { id: string, hash: string }): Promise<TransactionViewModel> {
-    return await this.readDb.save({ ...dto, id });
+  async create({ txid, ...dto }: { txid: string, hash: string }): Promise<TransactionViewModel> {
+    return await this.readDb.save({ ...dto, txid });
+  }
+
+  async createMany({ block, batch, status }: { block: any, status: string, batch: any }): Promise<TransactionViewModel[]> {
+    const transactions: TransactionViewModel[] = [];
+    
+    batch.transactions.forEach((item: any) => {
+      const tx = new TransactionViewModel({
+        txid: item.txid,
+        block,
+        status
+      });
+      transactions.push(tx);
+    });
+
+    return await this.readDb.save(transactions);
   }
 
   async update(transactionViewModel: TransactionViewModel): Promise<TransactionViewModel> {
@@ -20,8 +35,12 @@ export class TransactionsReadService {
     return await this.readDb.save(transactionViewModel);
   }
 
-  async findOneById(id: string): Promise<TransactionViewModel> {
-    return await this.readDb.findOneByOrFail({ id });
+  async findOneById(txid: string): Promise<TransactionViewModel | null> {
+    try {
+      return await this.readDb.findOneByOrFail({ txid });
+    } catch (error) {
+      return null;
+    }
   }
 
   async findAll(): Promise<TransactionViewModel[]> {

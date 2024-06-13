@@ -1,23 +1,35 @@
-import { CommandBus, EventBus, IEvent, UnhandledExceptionBus, IEventHandler, ICommand } from '@nestjs/cqrs';
-import { Type, Logger } from '@nestjs/common';
+import { IEvent, UnhandledExceptionBus, IEventHandler, ICommand, ISaga, EventBus, CommandBus } from '@nestjs/cqrs';
+import { Type, Logger, Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { defer, of } from 'rxjs';
-import { catchError, concatMap } from 'rxjs/operators';
+import { defer, of, Subject, Observable, tap, from } from 'rxjs';
+import { catchError, concatMap, filter } from 'rxjs/operators';
 import { defaultReflectEventId } from '@nestjs/cqrs/dist/helpers/default-get-event-id';
-import { EVENTS_HANDLER_METADATA } from '@nestjs/cqrs/dist/decorators/constants';
+import { EVENTS_HANDLER_METADATA, SAGA_METADATA } from '@nestjs/cqrs/dist/decorators/constants';
 import { UnhandledExceptionInfo } from '@nestjs/cqrs/dist/interfaces';
+import { InvalidSagaException } from '@nestjs/cqrs/dist/exceptions/invalid-saga.exception';
 
 export type EventHandlerType<EventBase extends IEvent = IEvent> = Type<IEventHandler<EventBase>>;
 
+@Injectable()
 export class CustomEventBus<EventBase extends IEvent = IEvent> extends EventBus<EventBase> {
   private readonly _newLogger = new Logger(CustomEventBus.name);
+  private readonly _eventHandlerCompletionSubject$ = new Subject<IEvent>();
+  private readonly _sagaCompletionSubject$ = new Subject<IEvent>();
 
   constructor(
-    private injectCommandBus: CommandBus,
-    private injectModuleRef: ModuleRef,
-    private injectUnhandledExceptionBus: UnhandledExceptionBus
+    private readonly ingectCommandBus: CommandBus,
+    private readonly injectedModuleRef: ModuleRef,
+    private readonly injectedUnhandledExceptionBus: UnhandledExceptionBus,
   ) {
-    super(injectCommandBus, injectModuleRef, injectUnhandledExceptionBus);
+    super(ingectCommandBus, injectedModuleRef, injectedUnhandledExceptionBus);
+  }
+
+  get eventHandlerCompletionSubject$(): Observable<IEvent> {
+    return this._eventHandlerCompletionSubject$.asObservable();
+  }
+
+  get sagaCompletionSubject$(): Observable<IEvent> {
+    return this._sagaCompletionSubject$.asObservable();
   }
 
   async publish<T extends EventBase, TContext = unknown>(event: T, context?: TContext) {
@@ -25,56 +37,115 @@ export class CustomEventBus<EventBase extends IEvent = IEvent> extends EventBus<
   }
 
   async publishAll<T extends EventBase, TContext = unknown>(events: T[], context?: TContext) {
-    if (this.publisher.publishAll) {
-      await this.publisher.publishAll(events, context);
-    } else {
-      await Promise.all(events.map((event) => this.publisher.publish(event, context)));
+    // if (this.publisher.publishAll) {
+    //   await this.publisher.publishAll(events, context);
+    // } else {
+      // await Promise.all(events.map((event) => this.publisher.publish(event, context)));
+    // }
+    for (let event of events) {
+      await this.publisher.publish(event, context);
     }
   }
 
-  newBind(handler: IEventHandler<EventBase>, id: string) {
+  // Все же нам точно нужен это метод, почему? 
+  // Сабскрайбер в EventBus достает по очереди ивенты с очереди 
+  // но если тут будет mergeMap, то на один ивент (тот который достали)
+  // сработают сразу несколько подписчиков, одновременно, но по сути это только EventHandler. 
+  // Мне это не обязательно так как я говорю что будет лишь один EventHandler на ивент. 
+  // Но если бы у нас была ситуация когда на ОДИН ивент у нас ДВА EventHandler
+  // то мы точно хотели бы тут concatMap. 
+  // Учитывая что мы хотим позволить пользователям приконекчиваться к нашим модулям и расшярять их
+  // то они могут использовать на одни и те же ивенты еще свои дополнительные, так что этот функционал точно нужен!
+
+  bind(handler: IEventHandler<EventBase>, id: string) {
     const stream$ = id ? this.ofEventId(id) : this.subject$;
     const subscription = stream$
       .pipe(
-        // Use concatMap to process each event sequentially
-        // QUESTION: Won't this become a point of failure?
-        // Maybe you still need to send all events at once,
-        // and then look for mechanisms to solve the race problem when updating event handlers?
-        concatMap((event) =>
-          defer(() => Promise.resolve(handler.handle(event))).pipe(
+        concatMap(event =>
+          defer(() => from(handler.handle(event)).pipe(
+            // Notify about completion of processing
+            tap(() => this._eventHandlerCompletionSubject$.next(event)),
             catchError((error) => {
-              const unhandledError = this.newMapToUnhandledErrorInfo(event, error);
-              this.injectUnhandledExceptionBus.publish(unhandledError);
-              this._newLogger.error(`"${handler.constructor.name}" has thrown an unhandled exception.`, error);
+              this._eventHandlerCompletionSubject$.error(error);
+              const unhandledError = this.mapUnhandledExceptionEvent(event, error);
+              this.injectedUnhandledExceptionBus.publish(unhandledError);
               return of();
             })
-          )
+          ))
         )
       )
       .subscribe();
     this.subscriptions.push(subscription);
   }
 
-  register(handlers: EventHandlerType<EventBase>[] = []) {
-    handlers.forEach((handler) => this.registerHandler(handler));
+  registerEventHandlers(handlers: EventHandlerType<EventBase>[] = []) {
+    handlers.forEach((handler) => this.registerEventHandler(handler));
   }
 
-  protected registerHandler(handler: EventHandlerType<EventBase>) {
-    const instance = this.injectModuleRef.get(handler, { strict: false });
+  protected registerEventHandler(handler: EventHandlerType<EventBase>) {
+    const instance = this.injectedModuleRef.get(handler, { strict: false });
     if (!instance) {
       return;
     }
-    const events = this.newReflectEvents(handler);
+    const events = this.reflectHandlersEvents(handler);
     events.forEach((event) => {
-      this.newBind(instance as IEventHandler<EventBase>, defaultReflectEventId(event));
+      this.bind(instance as IEventHandler<EventBase>, defaultReflectEventId(event));
     });
   }
 
-  protected newReflectEvents(handler: EventHandlerType<EventBase>): FunctionConstructor[] {
+  registerSagas(types: Type<unknown>[] = []) {
+    const sagas = types
+      .map((target) => {
+        const metadata = Reflect.getMetadata(SAGA_METADATA, target) || [];
+        // TODO: Provide the correct type
+        const instance: any = this.injectedModuleRef.get(target, { strict: false });
+        if (!instance) {
+          throw new InvalidSagaException();
+        }
+        return metadata.map((key: string) => instance[key].bind(instance));
+      })
+      .reduce((a, b) => a.concat(b), []);
+
+    // TODO: Provide the correct type
+    sagas.forEach((saga: any) => this.registerSaga(saga));
+  }
+
+  protected registerSaga(saga: ISaga<EventBase>) {
+    if (typeof saga !== 'function') {
+      throw new InvalidSagaException();
+    }
+    const stream$ = saga(this);
+    if (!(stream$ instanceof Observable)) {
+      throw new InvalidSagaException();
+    }
+
+    const subscription = stream$.pipe(
+      filter(e => !!e),
+    ).subscribe({
+      next: (data) => {
+        console.log(`Saga result: ${data}`)
+        this._newLogger.debug(`Saga result: ${data}`);
+        this._sagaCompletionSubject$.next(data);
+      },
+      error: (error) => {
+        console.log(`Saga has thrown an unhandled exception: ${error}`)
+        this._newLogger.error(`Saga has thrown an unhandled exception: ${error}`);
+        this._sagaCompletionSubject$.error(error);
+      },
+      complete: () => {
+        this._newLogger.debug('Saga processing completed.');
+        this._sagaCompletionSubject$.complete();
+      }
+    });
+
+    this.subscriptions.push(subscription);
+  }
+
+  protected reflectHandlersEvents(handler: EventHandlerType<EventBase>): FunctionConstructor[] {
     return Reflect.getMetadata(EVENTS_HANDLER_METADATA, handler);
   }
 
-  protected newMapToUnhandledErrorInfo(eventOrCommand: IEvent | ICommand, exception: unknown): UnhandledExceptionInfo {
+  protected mapUnhandledExceptionEvent(eventOrCommand: IEvent | ICommand, exception: unknown): UnhandledExceptionInfo {
     return {
       cause: eventOrCommand,
       exception,

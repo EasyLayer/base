@@ -21,6 +21,10 @@ export class SystemConfig {
     return process.env.NODE_ENV === 'production';
   }
 
+  isDEBUG(): boolean {
+    return process.env.DEBUG === 'y';
+  }
+
   isTEST(): boolean {
     return process.env.NODE_ENV === 'test';
   }

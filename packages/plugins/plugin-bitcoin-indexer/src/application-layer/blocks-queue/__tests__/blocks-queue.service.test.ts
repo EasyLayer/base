@@ -21,6 +21,7 @@ describe('BlocksQueueService', () => {
   let queueLength: number;
 
   beforeEach(async () => {
+    // jest.useFakeTimers({ advanceTimers: true });
     mockLogger = {
       debug: jest.fn(),
       error: jest.fn(),
@@ -343,12 +344,16 @@ describe('BlocksQueueService', () => {
 
   describe('startBlocksLoading', () => {  
     it('should not start loading blocks if already started', async () => {
-      service['isLoadingStarted'] = true;
-      jest.spyOn(service as any, 'loading');
-  
-      await service.startBlocksLoading(1n);
-  
-      expect(service['loading']).not.toHaveBeenCalled();
+      service['_isLoading'] = true;
+
+      // const startBlocksLoadingSpy = jest.spyOn(service as any, 'startBlocksLoading').mockImplementation(() => {});
+      const loadingSpy = jest.spyOn(service as any, 'loading').mockResolvedValue(undefined);
+      const startQueueIterattingSpy = jest.spyOn(service as any, 'startQueueIteratting').mockImplementation(() => {});
+
+      await service.runQueue(1n);
+
+      // expect(startBlocksLoadingSpy).not.toHaveBeenCalled();
+      expect(loadingSpy).not.toHaveBeenCalled();
     });
   });
   

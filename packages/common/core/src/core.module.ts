@@ -22,9 +22,9 @@ export class CoreModule {
       module: CoreModule,
       imports: [
         LoggerModule.forRoot({ name: appName, componentName: 'CoreModule' }),
-        CqrsModule.forRoot({ isGlobal: true }),
-        CqrsTransportModule,
+        CqrsTransportModule.forRoot({ isGlobal: true }),
         NetworkTransportModule,
+        CqrsModule.forRoot({ isGlobal: true }),
         ...plugins,
       ],
       controllers: [CoreController],

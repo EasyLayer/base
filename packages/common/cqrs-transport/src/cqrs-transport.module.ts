@@ -1,4 +1,4 @@
-import { Module, OnModuleInit, Inject } from '@nestjs/common';
+import { Module, OnModuleInit, Inject, DynamicModule } from '@nestjs/common';
 import { EventBus, CustomEventBus } from '@easylayer/cqrs';
 import { Publisher } from './publisher';
 import { Subscriber } from './subscriber';
@@ -7,13 +7,26 @@ import { Subscriber } from './subscriber';
   providers: [Publisher, Subscriber],
 })
 export class CqrsTransportModule implements OnModuleInit {
+  static forRoot(parameters: any): DynamicModule {
+
+    return {
+      module: CqrsTransportModule,
+      global: parameters.isGlobal || false,
+      imports: [],
+      providers: [
+        Publisher, Subscriber
+      ],
+      exports: [],
+    };
+  }
+
   constructor(
     @Inject(EventBus)
-    private readonly event$: CustomEventBus,
+    private readonly eventBus: CustomEventBus,
     private readonly publisher: Publisher
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.event$.publisher = this.publisher;
+    this.eventBus.publisher = this.publisher;
   }
 }

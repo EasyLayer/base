@@ -46,10 +46,10 @@ export class SQLiteService {
     });
   }
 
-  public async all(query: string): Promise<any[]> {
+  public async all(query: string, params: any[] = []): Promise<any[]> {
     return new Promise((resolve, reject) => {
       if (this.db) {
-        this.db.all(query, (err, rows) => {
+        this.db.all(query, params, (err, rows) => {
           if (err) {
             reject(err);
           } else {

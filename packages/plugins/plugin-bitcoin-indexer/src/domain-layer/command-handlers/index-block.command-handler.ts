@@ -126,7 +126,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       /* Index block with batch immediately */
       // IMPORTANT: this is case when we have just 1 transactions batch
       // so in order not to waste time, we index the entire block and transactions at once in one command
-      if (batches.length === 1) {
+      if (batches.length == 1) {
         // { <aggregateId>:<status> }
         const batchesMap: Map<string, string> = new Map();
         batches.forEach(batch => {
@@ -144,12 +144,12 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
         await this.eventStore.save([...batches, indexerModel, blockModel]);
 
+        await blockModel.commit();
+        await indexerModel.commit();
+
         for (let batch of batches) {
           await batch.commit();
         }
-
-        await blockModel.commit();
-        await indexerModel.commit();
 
         this.log.info(`Block successfull indexed`, {
           block: { height, hash },
@@ -175,6 +175,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         batches: batchesMap,
         requestId
       });
+
 
       await this.eventStore.save([...batches, indexerModel, blockModel]);
 

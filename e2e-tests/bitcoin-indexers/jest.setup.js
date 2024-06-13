@@ -1,4 +1,5 @@
-const dotenv = require('dotenv');
-const path = require('node:path');
+// const dotenv = require('dotenv');
+// const path = require('node:path');
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.simple') });
+// IMPORTANT: Its mock nodejs timers
+// jest.useFakeTimers();

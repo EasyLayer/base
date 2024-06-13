@@ -11,18 +11,22 @@ export class BlockWithCompleteIndexedEventHandler
       private readonly service: BlocksReadService,
     ) {}
 
-  // TODO: think if we need here a try catch ?
+  // IMPORTANT: at this stage if this method would throw an error 
+  // - we won't catch it! (the app should restart after that)
   async handle({ payload }: BitcoinBlockWithCompleteIndexedEvent) {
     try {
-      this.log.debug('handle()', payload, this.constructor.name);
+      this.log.debug('1handle()', payload, this.constructor.name);
 
-      const { aggregateId, block, status } = payload;
+      const { aggregateId, block, status, batches } = payload;
 
-      this.log.info('Aggregete Id Handle: ', { aggregateId, block, status }, this.constructor.name);
+      // QUESTION: Is there another point where we can do something like view the previous block?
+      // But we don't have access to the previous block? In theory, there is a height, but it’s not quite correct.
+      // For what? - supposedly so that we understand that we can definitely update the units further
 
-      return await this.service.create({ id: aggregateId, hash: block.hash, status });
-    } catch(error) {
+      return await this.service.create({ hash: block.hash, status });
+    } catch (error) {
       this.log.error('handle()', error, this.constructor.name);
+      throw error;
     }
   }
 }

@@ -4910,6 +4910,8 @@ __metadata:
   resolution: "e2e-bitcoin-indexers@workspace:e2e-tests/bitcoin-indexers"
   dependencies:
     "@easylayer/core": 0.0.2-experimental.1
+    "@easylayer/cqrs": 0.0.2-experimental.1
+    "@easylayer/domain-cqrs-components": 0.0.2-experimental.1
     "@easylayer/eventstore": 0.0.2-experimental.1
     "@easylayer/plugin-bitcoin-balances-indexer": 0.0.2-experimental.1
     "@easylayer/plugin-bitcoin-indexer": 0.0.2-experimental.1

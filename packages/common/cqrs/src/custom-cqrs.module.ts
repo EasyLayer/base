@@ -1,9 +1,8 @@
-import { Module, DynamicModule, OnModuleInit } from '@nestjs/common';
+import { Module, DynamicModule, OnModuleInit, Inject } from '@nestjs/common';
 import { ModuleRef, ModulesContainer } from '@nestjs/core';
-import { CqrsModule, CommandBus, QueryBus, EventBus, UnhandledExceptionBus, IEvent } from '@nestjs/cqrs';
+import { CqrsModule, CommandBus, QueryBus, UnhandledExceptionBus, IEvent, EventBus } from '@nestjs/cqrs';
 import { CustomEventBus } from './custom-event-bus';
 import { CustomExplorerService } from './custom-explorer.service';
-import { SagaBus } from './sagas';
 import { EventPublisher } from './event-publisher';
 
 export interface CQRSModuleParameters<EB extends EventBus = EventBus, EP extends EventPublisher = EventPublisher> {
@@ -29,13 +28,6 @@ export class CustomCqrsModule<EventBase extends IEvent = IEvent> implements OnMo
         CommandBus,
         QueryBus,
         {
-          provide: SagaBus,
-          useFactory: (moduleRef, unhandledExceptionBus, eventBus) => {
-            return new SagaBus(moduleRef, unhandledExceptionBus, eventBus);
-          },
-          inject: [ModuleRef, UnhandledExceptionBus, EventBus],
-        },
-        {
           provide: CustomExplorerService,
           useFactory: (modulesContainer) => {
             return new CustomExplorerService(modulesContainer);
@@ -56,25 +48,24 @@ export class CustomCqrsModule<EventBase extends IEvent = IEvent> implements OnMo
           inject: [CommandBus, ModuleRef, UnhandledExceptionBus],
         },
       ],
-      exports: [CommandBus, QueryBus, EventBus, EventPublisher, SagaBus],
+      exports: [CommandBus, QueryBus, EventBus, EventPublisher, EventBus],
     };
   }
 
   constructor(
     private readonly explorerService: CustomExplorerService<EventBase>,
-    private readonly eventBus: EventBus<EventBase>,
+    @Inject(EventBus)
+    private readonly eventBus: CustomEventBus,
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
-    private readonly sagaBus: SagaBus
   ) {}
 
   onModuleInit() {
-    const { events, queries, sagas, commands, syncSagas } = this.explorerService.explore();
+    const { events, queries, sagas, commands } = this.explorerService.explore();
 
     this.eventBus.register(events);
+    this.eventBus.registerSagas(sagas);
     this.commandBus.register(commands);
     this.queryBus.register(queries);
-    this.eventBus.registerSagas(sagas);
-    this.sagaBus.register(syncSagas);
   }
 }
