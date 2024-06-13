@@ -14,7 +14,7 @@ export class BlockViewModel {
     public status!: string;
 
     @OneToMany(() => TransactionViewModel, transaction => transaction.block, {
-        cascade: true
+        cascade: ['remove']
     })
     public transactions!: TransactionViewModel[];
 

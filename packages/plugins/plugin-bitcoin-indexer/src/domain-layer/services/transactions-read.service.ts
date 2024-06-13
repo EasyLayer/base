@@ -11,9 +11,9 @@ export class TransactionsReadService {
     private readDb: Repository<TransactionViewModel>
   ) {}
 
-  async create({ txid, ...dto }: { txid: string, hash: string }): Promise<TransactionViewModel> {
-    return await this.readDb.save({ ...dto, txid });
-  }
+  // async create({ txid, ...dto }: { txid: string, hash: string }): Promise<TransactionViewModel> {
+  //   return await this.readDb.upsert({ ...dto, txid });
+  // }
 
   async createMany({ block, batch, status }: { block: any, status: string, batch: any }): Promise<TransactionViewModel[]> {
     const transactions: TransactionViewModel[] = [];
@@ -27,7 +27,8 @@ export class TransactionsReadService {
       transactions.push(tx);
     });
 
-    return await this.readDb.save(transactions);
+    await this.readDb.upsert(transactions, ['txid']);
+    return transactions;
   }
 
   async update(transactionViewModel: TransactionViewModel): Promise<TransactionViewModel> {
