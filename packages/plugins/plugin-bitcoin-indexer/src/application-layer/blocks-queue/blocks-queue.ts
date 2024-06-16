@@ -33,6 +33,17 @@ export class BlocksQueue<T extends Block> {
   }
 
   /**
+   * Gets the first block in the queue without removing it.
+   * @returns The first block in the queue or undefined if the queue is empty.
+   */
+  public get firstBlock(): T | undefined {
+    if (this.outStack.length === 0) {
+      this.transferItems();
+    }
+    return this.outStack[this.outStack.length - 1];
+  }
+
+  /**
    * Fetches a block by its height from the inStack using binary search.
    * @param height The height of the block to be retrieved.
    * @returns The block with the specified height or undefined if not found.
@@ -58,12 +69,14 @@ export class BlocksQueue<T extends Block> {
    * @returns Boolean indicating success or failure of the enqueue operation.
    * @complexity O(1)
    */
-  // TODO: remove BigInt when add Block constructor class in service. 
+  // TODO: remove BigInt when add Block constructor class in service.
   // This queue have to works only with Block interface
   public enqueue(item: T): boolean {
+    console.log('1POPAL\n\n', item);
     if (BigInt(item.height) !== this._lastHeight + 1n) {
       return false;
     }
+    console.log('2POPAL\n\n', item);
     this.inStack.push(item);
     this._lastHeight = BigInt(item.height);
     return true;
@@ -117,41 +130,39 @@ export class BlocksQueue<T extends Block> {
     }
   }
 
-   /**
- * Performs binary search to find a block by height.
- * @param stack The stack to search within.
- * @param height The height of the block to find.
- * @param isInStack Boolean indicating if the search is in the inStack.
- * @returns The block if found, otherwise undefined.
- * @complexity O(log n)
- */
-private binarySearch(stack: T[], height: bigint, isInStack: boolean): T | undefined {
-  let left = 0;
-  let right = stack.length - 1;
+  /**
+   * Performs binary search to find a block by height.
+   * @param stack The stack to search within.
+   * @param height The height of the block to find.
+   * @param isInStack Boolean indicating if the search is in the inStack.
+   * @returns The block if found, otherwise undefined.
+   * @complexity O(log n)
+   */
+  private binarySearch(stack: T[], height: bigint, isInStack: boolean): T | undefined {
+    let left = 0;
+    let right = stack.length - 1;
 
-  while (left <= right) {
-    const mid = Math.floor((left + right) / 2);
-    const midHeight = BigInt(stack[mid].height);
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      const midHeight = BigInt(stack[mid].height);
 
-    if (midHeight === height) {
-      return stack[mid];
-    } else if (isInStack) {
-      if (midHeight < height) {
-        left = mid + 1;
+      if (midHeight === height) {
+        return stack[mid];
+      } else if (isInStack) {
+        if (midHeight < height) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
       } else {
-        right = mid - 1;
-      }
-    } else {
-      if (midHeight > height) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
+        if (midHeight > height) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
       }
     }
+
+    return undefined;
   }
-
-  return undefined;
-}
-
-
 }

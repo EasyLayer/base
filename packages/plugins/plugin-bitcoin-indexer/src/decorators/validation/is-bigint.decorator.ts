@@ -1,6 +1,7 @@
 import { registerDecorator, ValidationOptions, ValidationArguments } from 'class-validator';
 
 export function IsBigInt(validationOptions?: ValidationOptions): PropertyDecorator {
+  // eslint-disable-next-line @typescript-eslint/ban-types
   return function (target: Object, propertyName: string | symbol) {
     registerDecorator({
       name: 'isBigInt',
@@ -8,7 +9,8 @@ export function IsBigInt(validationOptions?: ValidationOptions): PropertyDecorat
       propertyName: propertyName as string,
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: any) {
+          //args: ValidationArguments
           if (typeof value === 'bigint') {
             return true;
           }
@@ -19,13 +21,13 @@ export function IsBigInt(validationOptions?: ValidationOptions): PropertyDecorat
 
           if (typeof value === 'string') {
             if (/^\d+n$/.test(value)) {
-              // Обрезаем последний символ 'n' и проверяем, все ли остальные символы цифры
+              // // Trim the last 'n' character and check if all other characters are digits
               value = value.slice(0, -1);
             }
-            // Проверяем, состоит ли строка только из цифр
+            // Checking if a string consists of only numbers
             if (/^\d+$/.test(value)) {
               try {
-                BigInt(value); // Попытка преобразования в BigInt
+                BigInt(value); // Attempt to convert to BigInt
                 return true;
               } catch (e) {
                 return false;
@@ -36,7 +38,7 @@ export function IsBigInt(validationOptions?: ValidationOptions): PropertyDecorat
         },
         defaultMessage(args: ValidationArguments) {
           return `${args.property} must be a valid BigInt or a string/number that can be converted to BigInt`;
-        }
+        },
       },
     });
   };

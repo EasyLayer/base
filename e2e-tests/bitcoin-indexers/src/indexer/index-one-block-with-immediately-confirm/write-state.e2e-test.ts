@@ -3,7 +3,7 @@ import { resolve, join } from 'node:path';
 import { readdir, unlink } from 'node:fs/promises';
 import { config } from 'dotenv';
 import supertest from 'supertest';
-import { take, Observable, tap } from 'rxjs';
+import { take, Observable } from 'rxjs';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoreModule } from '@easylayer/core';
@@ -13,7 +13,7 @@ import {
   BitcoinBlockWithCompleteIndexedEvent,
   BitcoinIndexerInitializedEvent,
   BitcoinTransactionsBatchWithIndexCreatedEvent,
-  BitcoinIndexerBlockWithConfirmAddedEvent
+  BitcoinIndexerBlockWithConfirmAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin';
 import { CustomEventBus, ofType, CqrsModule } from '@easylayer/cqrs';
 import { SQLiteService } from '../../helpers/sqlite/sqlite.service';
@@ -23,7 +23,7 @@ jest.mock('piscina', () => {
   return jest.fn().mockImplementation(() => {
     return {
       run: jest.fn().mockImplementation(({ height }) => {
-        const block = mockBlocks.find(block => BigInt(block.height) === BigInt(height));
+        const block = mockBlocks.find((block) => BigInt(block.height) === BigInt(height));
         if (!block) {
           return Promise.reject(new Error(`Block with height ${height} not found`));
         }
@@ -31,8 +31,8 @@ jest.mock('piscina', () => {
       }),
       destroy: jest.fn().mockResolvedValue(undefined),
       options: {
-        maxThreads: process.env.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM
-      }
+        maxThreads: process.env.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
+      },
     };
   });
 });
@@ -43,13 +43,13 @@ describe('/Index One Block with Immediately Confirm Write State Checkin', () => 
   let eventBus: CustomEventBus;
 
   beforeAll(async () => {
-    jest.useFakeTimers({ advanceTimers: true })
+    jest.useFakeTimers({ advanceTimers: true });
 
     // Clear the database
     const dataDir = resolve(process.cwd(), 'data');
     try {
       const files = await readdir(dataDir);
-      const unlinkPromises = files.map(file => unlink(join(dataDir, file)));
+      const unlinkPromises = files.map((file) => unlink(join(dataDir, file)));
       await Promise.all(unlinkPromises);
     } catch (err) {
       console.error('Failed to clean data directory', err);
@@ -68,19 +68,17 @@ describe('/Index One Block with Immediately Confirm Write State Checkin', () => 
       plugins: [indexer],
     });
 
-    const moduleFixture: TestingModule = await Test
-      .createTestingModule({ imports: [rootModule] })
-      .compile();
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [rootModule] }).compile();
 
     app = moduleFixture.createNestApplication();
 
     await app.init();
 
-    // IMPORTANT: We need EventBus to handle when event wiil be happend, 
+    // IMPORTANT: We need EventBus to handle when event wiil be happend,
     // get EventBus from nest we can't for some reason
-    // (It is some bug, when we replaced old EventBus in nestjs/cqrs by our new CustomEventBus, 
+    // (It is some bug, when we replaced old EventBus in nestjs/cqrs by our new CustomEventBus,
     // nest doesn't allow us to get the new one, only old)
-    // so we get crqs module from nest and then eventbus (CustomEventBus) from cqrs. 
+    // so we get crqs module from nest and then eventbus (CustomEventBus) from cqrs.
     const cqrs: any = app.get<CqrsModule>(CqrsModule);
     eventBus = cqrs.eventBus;
 
@@ -89,37 +87,30 @@ describe('/Index One Block with Immediately Confirm Write State Checkin', () => 
         throw new Error('eventBus.subject$ is not Observable');
       }
 
-      eventBus.subject$
-        .pipe(
-          ofType(BitcoinBlockWithCompleteIndexedEvent),
-          take(1)
-        )
-        .subscribe({
-          next: () =>  resolve(),
-          error: (err: any) => reject(err)
-        });
+      eventBus.subject$.pipe(ofType(BitcoinBlockWithCompleteIndexedEvent), take(1)).subscribe({
+        next: () => resolve(),
+        error: (err: any) => reject(err),
+      });
     });
 
     // Wait when event to hit EventBus
     await eventPromise;
-  
+
     await app.close();
   });
 
   it('/healthcheck (GET)', async () => {
-    await supertest(app.getHttpServer())
-      .get('/bitcoin-indexer/healthcheck')
-      .expect(200);
+    await supertest(app.getHttpServer()).get('/bitcoin-indexer/healthcheck').expect(200);
   });
 
   it('should save events of index aggregates correctly', async () => {
     // Connect to the write database (event store)
     dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/indexer-write.db') });
     await dbService.connect();
-  
+
     // Get aggregates events
     const events = await dbService.all(`SELECT * FROM events`);
-  
+
     // Group events by type and test that each type of event is only called once
     const eventTypes = events.reduce((acc, event) => {
       acc[event.type] = (acc[event.type] || 0) + 1;
@@ -132,7 +123,7 @@ describe('/Index One Block with Immediately Confirm Write State Checkin', () => 
     expect(eventTypes[BitcoinBlockWithCompleteIndexedEvent.name]).toBe(1);
 
     // Check that there are two events for 'indexer' and their versions
-    const indexerEvents = events.filter(event => event.aggregateId === 'indexer');
+    const indexerEvents = events.filter((event) => event.aggregateId === 'indexer');
     expect(indexerEvents.length).toBe(2);
     expect(indexerEvents[0].version).toBe(1);
     expect(indexerEvents[1].version).toBe(2);
@@ -142,14 +133,14 @@ describe('/Index One Block with Immediately Confirm Write State Checkin', () => 
     expect(payload0.status).toBe('awaiting');
 
     // Check block data correctness for the event with aggregateId equal to block hash
-    const blockEvent = events.find(event => event.aggregateId === mockBlocks[0].hash);
+    const blockEvent = events.find((event) => event.aggregateId === mockBlocks[0].hash);
     expect(blockEvent).toBeDefined();
     const blockPayload = JSON.parse(blockEvent.payload);
     expect(blockPayload.block.height).toBe(mockBlocks[0].height);
     expect(blockPayload.block.hash).toBe(mockBlocks[0].hash);
 
     // Check if the transactions batch event has transactions and their data
-    const batchEvent = events.find(event => event.type === BitcoinTransactionsBatchWithIndexCreatedEvent.name);
+    const batchEvent = events.find((event) => event.type === BitcoinTransactionsBatchWithIndexCreatedEvent.name);
     expect(batchEvent).toBeDefined();
     const batchPayload = JSON.parse(batchEvent.payload);
     expect(batchPayload.batch.transactions.length).toBeGreaterThan(0);

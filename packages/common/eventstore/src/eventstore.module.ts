@@ -25,8 +25,8 @@ export class EventStoreModule {
     return {
       module: EventStoreModule,
       imports: [
-        // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same 
-        // so as not to get confused. It must be unique to the one module connection. 
+        // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same
+        // so as not to get confused. It must be unique to the one module connection.
         TypeOrmModule.forRootAsync({
           name,
           useFactory: () => ({

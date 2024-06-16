@@ -37,11 +37,7 @@ export class BitcoinNetworkProviderModule {
     return {
       module: BitcoinNetworkProviderModule,
       imports: [LoggerModule.forRoot({ componentName: 'BitcoinNetworkProviderModule' })],
-      providers: [
-        BitcoinNetworkProviderService,
-        connectionManager,
-        BitcoinCryptoUtilsService
-      ],
+      providers: [BitcoinNetworkProviderService, connectionManager, BitcoinCryptoUtilsService],
       exports: [BitcoinNetworkProviderService, ConnectionManager, BitcoinCryptoUtilsService],
     };
   }

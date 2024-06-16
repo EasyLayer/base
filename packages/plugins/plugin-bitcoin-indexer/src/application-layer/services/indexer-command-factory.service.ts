@@ -5,13 +5,9 @@ import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 
 @Injectable()
 export class IndexerCommandFactoryService {
-  constructor(
-    private readonly commandBus: CommandBus
-  ) {}
+  constructor(private readonly commandBus: CommandBus) {}
 
   public async init(dto: any): Promise<void> {
-    return await this.commandBus.execute(
-      new InitIndexerCommand(dto)
-    );
+    return await this.commandBus.execute(new InitIndexerCommand(dto));
   }
 }

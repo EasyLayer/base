@@ -8,14 +8,11 @@ import { Subscriber } from './subscriber';
 })
 export class CqrsTransportModule implements OnModuleInit {
   static forRoot(parameters: any): DynamicModule {
-
     return {
       module: CqrsTransportModule,
       global: parameters.isGlobal || false,
       imports: [],
-      providers: [
-        Publisher, Subscriber
-      ],
+      providers: [Publisher, Subscriber],
       exports: [],
     };
   }

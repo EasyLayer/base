@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Repository, QueryFailedError } from 'typeorm';
 import { AggregateRoot, IEvent } from '@easylayer/cqrs';
-import { EventDataModel } from './event-data.model';
+import { EventDataModel, BasicEvent } from './event-data.model';
 
 @Injectable()
 export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
@@ -26,7 +26,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
 
     const eventRaws = await this.eventStore.find({
       where: { aggregateId },
-      order: { version: 'ASC' }, // TODO: think can we sort by "id" here? 
+      order: { version: 'ASC' }, // TODO: think can we sort by "id" here?
     });
 
     await model.loadFromHistory(eventRaws.map(EventDataModel.deserialize));
@@ -35,28 +35,25 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
 
   public async getMany() {}
 
-  public async fetchLastEvent(model: T & { aggregateId: string }): Promise<T> {
-    // Я смотрю что мы в любом случае должны тут преедать модель аггрегата
-    // даже если она пустая
+  public async fetchLastEvent(model: T & { aggregateId: string }): Promise<BasicEvent<IEvent> | undefined> {
     const { aggregateId } = model;
 
     if (!aggregateId) {
-      return model;
+      return undefined;
     }
 
-    const eventRaws = await this.eventStore.find({
+    // Find last event raw
+    const eventRaw = await this.eventStore.findOne({
       where: { aggregateId },
-      order: { version: 'ASC' },
+      order: { version: 'DESC' },
     });
 
-    await model.loadFromHistory(eventRaws.map(EventDataModel.deserialize));
+    if (!eventRaw) {
+      return undefined;
+    }
 
-    // TODO
-    // if (retryLastEvent && eventRaws.length > 0) {
-    //   await model.publish(eventRaws[eventRaws.length - 1]);
-    // }
-
-    return model;
+    const event = EventDataModel.deserialize(eventRaw);
+    return event;
   }
 
   public async getOneByExtra(model: T & { extra: string }): Promise<T> {
@@ -108,7 +105,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
             case 'UQ__version__aggregate_id':
               throw new Error('Version conflict error');
             default:
-              throw error;;
+              throw error;
           }
         }
         throw error;

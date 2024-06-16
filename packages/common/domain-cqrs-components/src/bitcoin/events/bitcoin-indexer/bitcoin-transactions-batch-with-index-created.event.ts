@@ -9,6 +9,8 @@ interface BitcoinTransactionsBatchWithIndexCreatedEventPayload {
   status: string;
 }
 
-export class BitcoinTransactionsBatchWithIndexCreatedEvent implements BasicEvent<BitcoinTransactionsBatchWithIndexCreatedEventPayload> {
+export class BitcoinTransactionsBatchWithIndexCreatedEvent
+  implements BasicEvent<BitcoinTransactionsBatchWithIndexCreatedEventPayload>
+{
   constructor(public readonly payload: BitcoinTransactionsBatchWithIndexCreatedEventPayload) {}
 }

@@ -8,6 +8,7 @@ import { ReadDatabaseService } from './read-database.service';
 type ReadDatabaseModuleConfig = TypeOrmModuleOptions & {
   type: 'sqlite' | 'postgres' | 'mysql' | 'mongodb';
   name: string;
+  // eslint-disable-next-line @typescript-eslint/ban-types
   entities: Function[];
 };
 
@@ -22,8 +23,8 @@ export class ReadDatabaseModule {
     return {
       module: ReadDatabaseModule,
       imports: [
-        // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same 
-        // so as not to get confused. It must be unique to the one module connection. 
+        // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same
+        // so as not to get confused. It must be unique to the one module connection.
         TypeOrmModule.forRootAsync({
           name,
           useFactory: () => ({
@@ -49,7 +50,7 @@ export class ReadDatabaseModule {
             return dataSource;
           },
         }),
-        // 
+        //
         TypeOrmModule.forFeature(entities, name),
       ],
       providers: [

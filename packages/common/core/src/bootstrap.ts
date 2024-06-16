@@ -7,7 +7,7 @@ import { NestLogger } from '@easylayer/logger';
 import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
-import { importPlugins, setupSwaggerServer } from './utils';
+import { setupSwaggerServer } from './utils';
 
 export interface RegisterablePlugin {
   register: () => DynamicModule | Promise<DynamicModule>;
@@ -23,20 +23,19 @@ initializeTransactionalContext();
 export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => {
   const logger = new NestLogger();
 
-  const basePath = resolve(process.cwd());
+  // const basePath = resolve(process.cwd());
 
   // IMPORTANT: we use dotenv here to load envs globaly.
   // It have to be before import all plugins.
   config({ path: resolve(process.cwd(), '.env') });
 
   const externalPlugins = [];
-  // Это можно в метод вынести
-  for (let plugin of plugins) {
+  // TODO: move to external method
+  for (const plugin of plugins) {
     const registeredPlugin = await plugin.register();
     externalPlugins.push(registeredPlugin);
   }
 
-  // TODO: это пусть загружает только плагины с папки node_modules
   // const internalPlugins = await importPlugins(basePath);
 
   // Create a root app module that already includes dynamic modules
@@ -51,7 +50,7 @@ export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => 
   const appConfig = app.get(AppConfig);
 
   // app.useGlobalFilters(new ExceptionFilterMiddleware());
-  
+
   if (appConfig.isDEVELOPMENT()) {
     setupSwaggerServer(app, {
       title: appName ? appName : 'default',

@@ -13,7 +13,7 @@ export class SystemConfig {
   @IsNumber()
   BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_SIZE: number = 100;
 
-  @Transform(({ value }) =>  (value ? BigInt(value) : BigInt(Number.MAX_SAFE_INTEGER)))
+  @Transform(({ value }) => (value ? BigInt(value) : BigInt(Number.MAX_SAFE_INTEGER)))
   @IsBigInt()
   BITCOIN_INDEXER_MAX_BLOCK_HEIGHT: bigint = BigInt(Number.MAX_SAFE_INTEGER);
 

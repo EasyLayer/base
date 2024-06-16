@@ -1,5 +1,6 @@
 import { Type } from '@nestjs/common';
 import { IEvent, IEventHandler } from '@nestjs/cqrs';
+import { EVENT_METADATA } from '@nestjs/cqrs/dist/decorators/constants';
 
 const INTERNAL_EVENTS = Symbol();
 const IS_AUTO_COMMIT_ENABLED = Symbol();
@@ -27,10 +28,21 @@ export abstract class CustomAggregateRoot<EventBase extends IEvent = IEvent> {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async publishAll<T extends EventBase = EventBase>(event: T[]): Promise<void> {}
 
+  /**
+   * Publishes an event.
+   * This method sets the event metadata before publishing it.
+   *
+   * @param event The event to be published.
+   */
+  async republish<T extends EventBase = EventBase>(event: T): Promise<void> {
+    this.setEventMetadata(event);
+    await this.publish(event);
+  }
+
   async commit(): Promise<void> {
     const events = this.getUncommittedEvents();
-    // Мы не хотим тут использовать публикации нескольких событий для одного и того же аггрегата. 
-    // Потому что мы не знаем как не перезаписать рид базу всеми ими? Или что? 
+    // Мы не хотим тут использовать публикации нескольких событий для одного и того же аггрегата.
+    // Потому что мы не знаем как не перезаписать рид базу всеми ими? Или что?
     // Сейчас мы попробоуем использовать для publishAll в самом методе в EventBus только publish()
     await this.publishAll(events);
     this.uncommit();
@@ -104,5 +116,18 @@ export abstract class CustomAggregateRoot<EventBase extends IEvent = IEvent> {
   protected getEventName(event: any): string {
     const { constructor } = Object.getPrototypeOf(event);
     return constructor.name as string;
+  }
+
+  /**
+   * Sets metadata for an event.
+   * This method assigns the event's metadata 'id' as the event name.
+   *
+   * @param event The event for which metadata should be set.
+   */
+  protected setEventMetadata(event: EventBase): void {
+    const eventName = this.getEventName(event);
+    if (!Reflect.hasOwnMetadata(EVENT_METADATA, event.constructor)) {
+      Reflect.defineMetadata(EVENT_METADATA, { id: eventName }, event.constructor);
+    }
   }
 }

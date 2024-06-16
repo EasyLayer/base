@@ -17,17 +17,8 @@ export class Publisher implements IEventPublisher {
     // because want to method inside .add() finished asynchronous.
     // The same before this.asyncTask()
     this.queue
-      .add(() => this
-        .asyncTask(event)
-        .catch(error => {
-          // IMPORTANT: we catch the error from method asyncTask()
-          // but don’t throw it away so that the .add() method doesn’t catch it.
-          // Thus, after successfully adding an event to the queue, 
-          // errors cannot affect the execution of the .add() method itself.
-          // return;
-        }
-      ))
-      .catch(error => {
+      .add(() => this.asyncTask(event))
+      .catch((error) => {
         // IMPORTANT: This error will cause the transaction to be rolled back.
         // NOTE: In theory we will never get here
         throw error;
@@ -41,7 +32,7 @@ export class Publisher implements IEventPublisher {
       // The same before this.asyncTask()
       this.queue
         .add(() => this.asyncTask(event))
-        .catch(error => {
+        .catch((error) => {
           // IMPORTANT: This error will cause the transaction to be rolled back.
           // NOTE: In theory we will never get here
           throw error;
@@ -50,9 +41,9 @@ export class Publisher implements IEventPublisher {
   }
 
   private async asyncTask<T extends IEvent>(event: T): Promise<void> {
-    // IMPORTANT: This is necessary so that in cases of an asynchronous error, 
+    // IMPORTANT: This is necessary so that in cases of an asynchronous error,
     // all functions (for example, committing aggregate) must be completed.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     // Sending an event to subscribers
     this.subject$.next(event);
   }

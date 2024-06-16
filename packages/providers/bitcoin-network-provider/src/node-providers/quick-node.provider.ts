@@ -9,7 +9,7 @@ export interface QuickNodeProviderOptions extends BaseNodeProviderOptions {
 
 export const createQuickNodeProvider = (options: QuickNodeProviderOptions): QuickNodeProvider => {
   return new QuickNodeProvider(options);
-}
+};
 
 export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions> {
   private _httpClient!: AxiosInstance;
@@ -26,8 +26,8 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     return {
       type: this.type,
       uniqName: this.uniqName,
-      baseUrl: this.baseUrl
-    }
+      baseUrl: this.baseUrl,
+    };
   }
 
   public async connect() {
@@ -38,15 +38,17 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     //   endpointUrl: this.connectionOptions.baseUrl,
     // })
 
-    this._httpClient = rateLimit(axios.create({
-      baseURL: this.connectionOptions.baseUrl,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // TODO: add to envs
-      // TODO: мы также должны эти значения сопоставлять с количеством воркеров...
-      
-    }), { maxRequests: 30, perMilliseconds: 1000 });
+    this._httpClient = rateLimit(
+      axios.create({
+        baseURL: this.connectionOptions.baseUrl,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // TODO: add to envs
+        // TODO: мы также должны эти значения сопоставлять с количеством воркеров...
+      }),
+      { maxRequests: 30, perMilliseconds: 1000 }
+    );
 
     if (!this.healthcheck()) {
       throw new Error('Cant connect');

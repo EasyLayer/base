@@ -1,8 +1,9 @@
-import { Injectable, Type } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IEvent } from '@nestjs/cqrs';
 import { ModulesContainer } from '@nestjs/core/injector/modules-container';
 import { ExplorerService } from '@nestjs/cqrs/dist/services/explorer.service';
 import { CqrsOptions } from '@nestjs/cqrs/dist/interfaces/cqrs-options.interface';
+import { setEventMetadataByHandlers } from './utils';
 
 export interface IExtendedOptions extends CqrsOptions {}
 
@@ -21,6 +22,12 @@ export class CustomExplorerService<EventBase extends IEvent = IEvent> extends Ex
     // const modules = [...this.customModulesContainer.values()];
     // const projectionUpdaters = this.flatMap<IProjectionUpdater>(modules, (instance) => this.filterProvider(instance, PROJECTION_UPDATER_METADATA));
 
-    return { ...baseOptions };
+    const { events } = baseOptions;
+
+    if (events) {
+      setEventMetadataByHandlers(events);
+    }
+
+    return { ...baseOptions, events };
   }
 }

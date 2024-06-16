@@ -21,17 +21,18 @@ describe('/First Initialization Application Write State Checkin', () => {
 
     // Mock the BlocksQueueService with runQueue() method
     const mockBlocksQueueService = {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       runQueue: jest.fn().mockImplementation(async (height: bigint | string | number) => {
         // Emit an event to signal that runQueue() was called
         eventEmitter.emit('runQueueCalled');
-        }),
+      }),
     };
 
     // Clear the database
     const dataDir = resolve(process.cwd(), 'data');
     try {
       const files = await readdir(dataDir);
-      const unlinkPromises = files.map(file => unlink(join(dataDir, file)));
+      const unlinkPromises = files.map((file) => unlink(join(dataDir, file)));
       await Promise.all(unlinkPromises);
     } catch (err) {
       console.error('Failed to clean data directory', err);
@@ -50,8 +51,7 @@ describe('/First Initialization Application Write State Checkin', () => {
       plugins: [indexer],
     });
 
-    const moduleFixture: TestingModule = await Test
-      .createTestingModule({ imports: [rootModule] })
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [rootModule] })
       .overrideProvider('BlocksQueueService')
       .useValue(mockBlocksQueueService)
       .compile();
@@ -70,16 +70,14 @@ describe('/First Initialization Application Write State Checkin', () => {
 
     // Wait for the startBlocksLoading() method
     await runQueueCalled;
-    
+
     // We wait until startBlocksLoadingCalled() will be executed
     // This is because we want to test an app that has already initialized and stopped
     await app.close();
   });
 
   it('/healthcheck (GET)', async () => {
-    await supertest(app.getHttpServer())
-      .get('/bitcoin-indexer/healthcheck')
-      .expect(200);
+    await supertest(app.getHttpServer()).get('/bitcoin-indexer/healthcheck').expect(200);
   });
 
   it('should create new indexer aggregate', async () => {

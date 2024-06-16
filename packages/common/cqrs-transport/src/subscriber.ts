@@ -28,9 +28,7 @@ export class Subscriber implements IMessageSource, OnModuleDestroy {
   private initialize(): void {
     this.subscription = this.publisher.events$.subscribe((event) => {
       if (this.bridge) {
-        this.queueSingleConcurrency
-          .add(() => this.asyncTask(event)
-        )
+        this.queueSingleConcurrency.add(() => this.asyncTask(event));
       } else {
         throw new Error('Subscriber error - subject is empty');
       }
@@ -42,11 +40,11 @@ export class Subscriber implements IMessageSource, OnModuleDestroy {
   }
 
   private async asyncTask<T extends IEvent>(event: T): Promise<void> {
-    // IMPORTANT: There may be a potential problem here 
-    // when the insertion error into the Read database is so fast in this particular transport 
-    // that the events do not have time to be stored in the EventStore. 
+    // IMPORTANT: There may be a potential problem here
+    // when the insertion error into the Read database is so fast in this particular transport
+    // that the events do not have time to be stored in the EventStore.
     // They then commit, but they may simply not have time to insert into the database.
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     this.bridge.next(event);
   }
 }

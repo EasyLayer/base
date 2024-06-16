@@ -15,14 +15,22 @@ export class TransactionsReadService {
   //   return await this.readDb.upsert({ ...dto, txid });
   // }
 
-  async createMany({ block, batch, status }: { block: any, status: string, batch: any }): Promise<TransactionViewModel[]> {
+  async createMany({
+    block,
+    batch,
+    status,
+  }: {
+    block: any;
+    status: string;
+    batch: any;
+  }): Promise<TransactionViewModel[]> {
     const transactions: TransactionViewModel[] = [];
-    
+
     batch.transactions.forEach((item: any) => {
       const tx = new TransactionViewModel({
         txid: item.txid,
         block,
-        status
+        status,
       });
       transactions.push(tx);
     });
@@ -45,6 +53,7 @@ export class TransactionsReadService {
   }
 
   async findAll(): Promise<TransactionViewModel[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [blocks, total] = await this.readDb.findAndCount();
     return blocks;
   }

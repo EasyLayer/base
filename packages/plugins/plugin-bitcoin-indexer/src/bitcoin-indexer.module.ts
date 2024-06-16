@@ -15,14 +15,14 @@ import {
   BlocksCommandFactoryService,
   IndexerCommandFactoryService,
   TransactionsCommandFactoryService,
-  ReadStateExceptionHandlerService
+  ReadStateExceptionHandlerService,
 } from './application-layer/services';
 import {
   BlockModelFactoryService,
   IndexerModelFactoryService,
   TransactionsBatchModelFactoryService,
   BlocksReadService,
-  TransactionsReadService
+  TransactionsReadService,
 } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 import { EventsHandlers } from './domain-layer/events-handlers';
@@ -41,7 +41,7 @@ export class BitcoinIndexerModule {
     const readdatabaseConfig = await transformAndValidate(ReadDatabaseConfig, process.env, {
       validator: { whitelist: true },
     });
-    
+
     // Create QuickNode providers
     const quickNodeProviders = [];
     if (providersConfig.QUICK_NODE_BASE_URLS) {
@@ -51,7 +51,7 @@ export class BitcoinIndexerModule {
             new QuickNodeProvider({
               uniqName: uuidv4(),
               baseUrl: quickNodeProviderOption,
-            }), 
+            }),
         });
       }
     }
@@ -62,20 +62,18 @@ export class BitcoinIndexerModule {
       imports: [
         LoggerModule.forRoot({ componentName: 'BitcoinIndexerModule' }),
         BitcoinNetworkProviderModule.forRootAsync({
-          providers: [
-            ...quickNodeProviders
-          ]
+          providers: [...quickNodeProviders],
         }),
         // TODO: move configs into envs
         EventStoreModule.forRoot({
-          type: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_TYPE, 
+          type: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_TYPE,
           name: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_NAME,
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
           enableWAL: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL,
           // Now, when attempting to perform an operation that encountered a block,
-          // SQLite will attempt to retry the operation for the specified time before returning an error. 
+          // SQLite will attempt to retry the operation for the specified time before returning an error.
           // busyTimeout: 1000
         }),
         ReadDatabaseModule.forRoot({
@@ -85,21 +83,23 @@ export class BitcoinIndexerModule {
           synchronize: readdatabaseConfig.BITCOIN_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
           enableWAL: readdatabaseConfig.BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL,
-          entities: [BlockViewModel, TransactionViewModel]
-        })
+          entities: [BlockViewModel, TransactionViewModel],
+        }),
       ],
       providers: [
         {
           provide: AppConfig,
-          useFactory: async () => transformAndValidate(AppConfig, process.env, {
-            validator: { whitelist: true }
-          }),
+          useFactory: async () =>
+            transformAndValidate(AppConfig, process.env, {
+              validator: { whitelist: true },
+            }),
         },
         {
           provide: SystemConfig,
-          useFactory: async () => transformAndValidate(SystemConfig, process.env, {
-            validator: { whitelist: true }
-          }),
+          useFactory: async () =>
+            transformAndValidate(SystemConfig, process.env, {
+              validator: { whitelist: true },
+            }),
         },
         {
           provide: ProvidersConfig,
@@ -114,7 +114,7 @@ export class BitcoinIndexerModule {
           useValue: readdatabaseConfig,
         },
         {
-          // IMPORTANT: We use such provider connections for services 
+          // IMPORTANT: We use such provider connections for services
           // to which we will need access in the future for service override by string token.
           provide: 'BlocksQueueService',
           useClass: BlocksQueueService,
@@ -132,7 +132,7 @@ export class BitcoinIndexerModule {
         TransactionsBatchModelFactoryService,
         ReadStateExceptionHandlerService,
         ...CommandHandlers,
-        ...EventsHandlers
+        ...EventsHandlers,
       ],
       exports: [],
     };

@@ -1,4 +1,4 @@
-import { Module} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { NETWORK_TRANSPORT_SERVICE } from '@easylayer/shared-interfaces';
 import { NetworkTransportService } from './network-transport.service';
 

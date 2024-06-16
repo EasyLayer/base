@@ -50,8 +50,8 @@ export class EventDataModel {
       payload: {
         aggregateId,
         requestId,
-        ...payload
-      }
+        ...payload,
+      },
     };
 
     aggregateEvent.constructor = { name: type } as typeof Object.constructor;

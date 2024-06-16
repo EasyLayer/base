@@ -48,7 +48,7 @@ type TransactionsMap = Map<string, Omit<Transaction, 'txid'> | null>;
 
 enum BatchStatuses {
   COMPLETED = 'completed',
-  CREATED = 'created'
+  CREATED = 'created',
 }
 
 export class TransactionsBatch extends AggregateRoot {
@@ -70,17 +70,16 @@ export class TransactionsBatch extends AggregateRoot {
     blockHeight,
     blockHash,
     index,
-    isFinalBatch
+    isFinalBatch,
   }: {
     aggregateId: string;
-    requestId: string,
-    transactionIds: string[],
+    requestId: string;
+    transactionIds: string[];
     blockHeight: bigint;
     blockHash: string;
-    index: number,
-    isFinalBatch: boolean
+    index: number;
+    isFinalBatch: boolean;
   }) {
-
     await this.apply(
       new BitcoinTransactionsBatchCreatedEvent({
         aggregateId,
@@ -90,7 +89,7 @@ export class TransactionsBatch extends AggregateRoot {
         blockHash,
         status: BatchStatuses.CREATED,
         index,
-        isFinalBatch
+        isFinalBatch,
       })
     );
   }
@@ -102,24 +101,23 @@ export class TransactionsBatch extends AggregateRoot {
     blockHeight,
     blockHash,
     index,
-    isFinalBatch
+    isFinalBatch,
   }: {
     aggregateId: string;
-    requestId: string,
-    transactions: Transaction[],
+    requestId: string;
+    transactions: Transaction[];
     blockHeight: bigint;
     blockHash: string;
     index: number;
     isFinalBatch: boolean;
   }) {
-
     // Check transactions
     // Make sure that the sum of the inputs equals the sum of the outputs plus the commission.
     const batch = {
       transactions,
       index,
-      isFinalBatch
-    }
+      isFinalBatch,
+    };
     await this.apply(
       new BitcoinTransactionsBatchWithIndexCreatedEvent({
         aggregateId,
@@ -132,26 +130,24 @@ export class TransactionsBatch extends AggregateRoot {
     );
   }
 
-  public async indexing({ transactions, requestId }: {
-    transactions: Transaction[],
-    requestId: string
-  }) {
-
+  public async indexing({ transactions, requestId }: { transactions: Transaction[]; requestId: string }) {
     // Check transactions
     // Make sure that the sum of the inputs equals the sum of the outputs plus the commission.
     const batch = {
       transactions,
       index: this.index,
-      isFInalBatch: this.isFinalBatch
-    }
-    await this.apply(new BitcoinTransactionsBatchIndexedEvent({
-      aggregateId: this.aggregateId,
-      status: BatchStatuses.COMPLETED,
-      requestId,
-      batch,
-      blockHash: this.blockHash,
-      blockHeight: this.blockHeight.toString()
-    }));
+      isFInalBatch: this.isFinalBatch,
+    };
+    await this.apply(
+      new BitcoinTransactionsBatchIndexedEvent({
+        aggregateId: this.aggregateId,
+        status: BatchStatuses.COMPLETED,
+        requestId,
+        batch,
+        blockHash: this.blockHash,
+        blockHeight: this.blockHeight.toString(),
+      })
+    );
   }
 
   private onBitcoinTransactionsBatchCreatedEvent({ payload }: BitcoinTransactionsBatchCreatedEvent) {
@@ -161,18 +157,16 @@ export class TransactionsBatch extends AggregateRoot {
     this.blockHash = blockHash;
     this.status = status;
     this.index = index;
-    this.transactions = new Map(transactionIds.map((txid: string) => [
-      txid, null
-    ]));
+    this.transactions = new Map(transactionIds.map((txid: string) => [txid, null]));
   }
 
   private onBitcoinTransactionsBatchIndexedEvent({ payload }: BitcoinTransactionsBatchIndexedEvent) {
     const { status, batch, blockHash, blockHeight } = payload;
     const { transactions, index, isFInalBatch } = batch;
     this.status = status;
-    this.transactions = new Map(transactions.map((transaction: Transaction) => [
-      transaction.txid, { ...transaction, txid: null }
-    ]));
+    this.transactions = new Map(
+      transactions.map((transaction: Transaction) => [transaction.txid, { ...transaction, txid: null }])
+    );
     this.index = index;
     this.isFinalBatch = isFInalBatch;
     this.blockHash = blockHash;
@@ -188,8 +182,8 @@ export class TransactionsBatch extends AggregateRoot {
     this.status = status;
     this.index = index;
     this.isFinalBatch = isFinalBatch;
-    this.transactions = new Map(transactions.map((transaction: Transaction) => [
-      transaction.txid, { ...transaction, txid: null }
-    ]));
+    this.transactions = new Map(
+      transactions.map((transaction: Transaction) => [transaction.txid, { ...transaction, txid: null }])
+    );
   }
 }

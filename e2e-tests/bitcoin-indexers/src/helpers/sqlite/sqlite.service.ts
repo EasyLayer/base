@@ -59,7 +59,6 @@ export class SQLiteService {
       } else {
         reject('Connection was lost');
       }
-      
     });
   }
 
@@ -91,7 +90,7 @@ export class SQLiteService {
       console.error(error);
     }
   }
-  
+
   private async openDatabase(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db = new sqlite3.Database(this._path, (err) => {

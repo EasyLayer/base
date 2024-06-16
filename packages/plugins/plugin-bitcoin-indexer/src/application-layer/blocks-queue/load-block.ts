@@ -5,7 +5,7 @@ import {
   BitcoinNetworkProviderModule,
   BitcoinNetworkProviderService,
   ProviderNodeOptions,
-  ProviderOptions
+  ProviderOptions,
 } from '@easylayer/bitcoin-network-provider';
 
 class ApplicationContextProvider {
@@ -15,16 +15,16 @@ class ApplicationContextProvider {
   private constructor() {}
 
   public static async getApplicationContext(providers: ProviderOptions[]): Promise<INestApplicationContext> {
-      if (!this.appContext) {
-        this.appContext = await NestFactory.createApplicationContext(
-          BitcoinNetworkProviderModule.forRootAsync({
-            providers
-          }),
-          { logger: false }
-        );
-      }
+    if (!this.appContext) {
+      this.appContext = await NestFactory.createApplicationContext(
+        BitcoinNetworkProviderModule.forRootAsync({
+          providers,
+        }),
+        { logger: false }
+      );
+    }
 
-      return this.appContext;
+    return this.appContext;
   }
 
   public static async closeApplicationContext(): Promise<void> {
@@ -37,7 +37,7 @@ class ApplicationContextProvider {
 
 export const loadBlock = async ({
   height,
-  providersConnectionOptions
+  providersConnectionOptions,
 }: {
   height: string | number;
   providersConnectionOptions: ProviderNodeOptions[];

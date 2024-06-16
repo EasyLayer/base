@@ -12,7 +12,6 @@ import { initializeTransactionalContext } from '@easylayer/eventstore/transactio
 import { SQLiteService } from '../../helpers/sqlite/sqlite.service';
 import { mockIndexerEvent } from './mocks/indexer-event';
 
-
 describe('/Second Initialization Application Write State Checkin', () => {
   let app: INestApplication;
   let dbService: SQLiteService;
@@ -23,17 +22,18 @@ describe('/Second Initialization Application Write State Checkin', () => {
 
     // Mock the BlocksQueueService with runQueue() method
     const mockBlocksQueueService = {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       runQueue: jest.fn().mockImplementation(async (height: bigint | string | number) => {
         // Emit an event to signal that runQueue was called
         eventEmitter.emit('runQueueCalled');
-        }),
+      }),
     };
 
     // Clear the database
     const dataDir = resolve(process.cwd(), 'data');
     try {
       const files = await readdir(dataDir);
-      const unlinkPromises = files.map(file => unlink(join(dataDir, file)));
+      const unlinkPromises = files.map((file) => unlink(join(dataDir, file)));
       await Promise.all(unlinkPromises);
     } catch (err) {
       console.error('Failed to clean data directory', err);
@@ -50,7 +50,9 @@ describe('/Second Initialization Application Write State Checkin', () => {
     dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/indexer-write.db') });
     await dbService.initializeDatabase(resolve(process.cwd(), 'src/indexer/second-init-flow/dump.sql'));
     const eventKeys = Object.keys(mockIndexerEvent);
-    const eventValues = Object.values(mockIndexerEvent).map(value => value === null ? 'NULL' : typeof value === 'string' ? `'${value}'` : value);
+    const eventValues = Object.values(mockIndexerEvent).map((value) =>
+      value === null ? 'NULL' : typeof value === 'string' ? `'${value}'` : value,
+    );
     await dbService.exec(`INSERT INTO events (${eventKeys.join(', ')}) VALUES (${eventValues.join(', ')})`);
     await dbService.close();
 
@@ -61,8 +63,7 @@ describe('/Second Initialization Application Write State Checkin', () => {
       plugins: [indexer],
     });
 
-    const moduleFixture: TestingModule = await Test
-      .createTestingModule({ imports: [rootModule] })
+    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [rootModule] })
       .overrideProvider('BlocksQueueService')
       .useValue(mockBlocksQueueService)
       .compile();
@@ -76,7 +77,7 @@ describe('/Second Initialization Application Write State Checkin', () => {
     });
 
     await app.init();
-    
+
     jest.runAllTimersAsync();
 
     // Wait for the startBlocksLoading() method
@@ -88,9 +89,7 @@ describe('/Second Initialization Application Write State Checkin', () => {
   });
 
   it('/healthcheck (GET)', async () => {
-    await supertest(app.getHttpServer())
-      .get('/bitcoin-indexer/healthcheck')
-      .expect(200);
+    await supertest(app.getHttpServer()).get('/bitcoin-indexer/healthcheck').expect(200);
   });
 
   it('should restore correct old indexer aggregate', async () => {

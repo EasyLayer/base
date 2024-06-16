@@ -58,12 +58,11 @@ export class CustomCqrsModule<EventBase extends IEvent = IEvent> implements OnMo
     @Inject(EventBus)
     private readonly eventBus: CustomEventBus,
     private readonly commandBus: CommandBus,
-    private readonly queryBus: QueryBus,
+    private readonly queryBus: QueryBus
   ) {}
 
   onModuleInit() {
     const { events, queries, sagas, commands } = this.explorerService.explore();
-
     this.eventBus.register(events);
     this.eventBus.registerSagas(sagas);
     this.commandBus.register(commands);

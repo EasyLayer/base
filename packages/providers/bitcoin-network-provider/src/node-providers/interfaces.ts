@@ -6,7 +6,9 @@ export type Hash = `0x${string}`;
 export type NodeProviderTypes = 'selfnode' | 'quicknode';
 
 export interface NodeProviderTypeInterface {
-    type: NodeProviderTypes;
+  type: NodeProviderTypes;
 }
 
-export type ProviderNodeOptions = SelfNodeProviderOptions & NodeProviderTypeInterface | QuickNodeProviderOptions & NodeProviderTypeInterface;
+export type ProviderNodeOptions =
+  | (SelfNodeProviderOptions & NodeProviderTypeInterface)
+  | (QuickNodeProviderOptions & NodeProviderTypeInterface);

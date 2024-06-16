@@ -3,9 +3,7 @@ import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
-import {
-  BitcoinNetworkProviderService,
-} from '@easylayer/bitcoin-network-provider';
+import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { Block } from '../models/block.model';
 import { Indexer } from '../models/indexer.model';
@@ -13,7 +11,7 @@ import { TransactionsBatch } from '../models/transactions-batch.model';
 import {
   BlockModelFactoryService,
   TransactionsBatchModelFactoryService,
-  IndexerModelFactoryService
+  IndexerModelFactoryService,
 } from '../services';
 
 @CommandHandler(IndexBlockCommand)
@@ -24,7 +22,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
     private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
-    private readonly eventStore: EventStoreRepository,
+    private readonly eventStore: EventStoreRepository
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -35,7 +33,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       const { block, requestId } = payload;
 
       // TODO: For this command, you need to get a block in which only hashes will be transferred.
-      const { tx, ...blockWithoutTx } = block; 
+      const { tx, ...blockWithoutTx } = block;
       const { height, hash, previousblockhash } = blockWithoutTx;
 
       // TODO: Indexer should be in snapshot cache
@@ -51,7 +49,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           height,
           requestId,
           service: this.networkProviderService,
-          blocks: []
+          blocks: [],
         });
         await this.eventStore.save(indexerModel);
         await indexerModel.commit();
@@ -78,18 +76,20 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         while (tx.length > 0) {
           // Extract a batch of transactions, removing them from the copy of the array
           // IMPORTANT: transactions in the block are arranged in order
-          // when splitting into batches we must follow this order. 
+          // when splitting into batches we must follow this order.
           const transactionSlice = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
-  
+
           // TODO: add type
           // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
           // that because we don't want to send all transactions by Transport, so we will get it from cache
-          const transactionSliceIds: string[] = transactionSlice.map((transaction: { txid: string }) => transaction.txid);
+          const transactionSliceIds: string[] = transactionSlice.map(
+            (transaction: { txid: string }) => transaction.txid
+          );
           const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
 
           // Check if this is the last batch
           const isFinalBatch = tx.length === 0;
-          
+
           await transactionBatch.create({
             aggregateId: uuidv4(),
             requestId,
@@ -97,16 +97,16 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
             blockHeight: height,
             blockHash: hash,
             index,
-            isFinalBatch
+            isFinalBatch,
           });
-  
+
           batches.push(transactionBatch);
 
           index++;
         }
       } else {
         // NOTE: Case when we have single batch
-        // we indexing it immediately 
+        // we indexing it immediately
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
         await transactionBatch.createWithIndexing({
           aggregateId: uuidv4(),
@@ -115,7 +115,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           blockHeight: height,
           blockHash: hash,
           isFinalBatch: true,
-          index: 0
+          index: 0,
         });
 
         batches.push(transactionBatch);
@@ -129,7 +129,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       if (batches.length == 1) {
         // { <aggregateId>:<status> }
         const batchesMap: Map<string, string> = new Map();
-        batches.forEach(batch => {
+        batches.forEach((batch) => {
           batchesMap.set(batch.aggregateId, 'completed');
         });
 
@@ -137,7 +137,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           aggregateId: hash,
           block: blockWithoutTx,
           batches: batchesMap,
-          requestId
+          requestId,
         });
 
         await indexerModel.addBlockWithImmediatelyConfirm({ requestId, block: blockWithoutTx });
@@ -147,35 +147,42 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         await blockModel.commit();
         await indexerModel.commit();
 
-        for (let batch of batches) {
+        for (const batch of batches) {
           await batch.commit();
         }
 
-        this.log.info(`Block successfull indexed`, {
-          block: { height, hash },
-          alreadyIndexedLength: indexerModel.chain.lastBlockHeight
-        }, this.constructor.name);
-        return; 
+        this.log.info(
+          `Block successfull indexed`,
+          {
+            block: { height, hash },
+            alreadyIndexedLength: indexerModel.chain.lastBlockHeight,
+          },
+          this.constructor.name
+        );
+        return;
       }
 
       /* Continue starting to index block */
       // { <aggregateId>:<status> }
       const batchesMap: Map<string, string> = new Map();
-      batches.forEach(batch => {
+      batches.forEach((batch) => {
         batchesMap.set(batch.aggregateId, 'created');
       });
 
       await indexerModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
-      
-      this.log.debug('Indexer added new block', { aggregateId: indexerModel.aggregateId, block: { height, hash, previousblockhash } }, this.constructor.name);
+
+      this.log.debug(
+        'Indexer added new block',
+        { aggregateId: indexerModel.aggregateId, block: { height, hash, previousblockhash } },
+        this.constructor.name
+      );
 
       await blockModel.index({
         aggregateId: hash,
         block: blockWithoutTx,
         batches: batchesMap,
-        requestId
+        requestId,
       });
-
 
       await this.eventStore.save([...batches, indexerModel, blockModel]);
 

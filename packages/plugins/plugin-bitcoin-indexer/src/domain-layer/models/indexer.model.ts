@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 import { AggregateRoot } from '@easylayer/cqrs';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import {
@@ -12,7 +12,7 @@ import {
 enum IndexerStatuses {
   AWAITING = 'awaiting',
   INDEXING = 'indexing',
-  REORGANISATION = 'reorganisation'
+  REORGANISATION = 'reorganisation',
 }
 
 type LightBlock = {
@@ -167,11 +167,11 @@ export class Blockchain {
    */
   public validateChain(): boolean {
     let current = this.head;
-    
+
     if (!current) {
       return true; // Пустая цепочка считается валидной
     }
-  
+
     while (current && current.next) {
       // First check if the block heights increment by 1
       if (current.next.block.height !== current.block.height + 1n) {
@@ -183,11 +183,10 @@ export class Blockchain {
       }
       current = current.next;
     }
-  
+
     // Если цикл завершился и current указывает на последний блок (this.tail)
     return current === this.tail;
   }
-  
 
   /**
    * Validates that the provided block data matches the last block in the chain.
@@ -250,7 +249,7 @@ export class Blockchain {
     let currentNode = this.tail;
     let found = false;
 
-    // Iterate backwards from the last block 
+    // Iterate backwards from the last block
     // until we find the block immediately before the given height
     while (currentNode && currentNode.prev) {
       if (currentNode.prev.block.height === height - 1n) {
@@ -303,7 +302,7 @@ export class Blockchain {
 }
 
 export class Indexer extends AggregateRoot {
-  // IMPORTANT: There must be only one Indexer Aggregate in the module, 
+  // IMPORTANT: There must be only one Indexer Aggregate in the module,
   // so we immediately give it aggregateId by which we can find it.
   public aggregateId: string = 'indexer';
   public status!: IndexerStatuses;
@@ -316,15 +315,17 @@ export class Indexer extends AggregateRoot {
     const status = this.status || IndexerStatuses.AWAITING;
     const height = this.chain.lastBlockHeight.toString();
 
-    await this.apply(new BitcoinIndexerInitializedEvent({
-      aggregateId: this.aggregateId,
-      requestId,
-      status,
-      height,
-    }));
+    await this.apply(
+      new BitcoinIndexerInitializedEvent({
+        aggregateId: this.aggregateId,
+        requestId,
+        status,
+        height,
+      })
+    );
   }
 
-  public async addBlock({ block, requestId }: { block: any, requestId: string }) {
+  public async addBlock({ block, requestId }: { block: any; requestId: string }) {
     if (this.status !== IndexerStatuses.AWAITING && this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error('addBlock() Previous Block did not complete indexing');
     }
@@ -335,15 +336,17 @@ export class Indexer extends AggregateRoot {
       throw new Error('Need reorganisation');
     }
 
-    await this.apply(new BitcoinIndexerBlockAddedEvent({
-      aggregateId: this.aggregateId,
-      requestId,
-      status: IndexerStatuses.INDEXING,
-      block
-    }));
+    await this.apply(
+      new BitcoinIndexerBlockAddedEvent({
+        aggregateId: this.aggregateId,
+        requestId,
+        status: IndexerStatuses.INDEXING,
+        block,
+      })
+    );
   }
 
-  public async addBlockWithImmediatelyConfirm({ block, requestId }: { block: any, requestId: string }) {
+  public async addBlockWithImmediatelyConfirm({ block, requestId }: { block: any; requestId: string }) {
     if (this.status !== IndexerStatuses.AWAITING && this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error('addBlock() Previous Block did not complete indexing');
     }
@@ -354,18 +357,27 @@ export class Indexer extends AggregateRoot {
       throw new Error('Need reorganisation');
     }
 
-    await this.apply(new BitcoinIndexerBlockWithConfirmAddedEvent({
-      aggregateId: this.aggregateId,
-      requestId,
-      status: IndexerStatuses.AWAITING,
-      block
-    }));
+    await this.apply(
+      new BitcoinIndexerBlockWithConfirmAddedEvent({
+        aggregateId: this.aggregateId,
+        requestId,
+        status: IndexerStatuses.AWAITING,
+        block,
+      })
+    );
   }
 
-  public async reorganisation(
-    { height, requestId, service, blocks } :
-    { height: bigint, requestId: string, service: BitcoinNetworkProviderService, blocks: any[] }
-  ): Promise<void> {
+  public async reorganisation({
+    height,
+    requestId,
+    service,
+    blocks,
+  }: {
+    height: bigint;
+    requestId: string;
+    service: BitcoinNetworkProviderService;
+    blocks: any[];
+  }): Promise<void> {
     if (this.status !== IndexerStatuses.AWAITING && this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error('reorganisation () Previous Block did not complete indexing');
     }
@@ -375,37 +387,39 @@ export class Indexer extends AggregateRoot {
     const localBlockNode = this.chain.findBlockByHeight(height - 1n);
 
     if (!localBlockNode) {
-      // If we haven’t found a block by height in the chain by height, 
-      // then this is an error, 
+      // If we haven’t found a block by height in the chain by height,
+      // then this is an error,
       // we must go back all the way to the loader and try with another block
       throw new Error('Block not found in local chain');
     }
 
     if (oldBlock.hash === localBlockNode.block.hash && oldBlock.previousblockhash === localBlockNode.block.prevHash) {
       // Match found
-      await this.apply(new BitcoinIndexerReorganisationEvent({
-        aggregateId: this.aggregateId,
-        requestId,
-        status: IndexerStatuses.REORGANISATION,
-        // NOTE: height - height of reorganization (last correct block)
-        height: localBlockNode.block.height.toString(),
-        // NOTE: We publish in the event the hashes of all blocks for which reorganization was required
-        blocksHashes: blocks.map(item => item.hash)
-      }));
+      await this.apply(
+        new BitcoinIndexerReorganisationEvent({
+          aggregateId: this.aggregateId,
+          requestId,
+          status: IndexerStatuses.REORGANISATION,
+          // NOTE: height - height of reorganization (last correct block)
+          height: localBlockNode.block.height.toString(),
+          // NOTE: We publish in the event the hashes of all blocks for which reorganization was required
+          blocksHashes: blocks.map((item) => item.hash),
+        })
+      );
     }
 
     // Saving blocks for publication in an event
-    const newBlocks = [ ...blocks, oldBlock ];
+    const newBlocks = [...blocks, oldBlock];
 
     // Recursive check the previous block
     return this.reorganisation({ height: oldBlock.height, requestId, service, blocks: newBlocks });
   }
-  
-  public async confirmIndexBlock({ block, requestId }: { block: any, requestId: string }) {
+
+  public async confirmIndexBlock({ block, requestId }: { block: any; requestId: string }) {
     if (this.status !== IndexerStatuses.INDEXING) {
       throw new Error('Any Block did not start indexing');
     }
-    
+
     const { height, hash, previousblockhash } = block;
 
     // Check this block in state
@@ -413,12 +427,14 @@ export class Indexer extends AggregateRoot {
       throw new Error('Last block chain mismatch');
     }
 
-    await this.apply(new BitcoinIndexerIndexBlockConfirmedEvent({
-      aggregateId: this.aggregateId,
-      requestId,
-      status: IndexerStatuses.AWAITING,
-      block
-    }));
+    await this.apply(
+      new BitcoinIndexerIndexBlockConfirmedEvent({
+        aggregateId: this.aggregateId,
+        requestId,
+        status: IndexerStatuses.AWAITING,
+        block,
+      })
+    );
   }
 
   private onBitcoinIndexerInitializedEvent({ payload }: BitcoinIndexerInitializedEvent) {

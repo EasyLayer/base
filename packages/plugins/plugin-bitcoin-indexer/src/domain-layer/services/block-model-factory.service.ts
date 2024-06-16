@@ -22,16 +22,18 @@ export class BlockModelFactoryService {
   }
 
   // Логика наверное должна быть другой
-  // Мы это события кладем в аггрегатор чтобы можно было его через commit запустить? 
+  // Мы это события кладем в аггрегатор чтобы можно было его через commit запустить?
   // Но нужно решить:
   // 1 - что п осохранению в базе, мы ж не можем это решать как то вручную и там же есть уже такая запись в базе
   // 2 - состояние аггрегата, чтобы небыло дубликатов
-  // С первым наверное сохранять все же внутри метода commit?? 
+  // С первым наверное сохранять все же внутри метода commit??
   public async publishLastEvent(aggragatorId: string): Promise<void> {
     const model = this.createNewModel();
     model.aggregateId = aggragatorId;
     const event = await this.blocksRepository.fetchLastEvent(model);
-    return model.publish(event);
+    if (event) {
+      await model.republish(event);
+    }
   }
 
   public async initAllModels(): Promise<Block[]> {

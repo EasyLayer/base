@@ -5,7 +5,13 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin';
 import { AppLogger } from '@easylayer/logger';
 import { Indexer } from '../models/indexer.model';
-import { IndexerModelFactoryService, BlockModelFactoryService } from '../services';
+import { Block } from '../models/block.model';
+// import { TransactionsBatch } from '../models/transactions-batch.model';
+import {
+  IndexerModelFactoryService,
+  BlockModelFactoryService,
+  TransactionsBatchModelFactoryService,
+} from '../services';
 
 @CommandHandler(InitIndexerCommand)
 export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCommand> {
@@ -14,6 +20,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     private readonly eventStore: EventStoreRepository,
     private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly blocksModelFactory: BlockModelFactoryService,
+    private readonly batchesModelFactory: TransactionsBatchModelFactoryService
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -26,10 +33,21 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
       await indexerModel.init({ requestId });
 
-      if (indexerModel.status === 'indexing') {
-        // Publish last block event (if it exists)
-        const blockAggregateId = String(indexerModel.chain.lastBlockHash);
-        await this.blocksModelFactory.publishLastEvent(blockAggregateId);
+      if (indexerModel.status === 'indexing' || indexerModel.status === 'awaiting') {
+        // Publish last block event and last transactions batch (if its exist)
+        const lastBlockAggregateId = String(indexerModel.chain.lastBlockHash);
+        if (lastBlockAggregateId) {
+          // Publish last block event
+          await this.blocksModelFactory.publishLastEvent(lastBlockAggregateId);
+          const blockModel: Block = await this.blocksModelFactory.initExistingModel(lastBlockAggregateId);
+          if (blockModel) {
+            const lastBatchAggregateId = String(blockModel.lastBatch?.aggregateId);
+            if (lastBatchAggregateId) {
+              // Publish last batch event
+              await this.batchesModelFactory.publishLastEvent(lastBatchAggregateId);
+            }
+          }
+        }
       }
 
       if (indexerModel.status === 'reorganisation') {

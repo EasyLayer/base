@@ -14,15 +14,13 @@ import {
 } from '../services';
 
 @CommandHandler(IndexTransactionsBatchCommand)
-export class IndexTransactionsBatchCommandHandler
-  implements ICommandHandler<IndexTransactionsBatchCommand>
-{
+export class IndexTransactionsBatchCommandHandler implements ICommandHandler<IndexTransactionsBatchCommand> {
   constructor(
     private readonly log: AppLogger,
     private readonly blocksModelFactoryService: BlockModelFactoryService,
     private readonly indexerModelFactoryService: IndexerModelFactoryService,
     private readonly batchModelFactoryService: TransactionsBatchModelFactoryService,
-    private readonly eventStore: EventStoreRepository,
+    private readonly eventStore: EventStoreRepository
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -41,16 +39,16 @@ export class IndexTransactionsBatchCommandHandler
 
       // Find no indexed batches
       const notIndexedBatches = []; // TODO: add type
-      for (let [id, status] of batches) {
+      for (const [id, status] of batches) {
         if (status === 'created') {
           notIndexedBatches.push(id);
-          // NOTE: We update the status to 'completed', 
-          // this is necessary to update batches in a block 
+          // NOTE: We update the status to 'completed',
+          // this is necessary to update batches in a block
           // without restoring the block from its state
           batches.set(id, 'completed');
 
           if (notIndexedBatches.length === MAX_INDEXING_BATCH_PER_ONE_TIME) {
-            // NOTE: The loop exits immediately after the required number of elements is found. 
+            // NOTE: The loop exits immediately after the required number of elements is found.
             // This means that it is not always necessary to process all the elements of the collection.
             break;
           }
@@ -74,10 +72,14 @@ export class IndexTransactionsBatchCommandHandler
         await restoredBlockModel.commit();
         await indexerModel.commit();
 
-        this.log.info(`Block successfull indexed`, {
-          block: { height: blockWithoutTx.height, hash: blockWithoutTx.hash },
-          alreadyIndexedLength: indexerModel.chain.lastBlockHeight
-        }, this.constructor.name);
+        this.log.info(
+          `Block successfull indexed`,
+          {
+            block: { height: blockWithoutTx.height, hash: blockWithoutTx.hash },
+            alreadyIndexedLength: indexerModel.chain.lastBlockHeight,
+          },
+          this.constructor.name
+        );
         return;
       }
 
@@ -96,7 +98,9 @@ export class IndexTransactionsBatchCommandHandler
         // Filter the batch transactions Map to find transactions with hashes present in tx
         // TODO: add type
         // TODO: optimise
-        const filteredTransactions = tx.filter((transaction: { txid: string }) => transactionsBatch.transactions.has(transaction.txid));
+        const filteredTransactions = tx.filter((transaction: { txid: string }) =>
+          transactionsBatch.transactions.has(transaction.txid)
+        );
 
         await transactionsBatch.indexing({ transactions: filteredTransactions, requestId });
 
@@ -111,10 +115,10 @@ export class IndexTransactionsBatchCommandHandler
 
       // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
       // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы
-      // и проверить не будет ли там исключения. 
+      // и проверить не будет ли там исключения.
       // Поэтому мы тут в массиве публикуем ивенты всех батчей(может и один он будет)
       // (Отдельно транзакции не будут публиковаться никогда)
-      for (let batch of updatedBatches) {
+      for (const batch of updatedBatches) {
         await batch.commit();
       }
 

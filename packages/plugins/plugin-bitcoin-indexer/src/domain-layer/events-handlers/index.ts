@@ -3,7 +3,7 @@ import { IndexerReorganisationEventHandler } from './indexer-reorganisation.even
 import { TransactionsBatchWithIndexCreatedEventHandler } from './transactions-create-with-indexing.event-handler';
 
 export const EventsHandlers = [
-    BlockWithCompleteIndexedEventHandler,
-    IndexerReorganisationEventHandler,
-    TransactionsBatchWithIndexCreatedEventHandler
+  BlockWithCompleteIndexedEventHandler,
+  IndexerReorganisationEventHandler,
+  TransactionsBatchWithIndexCreatedEventHandler,
 ];

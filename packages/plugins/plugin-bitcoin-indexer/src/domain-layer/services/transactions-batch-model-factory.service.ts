@@ -8,7 +8,6 @@ export class TransactionsBatchModelFactoryService {
   constructor(
     private readonly publisher: EventPublisher,
     private readonly batchesRepository: EventStoreRepository<TransactionsBatch>
-
   ) {}
 
   public createNewModel(): TransactionsBatch {
@@ -19,6 +18,15 @@ export class TransactionsBatchModelFactoryService {
     const model = this.createNewModel();
     model.aggregateId = aggragatorId;
     return await this.batchesRepository.getOne(model);
+  }
+
+  public async publishLastEvent(aggragatorId: string): Promise<void> {
+    const model = this.createNewModel();
+    model.aggregateId = aggragatorId;
+    const event = await this.batchesRepository.fetchLastEvent(model);
+    if (event) {
+      await model.republish(event);
+    }
   }
 
   public async initLastModel(): Promise<TransactionsBatch> {

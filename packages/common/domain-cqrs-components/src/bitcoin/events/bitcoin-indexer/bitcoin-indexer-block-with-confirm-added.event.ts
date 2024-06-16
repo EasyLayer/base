@@ -7,6 +7,8 @@ interface BitcoinIndexerBlockWithConfirmAddedEventPayload {
   status: string;
 }
 
-export class BitcoinIndexerBlockWithConfirmAddedEvent implements BasicEvent<BitcoinIndexerBlockWithConfirmAddedEventPayload> {
+export class BitcoinIndexerBlockWithConfirmAddedEvent
+  implements BasicEvent<BitcoinIndexerBlockWithConfirmAddedEventPayload>
+{
   constructor(public readonly payload: BitcoinIndexerBlockWithConfirmAddedEventPayload) {}
 }

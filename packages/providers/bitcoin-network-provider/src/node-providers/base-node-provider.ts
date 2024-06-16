@@ -1,10 +1,12 @@
-import { Hash } from './interfaces'
+import { Hash } from './interfaces';
 
 export interface BaseNodeProviderOptions {
   uniqName: string;
 }
 
-export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseNodeProviderOptions> implements BaseNodeProviderOptions {
+export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseNodeProviderOptions>
+  implements BaseNodeProviderOptions
+{
   abstract type: string;
   uniqName: string;
 

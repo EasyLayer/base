@@ -26,7 +26,7 @@ export class BlocksQueueService implements OnModuleDestroy {
     private readonly log: AppLogger,
     private readonly systemConfig: SystemConfig,
     private readonly blocksCommandFactory: BlocksCommandFactoryService,
-    private readonly connectionManager: ConnectionManager,
+    private readonly connectionManager: ConnectionManager
   ) {
     // IMPORTANT: We specify the same values for minThreads and maxThreads.
     // We do this so that the workers in the pool are created once and then reused,
@@ -35,7 +35,7 @@ export class BlocksQueueService implements OnModuleDestroy {
     this.workerPool = new Piscina({
       filename: join(__dirname, 'worker.js'),
       minThreads: this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
-      maxThreads: this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM
+      maxThreads: this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
     });
     this._maxQueueSize = this.systemConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_SIZE;
     this._maxBlockHeight = this.systemConfig.BITCOIN_INDEXER_MAX_BLOCK_HEIGHT;
@@ -43,8 +43,7 @@ export class BlocksQueueService implements OnModuleDestroy {
     this.initBlockProcessedPromise();
   }
 
-  
-  public get isLoading() : boolean {
+  public get isLoading(): boolean {
     return this._isLoading;
   }
 
@@ -55,10 +54,7 @@ export class BlocksQueueService implements OnModuleDestroy {
   }
 
   async runQueue(height: string | bigint | number) {
-    await Promise.allSettled([
-      this.startBlocksLoading(BigInt(height)),
-      this.startQueueIteratting()
-    ])
+    await Promise.allSettled([this.startBlocksLoading(BigInt(height)), this.startQueueIteratting()]);
   }
 
   /**
@@ -67,7 +63,7 @@ export class BlocksQueueService implements OnModuleDestroy {
    * @returns A promise that resolves to the block if found.
    */
   public async getOneBlockByHeight(height: bigint | string | number): Promise<Block> {
-    const block =  this.blockQueue.fetchBlockFromOutStack(BigInt(height));
+    const block = this.blockQueue.fetchBlockFromOutStack(BigInt(height));
     if (!block) {
       throw new Error('No block found with height ${height.toString()}');
     }
@@ -85,7 +81,7 @@ export class BlocksQueueService implements OnModuleDestroy {
       } else {
         // TODO: add description about why we use setTimeout() here
         // await new Promise(resolve => setImmediate(resolve));
-        await new Promise(resolve => setTimeout(resolve, 0));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
     }
   }
@@ -102,7 +98,7 @@ export class BlocksQueueService implements OnModuleDestroy {
   }
 
   private initBlockProcessedPromise(): void {
-    this.blockProcessedPromise = new Promise<void>(resolve => {
+    this.blockProcessedPromise = new Promise<void>((resolve) => {
       this.resolveNextBlock = resolve;
     });
     if (this.blockQueue.length === 0) {
@@ -116,13 +112,13 @@ export class BlocksQueueService implements OnModuleDestroy {
   private async startQueueIteratting(): Promise<void> {
     this.log.debug('startQueueIteratting()', {}, this.constructor.name);
 
-    for await (const block of this.blocksIterator()) {      
+    for await (const block of this.blocksIterator()) {
       try {
         await this.blocksCommandFactory.indexBlock({ block, requestId: uuidv4() });
       } catch (error) {
         // this.log.error('Failed to process block:', error, this.constructor.name);
 
-        // IMPORTANT: We call this to resolve queue promise 
+        // IMPORTANT: We call this to resolve queue promise
         // that we can try same block one more time
         // this.blockQueue.onError();
         this.resolveNextBlock();
@@ -162,12 +158,12 @@ export class BlocksQueueService implements OnModuleDestroy {
       } else {
         // Ждем, пока не появится место в очереди
         this.log.debug('Queue is full, waiting for space...', {}, this.constructor.name);
-        await new Promise(resolve => setTimeout(resolve, exponentialBackoff));
+        await new Promise((resolve) => setTimeout(resolve, exponentialBackoff));
         exponentialBackoff = Math.min(exponentialBackoff * 2, 10000); // Экспоненциально увеличиваем задержку, но ограничиваем максимумом
       }
     }
   }
-  
+
   /**
    * Handles blockchain reorganization by clearing the queue and setting a new starting height.
    * @param newStartHeight The new starting height for block loading.
@@ -191,22 +187,27 @@ export class BlocksQueueService implements OnModuleDestroy {
   }
 
   /**
-   * Confirms that a block has been already indexed by dequeuing it.
+   * Confirms the block at the front of the queue if its hash matches the provided hash.
+   * @param blockHash - The hash of the block that should be confirmed and dequeued.
    */
-  public async confirmIndexBlock(): Promise<void> {
-    this.log.debug(`confirmIndexBlock()`, {}, this.constructor.name);
+  public async confirmIndexBlock(blockHash: string): Promise<void> {
+    this.log.debug(`confirmIndexBlock()`, { blockHash }, this.constructor.name);
 
-    const block = this.blockQueue.dequeue();
-    if (!block) {
-      throw new Error('The block cannot be confirmed');
+    // IMPORTANT: This method must be idenpotent.
+    // To do this, we added a check and remove only the required block from the queue,
+    // BUT if there is no such block, then we will skip it, without an error!
+
+    const block = this.blockQueue.firstBlock;
+
+    if (block && block.hash === blockHash) {
+      this.blockQueue.dequeue();
     }
 
-    // TODO: think about do we need check exectly confirmed block?
     this.resolveNextBlock();
   }
 
   private async loading(): Promise<void> {
-    // IMPORTANT: This is a temp array 
+    // IMPORTANT: This is a temp array
     // it needs to calculate blocks from parallel threds before enqueue
     let blocksBatch: Block[] = [];
     let retryDelay = 100; // Начальная задержка для повторных попыток загрузки блоков
@@ -225,8 +226,8 @@ export class BlocksQueueService implements OnModuleDestroy {
 
       const results = await Promise.allSettled(promises);
 
-      results.forEach(result => {
-        if (result.status === "fulfilled") {
+      results.forEach((result) => {
+        if (result.status === 'fulfilled') {
           blocksBatch.push(result.value as Block); //TODO: add map for create Block
         } else {
           this.log.debug('Error loading block:', result.reason, this.constructor.name);
@@ -246,12 +247,12 @@ export class BlocksQueueService implements OnModuleDestroy {
           // TODO: think about this case
           blocksBatch = [];
           this.log.debug('Failed to enqueue blocks batch. Retrying...');
-          await new Promise(resolve => setTimeout(resolve, retryDelay));
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
           retryDelay = Math.min(retryDelay * 2, 10000); // Экспоненциально увеличиваем задержку, но ограничиваем максимумом
         }
       } else {
         this.log.debug('Incomplete blocks batch. Waiting for new blocks...');
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
         retryDelay = Math.min(retryDelay * 2, 10000); // Экспоненциально увеличиваем задержку, но ограничиваем максимумом
       }
     }
@@ -272,16 +273,20 @@ export class BlocksQueueService implements OnModuleDestroy {
       return 0;
     });
 
-    for (let block of blocksBatch) {
+    for (const block of blocksBatch) {
       if (!this.blockQueue.enqueue(block)) {
         this.log.debug('Block was not enqueued, wrong order', { height: block.height }, this.constructor.name);
         return false;
       }
 
-      this.log.debug('Block was successfully added to the queue', {
-        height: this.blockQueue.lastHeight,
-        length: this.blockQueue.length
-      }, this.constructor.name);
+      this.log.debug(
+        'Block was successfully added to the queue',
+        {
+          height: this.blockQueue.lastHeight,
+          length: this.blockQueue.length,
+        },
+        this.constructor.name
+      );
     }
 
     this.log.info('Blocks Queue Length', { length: this.blockQueue.length }, this.constructor.name);
@@ -314,7 +319,7 @@ export class BlocksQueueService implements OnModuleDestroy {
 
     while (counter < maxRetries) {
       try {
-          return await this.loadBlock(height);
+        return await this.loadBlock(height);
       } catch (error) {
         counter++;
         this.log.debug(`Error loading block at height ${height}, counter ${counter}: ${error}`, this.constructor.name);
@@ -322,7 +327,7 @@ export class BlocksQueueService implements OnModuleDestroy {
           throw new Error(`Failed to load block at height ${height} after ${maxRetries} attempts: ${error}`);
         }
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
         delay *= 2;
       }
     }

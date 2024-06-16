@@ -9,7 +9,7 @@ export interface SelfNodeProviderOptions extends BitcoinCoreConnectionOptions, B
 
 export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNodeProvider => {
   return new SelfNodeProvider(options);
-}
+};
 
 export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> {
   readonly type: NodeProviderTypes = 'selfnode';
@@ -28,8 +28,8 @@ export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> 
       type: this.type,
       uniqName: this.uniqName,
       port: this.port,
-      host: this.host
-    }
+      host: this.host,
+    };
   }
 
   public async connect() {

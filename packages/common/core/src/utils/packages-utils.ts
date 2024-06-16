@@ -38,7 +38,6 @@ export const isPackageJsonSafe = (packageJson: PackageJson): boolean => {
       if (knownVulnerablePackages.hasOwnProperty(pkg)) {
         const versionStr = String(version);
         if (semver.satisfies(versionStr, knownVulnerablePackages[pkg])) {
-          console.warn(`Vulnerable package detected: ${pkg}@${version}`);
           return false;
         }
       }

@@ -11,17 +11,17 @@ export class BlocksReadService {
     private readDb: Repository<BlockViewModel>
   ) {}
 
-  async create({ hash, status }: { hash: string, status: string }): Promise<BlockViewModel> {
+  async create({ hash, status }: { hash: string; status: string }): Promise<BlockViewModel> {
     const block = new BlockViewModel({
       hash,
-      status
+      status,
     });
     // IMPORTANT: we do not use the save method here because there is a bug with it
     // Since he uses his own transactions (get and then insert) then
     // this isolates the line until it completes and thus we do not see the record from another handler
     // It seems to work with insert method.
     // I also tried upsert here, it seems to work, but I need to test it
-    
+
     // await this.readDb.insert(block);
     await this.readDb.upsert(block, ['hash']);
     return block;
@@ -32,10 +32,7 @@ export class BlocksReadService {
     return await this.readDb.save(blockViewModel);
   }
 
-  async findOne({
-    where,
-    relations = [],
-  }: { where: object, relations?: string[] }): Promise<BlockViewModel | null> {
+  async findOne({ where, relations = [] }: { where: object; relations?: string[] }): Promise<BlockViewModel | null> {
     return await this.readDb.findOne({
       where,
       relations,
@@ -49,6 +46,7 @@ export class BlocksReadService {
   }
 
   async findAll(): Promise<BlockViewModel[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [blocks, total] = await this.readDb.findAndCount();
     return blocks;
   }
