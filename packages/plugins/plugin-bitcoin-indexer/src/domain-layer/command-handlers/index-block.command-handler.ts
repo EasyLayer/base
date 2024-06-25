@@ -63,70 +63,65 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       const blockModel: Block = this.modelFactory.createNewModel();
 
       // TODO: move into env
-      const MAX_TRANSACTIONS_PER_BATCH = 1000;
+      const MAX_TRANSACTIONS_BATCH_SIZE = 10 * 1000 * 1024; // 1000 KB
 
       const batches = [];
 
       this.log.info('Transactions lenght', { length: tx.length }, this.constructor.name);
 
-      // Slice transactions by batches and start index it
-      if (tx.lenght > MAX_TRANSACTIONS_PER_BATCH) {
-        let index = 0;
+      if (tx.length > 0) {
+        // Split transactions by batches
+        const transactionSlices = this.splitTransactionsIntoSlices(tx, MAX_TRANSACTIONS_BATCH_SIZE);
 
-        while (tx.length > 0) {
-          // Extract a batch of transactions, removing them from the copy of the array
-          // IMPORTANT: transactions in the block are arranged in order
-          // when splitting into batches we must follow this order.
-          const transactionSlice = tx.splice(0, MAX_TRANSACTIONS_PER_BATCH);
-
-          // TODO: add type
-          // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
-          // that because we don't want to send all transactions by Transport, so we will get it from cache
-          const transactionSliceIds: string[] = transactionSlice.map(
-            (transaction: { txid: string }) => transaction.txid
-          );
+        if (transactionSlices.length === 1) {
+          // NOTE: Case when we have single batch
+          // we indexing it immediately
           const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
-
-          // Check if this is the last batch
-          const isFinalBatch = tx.length === 0;
-
-          await transactionBatch.create({
+          await transactionBatch.createWithIndexing({
             aggregateId: uuidv4(),
             requestId,
-            transactionIds: transactionSliceIds,
+            transactions: tx,
             blockHeight: height,
             blockHash: hash,
-            index,
-            isFinalBatch,
+            isFinalBatch: true,
+            index: 0,
           });
 
           batches.push(transactionBatch);
+        } else {
+          for (let index = 0; index < transactionSlices.length; index++) {
+            const slice = transactionSlices[index];
 
-          index++;
+            // TODO: add type
+            // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
+            // that because we don't want to send all transactions by Transport, so we will get it from cache
+            const transactionSliceIds: string[] = slice.map((transaction: { txid: string }) => transaction.txid);
+            const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
+
+            // Check if this is the last batch
+            const isFinalBatch = index === transactionSlices.length - 1;
+
+            await transactionBatch.create({
+              aggregateId: uuidv4(),
+              requestId,
+              transactionIds: transactionSliceIds,
+              blockHeight: height,
+              blockHash: hash,
+              index,
+              isFinalBatch,
+            });
+
+            batches.push(transactionBatch);
+          }
         }
-      } else {
-        // NOTE: Case when we have single batch
-        // we indexing it immediately
-        const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
-        await transactionBatch.createWithIndexing({
-          aggregateId: uuidv4(),
-          requestId,
-          transactions: tx,
-          blockHeight: height,
-          blockHash: hash,
-          isFinalBatch: true,
-          index: 0,
-        });
-
-        batches.push(transactionBatch);
       }
 
       this.log.info('Batches lenght', { length: batches.length }, this.constructor.name);
 
       /* Index block with batch immediately */
-      // IMPORTANT: this is case when we have just 1 transactions batch
+      // IMPORTANT: this is case when we have just 0 or 1 transactions batch
       // so in order not to waste time, we index the entire block and transactions at once in one command
-      if (batches.length == 1) {
+      if (batches.length < 2) {
         // { <aggregateId>:<status> }
         const batchesMap: Map<string, string> = new Map();
         batches.forEach((batch) => {
@@ -194,5 +189,40 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       this.log.error('execute()', error, this.constructor.name);
       throw error;
     }
+  }
+
+  private getSizeInBytes<T extends object>(object: T) {
+    return Buffer.byteLength(JSON.stringify(object), 'utf8');
+  }
+
+  private splitTransactionsIntoSlices(transactions: any[], maxBatchSize: number) {
+    let currentBatchSize = 0;
+    let transactionSlice = [];
+    const slices = [];
+
+    for (let i = 0; i < transactions.length; i++) {
+      const transaction = transactions[i];
+      const transactionSize = this.getSizeInBytes(transaction);
+
+      // Check if adding this transaction exceeds the slice size limit
+      if (currentBatchSize + transactionSize > maxBatchSize) {
+        slices.push(transactionSlice);
+
+        // Reset for next batch
+        currentBatchSize = 0;
+        transactionSlice = [];
+      }
+
+      // Add the current transaction to the current batch
+      transactionSlice.push(transaction);
+      currentBatchSize += transactionSize;
+    }
+
+    // Handle the final batch if it exists
+    if (transactionSlice.length > 0) {
+      slices.push(transactionSlice);
+    }
+
+    return slices;
   }
 }
