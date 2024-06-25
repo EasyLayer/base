@@ -1,6 +1,0 @@
-{
-    "bitcoin_wallet": {
-        "version": "0.0.2-experimental.0",
-        "name":  "@easylayer/bitcoin-wallet"
-    }
-}

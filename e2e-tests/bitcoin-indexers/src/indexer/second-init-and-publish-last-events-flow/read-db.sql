@@ -1,0 +1,15 @@
+CREATE TABLE blocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  hash VARCHAR NOT NULL,
+  status VARCHAR,
+  UNIQUE (hash)
+);
+
+CREATE TABLE transactions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  txid VARCHAR NOT NULL,
+  status VARCHAR,
+  blockHash VARCHAR,
+  UNIQUE (txid),
+  FOREIGN KEY (blockHash) REFERENCES blocks(hash) ON DELETE CASCADE
+);

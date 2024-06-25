@@ -18,7 +18,9 @@
       "apps/*",
       "apps/*/*",
       "packages/*",
-      "packages/*/*"
+      "packages/*/*",
+      "e2e-tests/*",
+      "e2e-tests/*/*"
     ]
   },
   "scripts": {
@@ -26,13 +28,14 @@
     "clear:node_modules": "lerna run  clear:node_modules && rimraf node_modules",
     "clear:dist": "lerna run clear:dist",
     "build:packages": "lerna run --stream build --ignore example-app",
-    "start:dev": "lerna run --stream start:dev",
+    "start:dev:example-app": "cd ./apps/example-app && DEBUG=y yarn start:dev",
     "test:unit": "lerna run --stream test:unit",
+    "test:e2e": "lerna run --stream test:e2e",
     "lint": "lerna run --stream lint",
     "lint:fix": "lerna run --stream lint:fix",
     "postinstall": "husky install",
-    "pre-commit": "lerna run --stream lint",
-    "pre-push": "lerna run --stream test:unit",
+    "pre-commit": "lerna run lint",
+    "pre-push": "lerna run test:unit",
     "commit": "cz",
     "generate-quickstart-app": "node ./packages/cli/create-easylayer-app/bin/index.js --quickstart",
     "generate-source-docs": "typedoc",
@@ -60,5 +63,9 @@
   "devEngines": {
     "node": ">=18.0.0 <=20.x.x",
     "npm": ">=8.0.0"
+  },
+  "dependencies": {
+    "dotenv": "16.4.5",
+    "sqlite": "5.1.1"
   }
 }

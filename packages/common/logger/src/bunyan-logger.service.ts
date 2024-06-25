@@ -1,27 +1,71 @@
 import * as bunyan from 'bunyan';
-import { LoggerOptions, nameFromLevel, safeCycles } from 'bunyan';
+import { LoggerOptions, nameFromLevel } from 'bunyan';
 export { LoggerOptions };
+import chalk from 'chalk';
 
 export class BunyanStream {
   write(logMessage: any): void {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    // Destructuring to separate time, hostname, level, and msg from extra parameters
+    const { name, time, level, msg, args, context, component } = logMessage;
+    const formattedTime = time ? time.toISOString() : new Date().toISOString();
+
+    // Preparing the log object without hostname for structured logging
     const updatedLog = {
       ...logMessage,
-      time: logMessage.time ? logMessage.time.toISOString() : new Date().toISOString(),
-      level: nameFromLevel[logMessage.level] || 'info',
-      // Removing "hostname" from the log
+      time: formattedTime,
+      level: nameFromLevel[level],
       hostname: undefined,
     };
 
-    const result = JSON.stringify(updatedLog, safeCycles()) + '\n';
-    process.stdout.write(result);
+    if (isDevelopment) {
+      // In Development mode, output colored logs including specified parameters
+      const levelColor = this.getColor(level);
+      const coloredLevel = levelColor(`[${nameFromLevel[level].toUpperCase()}]`);
+
+      const argsString = args ? JSON.stringify(args, replacer, 2) : '';
+      const contextString = context ? JSON.stringify(context, replacer, 2) : '';
+      const componentName = component ? component : name;
+
+      // Building messages
+      console.log(`${coloredLevel}: ${componentName} ${contextString} ${msg}`, argsString);
+    } else {
+      // In Production mode, output structured JSON logs
+      const result = JSON.stringify(updatedLog, replacer) + '\n';
+      process.stdout.write(result);
+    }
+  }
+
+  private getColor(level: number): (text: string) => string {
+    switch (level) {
+      case bunyan.INFO:
+        return chalk.blue;
+      case bunyan.WARN:
+        return chalk.green;
+      case bunyan.ERROR:
+        return chalk.red;
+      case bunyan.DEBUG:
+        return chalk.yellow;
+      default:
+        return chalk.white;
+    }
   }
 }
 
+function replacer(key: string, value: any) {
+  if (typeof value === 'bigint') {
+    return value.toString();
+  }
+  return value;
+}
+
 export function createLogger(name: string): bunyan {
+  const level = process.env.DEBUG === 'y' ? 'debug' : 'info';
+
   const options: LoggerOptions = {
     name,
-    // TODO: check it
-    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    level,
     streams: [
       {
         type: 'raw',

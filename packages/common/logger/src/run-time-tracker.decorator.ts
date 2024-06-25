@@ -1,3 +1,5 @@
+import { logger } from './app-logger.service';
+
 interface MemoryUsage {
   [key: string]: string;
 }
@@ -24,22 +26,20 @@ export function RuntimeTracker({
 }: RuntimeTrackerParams = {}): MethodDecorator {
   return (target: object, key: string | symbol, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
+    const log = logger('runtime-tracker');
 
     descriptor.value = async function (...args: any[]) {
       const start = Date.now();
-      let errorOccurred = false;
 
       try {
         return await originalMethod.apply(this, args);
       } catch (error) {
-        errorOccurred = true;
         throw error;
       } finally {
         const time = Date.now() - start;
         const context = `${target.constructor.name}.${String(key)}`;
         const logArgs: any = {
           time: `${time} ms`,
-          context,
           warningThresholdMs,
           errorThresholdMs,
         };
@@ -48,15 +48,12 @@ export function RuntimeTracker({
           logArgs.memory = getMemoryUsage();
         }
 
-        const message = `${context} - Execution time: ${time} ms`;
-        if (errorOccurred) {
-          console.error(`${message} - An error occurred`, logArgs);
-        } else if (errorThresholdMs && time > errorThresholdMs) {
-          console.error(message, logArgs);
+        if (errorThresholdMs && time > errorThresholdMs) {
+          log.error('Method takes too long to execute', logArgs, context);
         } else if (warningThresholdMs && time > warningThresholdMs) {
-          console.warn(message, logArgs);
+          log.warn('Method takes too long to execute', logArgs, context);
         } else {
-          console.debug(message, logArgs);
+          log.debug('', logArgs, context);
         }
       }
     };
