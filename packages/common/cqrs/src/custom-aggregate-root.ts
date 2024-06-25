@@ -41,9 +41,6 @@ export abstract class CustomAggregateRoot<EventBase extends IEvent = IEvent> {
 
   async commit(): Promise<void> {
     const events = this.getUncommittedEvents();
-    // Мы не хотим тут использовать публикации нескольких событий для одного и того же аггрегата.
-    // Потому что мы не знаем как не перезаписать рид базу всеми ими? Или что?
-    // Сейчас мы попробоуем использовать для publishAll в самом методе в EventBus только publish()
     await this.publishAll(events);
     this.uncommit();
   }
