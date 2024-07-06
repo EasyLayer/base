@@ -1,5 +1,7 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import { Readable } from 'node:stream';
+import axios, { AxiosInstance } from 'axios';
 import rateLimit from 'axios-rate-limit';
+import * as JSONStream from 'JSONStream';
 import { BaseNodeProvider, BaseNodeProviderOptions } from './base-node-provider';
 import { Hash, NodeProviderTypes } from './interfaces';
 
@@ -31,13 +33,6 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
   }
 
   public async connect() {
-    // this._httpClient = new Core({
-    //   // chain: {
-    //   //   testnet: true
-    //   // },
-    //   endpointUrl: this.connectionOptions.baseUrl,
-    // })
-
     this._httpClient = rateLimit(
       axios.create({
         baseURL: this.connectionOptions.baseUrl,
@@ -77,11 +72,18 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
 
       const response = await this._httpClient.post('/', data);
       const blockHeight = response.data.result;
-      return blockHeight;
+      return BigInt(blockHeight);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        throw error.response?.data;
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Error: ${error.response.data}`);
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(error.message);
+        }
       }
+
       throw error;
     }
   }
@@ -98,9 +100,16 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
       const blockHash = response.data.result;
       return blockHash;
     } catch (error) {
-      if (error instanceof AxiosError) {
-        throw error.response?.data;
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Error: ${error.response.data}`);
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(error.message);
+        }
       }
+
       throw error;
     }
   }
@@ -117,9 +126,16 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
       const block = response.data.result;
       return block;
     } catch (error) {
-      if (error instanceof AxiosError) {
-        throw error.response?.data;
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Error: ${error.response.data}`);
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(error.message);
+        }
       }
+
       throw error;
     }
   }
@@ -165,9 +181,16 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
       const block = response.data.result;
       return block;
     } catch (error) {
-      if (error instanceof AxiosError) {
-        throw error.response?.data;
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Error: ${error.response.data}`);
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(error.message);
+        }
       }
+
       throw error;
     }
   }
@@ -188,4 +211,116 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
   public async findOneTransaction() {}
 
   public async findManyTransactions() {}
+
+  public async createWebhookStream(streamConfig: any): Promise<any> {
+    try {
+      const response = await this._httpClient.post('/streams', streamConfig);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Error: ${error.response.data}`);
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  // public async updateWebhookStream(streamId: string, streamConfig: any): Promise<any> {
+  //   try {
+  //     const response = await this._httpClient.put(`/streams/${streamId}`, streamConfig);
+  //     return response.data;
+  //   } catch (error) {
+  //     if (axios.isAxiosError(error)) {
+  //       if (error.response) {
+  //         throw new Error(`Error: ${error.response.data}`);
+  //       } else if (error.request) {
+  //         throw new Error('No response received from server');
+  //       } else {
+  //         throw new Error(error.message);
+  //       }
+  //     }
+
+  //     throw error;
+  //   }
+  // }
+
+  public async deleteWebhookStream(streamId: string): Promise<any> {
+    try {
+      const response = await this._httpClient.delete(`/streams/${streamId}`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(`Error: ${error.response.data}`);
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  // public async pauseWebhookStream(streamId: string): Promise<any> {
+  //   try {
+  //     const response = await this._httpClient.delete(`/streams/${streamId}`);
+  //     return response.data;
+  //   } catch (error) {
+  //     if (axios.isAxiosError(error)) {
+  //       if (error.response) {
+  //         throw new Error(`Error: ${error.response.data}`);
+  //       } else if (error.request) {
+  //         throw new Error('No response received from server');
+  //       } else {
+  //         throw new Error(error.message);
+  //       }
+  //     }
+
+  //     throw error;
+  //   }
+  // }
+
+  public async handleWebhookStream({
+    stream,
+    onDataCallback,
+    onFinishCallback,
+    onErrorCallback,
+  }: {
+    stream: Readable;
+    onDataCallback: (block: any) => Promise<void>;
+    onFinishCallback: () => void;
+    onErrorCallback: (error: any) => void;
+  }): Promise<NodeJS.ReadWriteStream> {
+    return new Promise((resolve, reject) => {
+      const jsonStream = JSONStream.parse('*');
+
+      jsonStream.on('data', async (data: any) => {
+        try {
+          await onDataCallback(data);
+        } catch (error) {
+          onErrorCallback(error);
+        }
+      });
+
+      jsonStream.on('end', () => {
+        onFinishCallback();
+        resolve(jsonStream);
+      });
+
+      jsonStream.on('error', (error: any) => {
+        onErrorCallback(error);
+        reject(error);
+      });
+
+      stream.pipe(jsonStream);
+    });
+  }
 }

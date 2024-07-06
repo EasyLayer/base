@@ -2,7 +2,7 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin';
+import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { AppLogger } from '@easylayer/logger';
 import { Indexer } from '../models/indexer.model';
 import { Block } from '../models/block.model';
@@ -28,10 +28,13 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { requestId } = payload;
+      const { requestId, startHeight } = payload;
 
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
-      await indexerModel.init({ requestId });
+      await indexerModel.init({
+        requestId,
+        startHeight,
+      });
 
       if (indexerModel.status === 'indexing' || indexerModel.status === 'awaiting') {
         // Publish last block event and last transactions batch (if its exist)

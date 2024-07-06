@@ -1,9 +1,9 @@
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
-  BitcoinTransactionsBatchCreatedEvent,
-  BitcoinTransactionsBatchIndexedEvent,
-  BitcoinTransactionsBatchWithIndexCreatedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin';
+  BitcoinIndexerTransactionsBatchCreatedEvent,
+  BitcoinIndexerTransactionsBatchIndexedEvent,
+  BitcoinIndexerTransactionsBatchWithIndexCreatedEvent,
+} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 interface Input {
   txid: string;
@@ -81,7 +81,7 @@ export class TransactionsBatch extends AggregateRoot {
     isFinalBatch: boolean;
   }) {
     await this.apply(
-      new BitcoinTransactionsBatchCreatedEvent({
+      new BitcoinIndexerTransactionsBatchCreatedEvent({
         aggregateId,
         requestId,
         transactionIds,
@@ -119,7 +119,7 @@ export class TransactionsBatch extends AggregateRoot {
       isFinalBatch,
     };
     await this.apply(
-      new BitcoinTransactionsBatchWithIndexCreatedEvent({
+      new BitcoinIndexerTransactionsBatchWithIndexCreatedEvent({
         aggregateId,
         requestId,
         batch,
@@ -139,7 +139,7 @@ export class TransactionsBatch extends AggregateRoot {
       isFInalBatch: this.isFinalBatch,
     };
     await this.apply(
-      new BitcoinTransactionsBatchIndexedEvent({
+      new BitcoinIndexerTransactionsBatchIndexedEvent({
         aggregateId: this.aggregateId,
         status: BatchStatuses.COMPLETED,
         requestId,
@@ -150,7 +150,7 @@ export class TransactionsBatch extends AggregateRoot {
     );
   }
 
-  private onBitcoinTransactionsBatchCreatedEvent({ payload }: BitcoinTransactionsBatchCreatedEvent) {
+  private onBitcoinIndexerTransactionsBatchCreatedEvent({ payload }: BitcoinIndexerTransactionsBatchCreatedEvent) {
     const { aggregateId, transactionIds, blockHeight, blockHash, status, index } = payload;
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
@@ -160,7 +160,7 @@ export class TransactionsBatch extends AggregateRoot {
     this.transactions = new Map(transactionIds.map((txid: string) => [txid, null]));
   }
 
-  private onBitcoinTransactionsBatchIndexedEvent({ payload }: BitcoinTransactionsBatchIndexedEvent) {
+  private onBitcoinIndexerTransactionsBatchIndexedEvent({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
     const { status, batch, blockHash, blockHeight } = payload;
     const { transactions, index, isFInalBatch } = batch;
     this.status = status;
@@ -173,7 +173,9 @@ export class TransactionsBatch extends AggregateRoot {
     this.blockHeight = BigInt(blockHeight);
   }
 
-  private onBitcoinTransactionsBatchWithIndexCreatedEvent({ payload }: BitcoinTransactionsBatchWithIndexCreatedEvent) {
+  private onBitcoinIndexerTransactionsBatchWithIndexCreatedEvent({
+    payload,
+  }: BitcoinIndexerTransactionsBatchWithIndexCreatedEvent) {
     const { aggregateId, blockHeight, blockHash, status, batch } = payload;
     const { transactions, index, isFinalBatch } = batch;
     this.aggregateId = aggregateId;

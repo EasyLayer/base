@@ -1,8 +1,8 @@
 // import { v4 as uuidv4 } from 'uuid';
 import { Injectable, Inject } from '@nestjs/common';
 import { CommandBus } from '@easylayer/cqrs';
-import { IndexTransactionsBatchCommand } from '@easylayer/domain-cqrs-components/bitcoin';
-import { BlocksQueueService } from '../blocks-queue';
+import { IndexTransactionsBatchCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
+import { BlocksQueueService } from '@easylayer/bitcoin-blocks-queue';
 
 @Injectable()
 export class TransactionsCommandFactoryService {

@@ -22,12 +22,12 @@ export interface RetryOptions {
 
 export interface ExecuteParams<T extends IEvent> {
   event: Type<T>;
-  command: (data: T) => Promise<any>;
+  command: (data: T) => Promise<void>;
 }
 
 export interface ExecuteWithRollbackParams<T extends IEvent> {
   event: Type<T>;
-  command: (data: T) => Promise<any>;
+  command: (data: T) => Promise<void>;
   rollback: (data: T, error?: any) => Promise<void>;
   retryOpt?: RetryOptions;
 }

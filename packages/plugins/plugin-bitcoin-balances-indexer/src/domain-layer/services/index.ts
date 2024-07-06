@@ -1,0 +1,1 @@
+export * from './balances-indexer-model-factory.service';

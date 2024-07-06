@@ -3,11 +3,11 @@ import { AggregateRoot } from '@easylayer/cqrs';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import {
   BitcoinIndexerInitializedEvent,
-  BitcoinIndexerBlockAddedEvent,
+  BitcoinIndexerChainBlockAddedEvent,
   BitcoinIndexerReorganisationEvent,
-  BitcoinIndexerIndexBlockConfirmedEvent,
-  BitcoinIndexerBlockWithConfirmAddedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin';
+  BitcoinIndexerChainIndexBlockConfirmedEvent,
+  BitcoinIndexerChainBlockWithConfirmAddedEvent,
+} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 enum IndexerStatuses {
   AWAITING = 'awaiting',
@@ -311,16 +311,21 @@ export class Indexer extends AggregateRoot {
   // IMPORTANT: this method doing two things:
   // 1 - create Indexer if it's first creation
   // 2 - use already created params but still publish event
-  public async init({ requestId }: { requestId: string }) {
+  public async init({ requestId, startHeight }: { requestId: string; startHeight: bigint }) {
     const status = this.status || IndexerStatuses.AWAITING;
-    const height = this.chain.lastBlockHeight.toString();
+    const lastBlockHeight = this.chain.lastBlockHeight;
+    // NOTE: lastBlockHeight - is the last already indexed block and
+    // if it's start of blockchain where genesis block height is '0'
+    // so we indicate the last indexed block adjusted by -1n.
+    // startHeight - is the height from which the user wants to index, it cannot be less than 0.
+    const height = lastBlockHeight + 1n > startHeight ? lastBlockHeight : startHeight - 1n;
 
     await this.apply(
       new BitcoinIndexerInitializedEvent({
         aggregateId: this.aggregateId,
         requestId,
         status,
-        height,
+        indexedHeight: height.toString(),
       })
     );
   }
@@ -337,7 +342,7 @@ export class Indexer extends AggregateRoot {
     }
 
     await this.apply(
-      new BitcoinIndexerBlockAddedEvent({
+      new BitcoinIndexerChainBlockAddedEvent({
         aggregateId: this.aggregateId,
         requestId,
         status: IndexerStatuses.INDEXING,
@@ -358,7 +363,7 @@ export class Indexer extends AggregateRoot {
     }
 
     await this.apply(
-      new BitcoinIndexerBlockWithConfirmAddedEvent({
+      new BitcoinIndexerChainBlockWithConfirmAddedEvent({
         aggregateId: this.aggregateId,
         requestId,
         status: IndexerStatuses.AWAITING,
@@ -428,7 +433,7 @@ export class Indexer extends AggregateRoot {
     }
 
     await this.apply(
-      new BitcoinIndexerIndexBlockConfirmedEvent({
+      new BitcoinIndexerChainIndexBlockConfirmedEvent({
         aggregateId: this.aggregateId,
         requestId,
         status: IndexerStatuses.AWAITING,
@@ -443,7 +448,7 @@ export class Indexer extends AggregateRoot {
     this.status = status as IndexerStatuses;
   }
 
-  private onBitcoinIndexerBlockAddedEvent({ payload }: BitcoinIndexerBlockAddedEvent) {
+  private onBitcoinIndexerChainBlockAddedEvent({ payload }: BitcoinIndexerChainBlockAddedEvent) {
     const { block, status } = payload;
 
     const { height, hash, previousblockhash } = block;
@@ -457,12 +462,12 @@ export class Indexer extends AggregateRoot {
     this.chain.truncateToBlock(BigInt(height));
   }
 
-  private onBitcoinIndexerIndexBlockConfirmedEvent({ payload }: BitcoinIndexerIndexBlockConfirmedEvent) {
+  private onBitcoinIndexerChainIndexBlockConfirmedEvent({ payload }: BitcoinIndexerChainIndexBlockConfirmedEvent) {
     const { status } = payload;
     this.status = status as IndexerStatuses;
   }
 
-  private onBitcoinIndexerBlockWithConfirmAddedEvent({ payload }: BitcoinIndexerBlockWithConfirmAddedEvent) {
+  private onBitcoinIndexerChainBlockWithConfirmAddedEvent({ payload }: BitcoinIndexerChainBlockWithConfirmAddedEvent) {
     const { block, status } = payload;
 
     const { height, hash, previousblockhash } = block;

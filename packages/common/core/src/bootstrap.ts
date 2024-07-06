@@ -35,7 +35,6 @@ export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => 
     const registeredPlugin = await plugin.register();
     externalPlugins.push(registeredPlugin);
   }
-
   // const internalPlugins = await importPlugins(basePath);
 
   // Create a root app module that already includes dynamic modules

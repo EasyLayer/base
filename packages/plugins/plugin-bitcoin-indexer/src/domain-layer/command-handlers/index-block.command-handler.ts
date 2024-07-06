@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
-import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin';
+import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { EventStoreRepository } from '@easylayer/eventstore';
@@ -35,6 +35,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // TODO: For this command, you need to get a block in which only hashes will be transferred.
       const { tx, ...blockWithoutTx } = block;
       const { height, hash, previousblockhash } = blockWithoutTx;
+      const txCount = tx.lenght;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
@@ -132,6 +133,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           aggregateId: hash,
           block: blockWithoutTx,
           batches: batchesMap,
+          txCount,
           requestId,
         });
 
@@ -176,6 +178,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         aggregateId: hash,
         block: blockWithoutTx,
         batches: batchesMap,
+        txCount,
         requestId,
       });
 

@@ -1,18 +1,18 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Injectable, Inject } from '@nestjs/common';
-import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+// import { catchError } from 'rxjs/operators';
 import { Saga, ICommand, executeWithRetry } from '@easylayer/cqrs';
+import { BlocksQueueService } from '@easylayer/bitcoin-blocks-queue';
 import {
   BitcoinIndexerInitializedEvent,
-  BitcoinBlockIndexStartedEvent,
-  BitcoinIndexerIndexBlockConfirmedEvent,
-  BitcoinBlockBatchesUpdatedEvent,
+  BitcoinIndexerBlockIndexStartedEvent,
+  BitcoinIndexerChainIndexBlockConfirmedEvent,
+  BitcoinIndexerBlockBatchesUpdatedEvent,
   BitcoinIndexerReorganisationEvent,
-  BitcoinBlockWithCompleteIndexedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin';
+  BitcoinIndexerBlockWithCompleteIndexedEvent,
+} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { TransactionsCommandFactoryService } from '../services';
-import { BlocksQueueService } from '../blocks-queue/blocks-queue.service';
 
 @Injectable()
 export class IndexerSaga {
@@ -26,12 +26,8 @@ export class IndexerSaga {
     return events$.pipe(
       executeWithRetry({
         event: BitcoinIndexerInitializedEvent,
-        command: ({ payload }: BitcoinIndexerInitializedEvent) => this.blocksQueueService.runQueue(payload.height),
+        command: ({ payload }: BitcoinIndexerInitializedEvent) => this.blocksQueueService.start(payload.indexedHeight),
       })
-      // catchError((error) => {
-      //   console.error(`Error handling <BitcoinIndexerInitializedEvent> for event: ${error}`);
-      //   return of();
-      // })
     );
   }
 
@@ -50,10 +46,10 @@ export class IndexerSaga {
   }
 
   @Saga()
-  onBitcoinBlockIndexStartedEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerBlockIndexStartedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
       executeWithRetry({
-        event: BitcoinBlockIndexStartedEvent,
+        event: BitcoinIndexerBlockIndexStartedEvent,
         command: ({ payload }) =>
           this.transactionsCommandFactoryService.indexTransactionsBatch({
             batches: payload.batches,
@@ -69,10 +65,10 @@ export class IndexerSaga {
   }
 
   @Saga()
-  onBitcoinIndexerIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerChainIndexBlockConfirmedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
       executeWithRetry({
-        event: BitcoinIndexerIndexBlockConfirmedEvent,
+        event: BitcoinIndexerChainIndexBlockConfirmedEvent,
         command: ({ payload }) => this.blocksQueueService.confirmIndexBlock(payload.block.hash),
       })
       // catchError((error) => {
@@ -83,24 +79,24 @@ export class IndexerSaga {
   }
 
   @Saga()
-  onBitcoinBlockWithCompleteIndexedEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerBlockWithCompleteIndexedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
       executeWithRetry({
-        event: BitcoinBlockWithCompleteIndexedEvent,
+        event: BitcoinIndexerBlockWithCompleteIndexedEvent,
         command: ({ payload }) => this.blocksQueueService.confirmIndexBlock(payload.block.hash),
-      }),
-      catchError((error) => {
-        console.error(`Error handling <BitcoinBlockWithCompleteIndexedEvent> for event: ${error}`);
-        return of();
       })
+      // catchError((error) => {
+      //   console.error(`Error handling <BitcoinBlockWithCompleteIndexedEvent> for event: ${error}`);
+      //   return of();
+      // })
     );
   }
 
   @Saga()
-  onBitcoinBlockBatchesUpdatedEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerBlockBatchesUpdatedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
       executeWithRetry({
-        event: BitcoinBlockBatchesUpdatedEvent,
+        event: BitcoinIndexerBlockBatchesUpdatedEvent,
         command: ({ payload }) =>
           this.transactionsCommandFactoryService.indexTransactionsBatch({
             batches: payload.batches,

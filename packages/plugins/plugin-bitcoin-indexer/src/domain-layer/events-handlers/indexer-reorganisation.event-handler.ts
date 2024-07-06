@@ -1,6 +1,6 @@
 import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
 import { AppLogger } from '@easylayer/logger';
-import { BitcoinIndexerReorganisationEvent } from '@easylayer/domain-cqrs-components/bitcoin';
+import { BitcoinIndexerReorganisationEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { BlocksReadService } from '../services';
 
 @EventsHandler(BitcoinIndexerReorganisationEvent)

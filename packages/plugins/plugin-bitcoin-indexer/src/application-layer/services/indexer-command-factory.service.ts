@@ -1,7 +1,7 @@
 // import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
 import { CommandBus } from '@easylayer/cqrs';
-import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin';
+import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 @Injectable()
 export class IndexerCommandFactoryService {

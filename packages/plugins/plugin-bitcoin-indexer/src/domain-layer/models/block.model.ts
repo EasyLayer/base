@@ -1,10 +1,10 @@
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
-  BitcoinBlockIndexStartedEvent,
-  BitcoinBlockIndexCompletedEvent,
-  BitcoinBlockBatchesUpdatedEvent,
-  BitcoinBlockWithCompleteIndexedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin';
+  BitcoinIndexerBlockIndexStartedEvent,
+  BitcoinIndexerBlockIndexCompletedEvent,
+  BitcoinIndexerBlockBatchesUpdatedEvent,
+  BitcoinIndexerBlockWithCompleteIndexedEvent,
+} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 enum BlockStatuses {
   COMPLETED = 'completed',
@@ -41,6 +41,7 @@ export class Block extends AggregateRoot {
   public block!: BlockType; // without transactions (or just with transactions hashes)
   public status!: BlockStatuses; // indexing or completed
   public batches!: Batches; // { <aggregateId>:<status> }
+  public txCount!: number; // transactions lenght
 
   get lastBatch(): { aggregateId: TransactionBatchAggregateId; status: TransactionBatchStatus } | undefined {
     if (this.batches.size === 0) {
@@ -62,12 +63,14 @@ export class Block extends AggregateRoot {
     aggregateId,
     block,
     batches,
+    txCount,
     requestId,
   }: {
     aggregateId: string;
     block: BlockType;
     requestId: string;
     batches: Map<string, string>;
+    txCount: number;
   }) {
     // QUESTION: if the status does not match, should I throw an error or just skip it?
     if (this.status === BlockStatuses.INDEXING) {
@@ -75,11 +78,12 @@ export class Block extends AggregateRoot {
     }
 
     await this.apply(
-      new BitcoinBlockIndexStartedEvent({
+      new BitcoinIndexerBlockIndexStartedEvent({
         aggregateId,
         block,
         batches: Object.fromEntries(batches),
         requestId,
+        txCount,
         status: BlockStatuses.INDEXING,
       })
     );
@@ -91,11 +95,13 @@ export class Block extends AggregateRoot {
     block,
     batches,
     requestId,
+    txCount,
   }: {
     aggregateId: string;
     block: BlockType;
     requestId: string;
     batches: Map<string, string>;
+    txCount: number;
   }) {
     // QUESTION: if the status does not match, should I throw an error or just skip it?
     if (this.status === 'indexing') {
@@ -110,11 +116,12 @@ export class Block extends AggregateRoot {
     }
 
     await this.apply(
-      new BitcoinBlockWithCompleteIndexedEvent({
+      new BitcoinIndexerBlockWithCompleteIndexedEvent({
         aggregateId,
         block,
         batches: Object.fromEntries(batches),
         requestId,
+        txCount,
         status: 'completed',
       })
     );
@@ -124,7 +131,7 @@ export class Block extends AggregateRoot {
     // IMPORTANT: here we all the time rewrite all batches
     // that is because we optimaze resoring state
     await this.apply(
-      new BitcoinBlockBatchesUpdatedEvent({
+      new BitcoinIndexerBlockBatchesUpdatedEvent({
         aggregateId: this.aggregateId,
         requestId,
         batches: Object.fromEntries(batches),
@@ -144,18 +151,19 @@ export class Block extends AggregateRoot {
       }
 
       await this.apply(
-        new BitcoinBlockIndexCompletedEvent({
+        new BitcoinIndexerBlockIndexCompletedEvent({
           aggregateId: this.aggregateId,
           requestId,
           batches: Object.fromEntries(this.batches),
           status: BlockStatuses.COMPLETED,
           block: this.block,
+          txCount: this.txCount,
         })
       );
     }
   }
 
-  private onBitcoinBlockIndexStartedEvent({ payload }: BitcoinBlockIndexStartedEvent) {
+  private onBitcoinIndexerBlockIndexStartedEvent({ payload }: BitcoinIndexerBlockIndexStartedEvent) {
     const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
     this.block = block;
@@ -165,7 +173,7 @@ export class Block extends AggregateRoot {
     }
   }
 
-  private onBitcoinBlockIndexCompletedEvent({ payload }: BitcoinBlockIndexCompletedEvent) {
+  private onBitcoinIndexerBlockIndexCompletedEvent({ payload }: BitcoinIndexerBlockIndexCompletedEvent) {
     const { status, batches } = payload;
     this.batches = new Map(Object.entries(batches));
     if (status) {
@@ -173,12 +181,12 @@ export class Block extends AggregateRoot {
     }
   }
 
-  private onBitcoinBlockBatchesUpdatedEvent({ payload }: BitcoinBlockBatchesUpdatedEvent) {
+  private onBitcoinIndexerBlockBatchesUpdatedEvent({ payload }: BitcoinIndexerBlockBatchesUpdatedEvent) {
     const { batches } = payload;
     this.batches = new Map(Object.entries(batches));
   }
 
-  private onBitcoinBlockWithCompleteIndexedEvent({ payload }: BitcoinBlockWithCompleteIndexedEvent) {
+  private onBitcoinIndexerBlockWithCompleteIndexedEvent({ payload }: BitcoinIndexerBlockWithCompleteIndexedEvent) {
     const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
     this.block = block;

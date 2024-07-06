@@ -2,7 +2,7 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { IndexTransactionsBatchCommand } from '@easylayer/domain-cqrs-components/bitcoin';
+import { IndexTransactionsBatchCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { AppLogger } from '@easylayer/logger';
 import { Block } from '../models/block.model';
 import { Indexer } from '../models/indexer.model';

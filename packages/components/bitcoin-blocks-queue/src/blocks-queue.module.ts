@@ -1,0 +1,75 @@
+import { DynamicModule, Module, Type } from '@nestjs/common';
+import { transformAndValidate } from 'class-transformer-validator';
+import { LoggerModule, AppLogger } from '@easylayer/logger';
+import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
+import { BlocksQueueController } from './blocks-queue.controller';
+import { BlocksQueueService } from './blocks-queue.service';
+import { BlocksQueueIteratorService } from './blocks-iterator';
+import { BlocksQueueLoaderService } from './blocks-loader';
+import { BlocksQueueCollectorService } from './blocks-collector';
+import { BlocksCommandExecutor } from './interfaces';
+import { BlocksQueueConfig } from './config/blocks-queue.config';
+
+export interface BlocksQueueModuleOptions {
+  blocksCommandExecutor: Type<BlocksCommandExecutor>;
+  isTransportMode: boolean;
+  maxBlockHeight: bigint;
+}
+
+@Module({})
+export class BlocksQueueModule {
+  static async forRootAsync({
+    blocksCommandExecutor,
+    isTransportMode,
+    maxBlockHeight,
+  }: BlocksQueueModuleOptions): Promise<DynamicModule> {
+    const blocksQueueConfig = await transformAndValidate(BlocksQueueConfig, process.env, {
+      validator: { whitelist: true },
+    });
+
+    return {
+      module: BlocksQueueModule,
+      controllers: [BlocksQueueController],
+      imports: [LoggerModule.forRoot({ componentName: 'BlocksQueueComponent' })],
+      providers: [
+        {
+          provide: BlocksQueueConfig,
+          useValue: blocksQueueConfig,
+        },
+        {
+          // IMPORTANT:
+          provide: 'BlocksCommandExecutor',
+          useClass: blocksCommandExecutor,
+        },
+        // {
+        //   // IMPORTANT:
+        //   provide: 'BlocksQueueService',
+        //   useClass: BlocksQueueService,
+        // },
+        {
+          provide: 'BlocksQueueService',
+          useFactory: (logger, iterator, loader, config, collector) =>
+            new BlocksQueueService(logger, iterator, loader, config, collector, { maxBlockHeight }),
+          inject: [
+            AppLogger,
+            BlocksQueueIteratorService,
+            BlocksQueueLoaderService,
+            BlocksQueueConfig,
+            BlocksQueueCollectorService,
+          ],
+        },
+        {
+          provide: BlocksQueueLoaderService,
+          useFactory: (logger, blocksQueueConfig, networkProvider, webhookStreamService) =>
+            new BlocksQueueLoaderService(logger, blocksQueueConfig, networkProvider, webhookStreamService, {
+              isTransportMode,
+            }),
+          inject: [AppLogger, BlocksQueueConfig, BitcoinNetworkProviderService, BitcoinWebhookStreamService],
+        },
+        BlocksQueueIteratorService,
+        BlocksQueueCollectorService,
+      ],
+      exports: ['BlocksQueueService'],
+    };
+  }
+}

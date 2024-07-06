@@ -24,6 +24,7 @@
   "packageManager": "yarn@3.6.0",
   "dependencies": {
     "@easylayer/arithmetic": "0.0.2-experimental.1",
+    "@easylayer/bitcoin-blocks-queue": "0.0.2-experimental.1",
     "@easylayer/bitcoin-network-provider": "0.0.2-experimental.1",
     "@easylayer/cqrs": "0.0.2-experimental.1",
     "@easylayer/domain-cqrs-components": "0.0.2-experimental.1",
@@ -37,7 +38,6 @@
     "class-transformer": "0.5.1",
     "class-transformer-validator": "0.9.1",
     "class-validator": "0.14.0",
-    "piscina": "4.1.0",
     "reflect-metadata": "0.1.14",
     "rxjs": "7.8.1",
     "uuid": "9.0.1"
