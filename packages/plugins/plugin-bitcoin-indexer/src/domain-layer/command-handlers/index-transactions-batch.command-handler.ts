@@ -28,11 +28,8 @@ export class IndexTransactionsBatchCommandHandler implements ICommandHandler<Ind
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
+      // NOTE: block - is from event (without tx)
       const { block, requestId, batches } = payload;
-
-      // TODO: we can have here transactions not all but "from to"
-      // for this we need to fetch block from cache with not all tranactions
-      const { tx, ...blockWithoutTx } = block;
 
       // TODO: move to env
       const MAX_INDEXING_BATCH_PER_ONE_TIME = 1;
@@ -60,12 +57,12 @@ export class IndexTransactionsBatchCommandHandler implements ICommandHandler<Ind
         this.log.debug('No batches for indexing', { notIndexedBatches }, this.constructor.name);
 
         // IMPORTANT: We restore the state of the block to make sure it can be completed
-        const restoredBlockModel: Block = await this.blocksModelFactoryService.initExistingModel(blockWithoutTx.height);
+        const restoredBlockModel: Block = await this.blocksModelFactoryService.initExistingModel(block.height);
 
         await restoredBlockModel.completeIndexBlock({ requestId });
 
         const indexerModel: Indexer = await this.indexerModelFactoryService.initModel();
-        await indexerModel.confirmIndexBlock({ requestId, block: blockWithoutTx });
+        await indexerModel.confirmIndexBlock({ requestId, block });
 
         await this.eventStore.save([indexerModel, restoredBlockModel]);
 
@@ -75,7 +72,7 @@ export class IndexTransactionsBatchCommandHandler implements ICommandHandler<Ind
         this.log.info(
           `Block successfull indexed`,
           {
-            block: { height: blockWithoutTx.height, hash: blockWithoutTx.hash },
+            block: { height: block.height, hash: block.hash },
             alreadyIndexedLength: indexerModel.chain.lastBlockHeight,
           },
           this.constructor.name
@@ -94,15 +91,7 @@ export class IndexTransactionsBatchCommandHandler implements ICommandHandler<Ind
       for (const batchId of notIndexedBatches) {
         // Get transactionsBatch aggregate
         const transactionsBatch: TransactionsBatch = await this.batchModelFactoryService.initExistingModel(batchId);
-
-        // Filter the batch transactions Map to find transactions with hashes present in tx
-        // TODO: add type
-        // TODO: optimise
-        const filteredTransactions = tx.filter((transaction: { txid: string }) =>
-          transactionsBatch.transactions.has(transaction.txid)
-        );
-
-        await transactionsBatch.indexing({ transactions: filteredTransactions, requestId });
+        await transactionsBatch.indexing({ requestId });
 
         // TODO: this needs to be optimized
         updatedBatches.push(transactionsBatch);
@@ -113,11 +102,8 @@ export class IndexTransactionsBatchCommandHandler implements ICommandHandler<Ind
 
       await this.eventStore.save([...updatedBatches, newBlockModel]);
 
-      // Так как у нас по фичам могут быть за раза тут несколько батчей индексироваться
-      // И потому что нам нужно сначала попробовать сохранить в базе остальные аггегтаы
-      // и проверить не будет ли там исключения.
-      // Поэтому мы тут в массиве публикуем ивенты всех батчей(может и один он будет)
-      // (Отдельно транзакции не будут публиковаться никогда)
+      // Publish the events of all batches here in an arrays (maybe there will be only one)
+      // (Transactions will never be published separately)
       for (const batch of updatedBatches) {
         await batch.commit();
       }

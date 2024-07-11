@@ -24,12 +24,12 @@
   "packageManager": "yarn@3.6.0",
   "dependencies": {
     "@easylayer/arithmetic": "0.0.2-experimental.1",
-    "@easylayer/bitcoin-blocks-queue": "0.0.2-experimental.1",
     "@easylayer/bitcoin-network-provider": "0.0.2-experimental.1",
     "@easylayer/cqrs": "0.0.2-experimental.1",
     "@easylayer/domain-cqrs-components": "0.0.2-experimental.1",
     "@easylayer/eventstore": "0.0.2-experimental.1",
     "@easylayer/logger": "0.0.2-experimental.1",
+    "@easylayer/network-transport": "0.0.2-experimental.1",
     "@easylayer/read-database": "0.0.2-experimental.1",
     "@easylayer/shared-interfaces": "0.0.2-experimental.1",
     "@nestjs/common": "10.2.10",

@@ -18,7 +18,7 @@ import {
 export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockCommand> {
   constructor(
     private readonly log: AppLogger,
-    private readonly modelFactory: BlockModelFactoryService,
+    private readonly blocksModelFactory: BlockModelFactoryService,
     private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
@@ -30,12 +30,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
+      // NOTE: block - is from BlocksQueue
       const { block, requestId } = payload;
-
-      // TODO: For this command, you need to get a block in which only hashes will be transferred.
       const { tx, ...blockWithoutTx } = block;
       const { height, hash, previousblockhash } = blockWithoutTx;
-      const txCount = tx.lenght;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
@@ -46,7 +44,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // IMPORTANT: We do this check here, and not inside the aggregate,
       // because we don’t want to throw an error and process it
       if (!indexerModel.chain.validateNextBlock(height, previousblockhash)) {
-        await indexerModel.reorganisation({
+        await indexerModel.startReorganisation({
           height,
           requestId,
           service: this.networkProviderService,
@@ -61,7 +59,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       /* Start indexing block */
       // IMPORTANT: We do not check whether a block with such a hash exists in the state,
       // but overwrite the state if so
-      const blockModel: Block = this.modelFactory.createNewModel();
+      const blockModel: Block = this.blocksModelFactory.createNewModel();
 
       // TODO: move into env
       const MAX_TRANSACTIONS_BATCH_SIZE = 10 * 1000 * 1024; // 1000 KB
@@ -81,7 +79,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           await transactionBatch.createWithIndexing({
             aggregateId: uuidv4(),
             requestId,
-            transactions: tx,
+            transactions: transactionSlices[0],
             blockHeight: height,
             blockHash: hash,
             isFinalBatch: true,
@@ -96,7 +94,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
             // TODO: add type
             // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
             // that because we don't want to send all transactions by Transport, so we will get it from cache
-            const transactionSliceIds: string[] = slice.map((transaction: { txid: string }) => transaction.txid);
+            // ЗАЧЕМ? - они же в разных событиях идут!
+            // const transactionSliceIds: string[] = slice.map((transaction: { txid: string }) => transaction.txid);
             const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
 
             // Check if this is the last batch
@@ -105,7 +104,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
             await transactionBatch.create({
               aggregateId: uuidv4(),
               requestId,
-              transactionIds: transactionSliceIds,
+              transactions: slice,
               blockHeight: height,
               blockHash: hash,
               index,
@@ -133,11 +132,18 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           aggregateId: hash,
           block: blockWithoutTx,
           batches: batchesMap,
-          txCount,
+          txCount: tx.lenght,
           requestId,
         });
 
-        await indexerModel.addBlockWithImmediatelyConfirm({ requestId, block: blockWithoutTx });
+        await indexerModel.addBlockWithImmediatelyConfirm({
+          requestId,
+          block: {
+            ...blockWithoutTx,
+            // NOTE: we store batches ids with block in Indexer Blockchain structure
+            batches: batches.map((item) => item.aggregateId),
+          },
+        });
 
         await this.eventStore.save([...batches, indexerModel, blockModel]);
 
@@ -166,7 +172,16 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         batchesMap.set(batch.aggregateId, 'created');
       });
 
-      await indexerModel.addBlock({ block: { height, hash, previousblockhash }, requestId });
+      await indexerModel.addBlock({
+        requestId,
+        block: {
+          height,
+          hash,
+          previousblockhash,
+          // NOTE: we store batches ids with block in Indexer Blockchain structure
+          batches: batches.map((item) => item.aggregateId),
+        },
+      });
 
       this.log.debug(
         'Indexer added new block',
@@ -178,7 +193,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         aggregateId: hash,
         block: blockWithoutTx,
         batches: batchesMap,
-        txCount,
+        txCount: tx.lenght,
         requestId,
       });
 
@@ -186,6 +201,10 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       await indexerModel.commit();
       await blockModel.commit();
+
+      for (const batch of batches) {
+        await batch.commit();
+      }
 
       this.log.debug('Block index started', { block: blockWithoutTx }, this.constructor.name);
     } catch (error) {

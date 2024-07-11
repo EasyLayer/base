@@ -5,6 +5,7 @@ interface BitcoinIndexerChainBlockWithConfirmAddedEventPayload {
   requestId: string;
   block: any;
   status: string;
+  batches: string[];
 }
 
 export class BitcoinIndexerChainBlockWithConfirmAddedEvent

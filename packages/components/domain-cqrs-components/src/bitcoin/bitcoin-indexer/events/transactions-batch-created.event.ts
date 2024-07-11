@@ -3,12 +3,10 @@ import { BasicEvent } from '../../../base.event';
 interface BitcoinIndexerTransactionsBatchCreatedEventPayload {
   aggregateId: string;
   requestId: string;
-  transactionIds: string[];
+  batch: any;
   blockHeight: string;
   blockHash: string;
   status: string;
-  index: number;
-  isFinalBatch: boolean;
 }
 
 export class BitcoinIndexerTransactionsBatchCreatedEvent

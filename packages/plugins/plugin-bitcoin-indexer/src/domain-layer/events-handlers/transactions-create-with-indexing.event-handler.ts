@@ -17,20 +17,19 @@ export class BitcoinIndexerTransactionsBatchWithIndexCreatedEventHandler
   // - we won't catch it! (the app should restart after that)
   async handle({ payload }: BitcoinIndexerTransactionsBatchWithIndexCreatedEvent) {
     try {
-      this.log.debug('2handle()', payload, this.constructor.name);
+      this.log.debug('handle()', payload, this.constructor.name);
 
       const { blockHash, status, batch } = payload;
 
       // Check if block exists
-      const block = await this.blocksService.findOne({
-        where: { hash: blockHash },
-        // relations: ['transactions']
-      });
-      if (!block) {
-        throw new Error('Block is not found');
-      }
-
-      return await this.transactionsService.createMany({ block, batch, status });
+      // const block = await this.blocksService.findOne({
+      //   where: { hash: blockHash },
+      //   // relations: ['transactions']
+      // });
+      // if (!block) {
+      //   throw new Error('Block is not found');
+      // }
+      return await this.transactionsService.createMany({ blockHash, batch, status });
     } catch (error) {
       this.log.error('handle()', error, this.constructor.name);
       throw error;

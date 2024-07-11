@@ -3,6 +3,7 @@ import {
   BitcoinIndexerTransactionsBatchCreatedEvent,
   BitcoinIndexerTransactionsBatchIndexedEvent,
   BitcoinIndexerTransactionsBatchWithIndexCreatedEvent,
+  BitcoinIndexerTransactionsBatchSuspendedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 interface Input {
@@ -49,6 +50,7 @@ type TransactionsMap = Map<string, Omit<Transaction, 'txid'> | null>;
 enum BatchStatuses {
   COMPLETED = 'completed',
   CREATED = 'created',
+  SUSPENDED = 'suspended',
 }
 
 export class TransactionsBatch extends AggregateRoot {
@@ -57,7 +59,7 @@ export class TransactionsBatch extends AggregateRoot {
   public blockHash!: string;
   // IMPORTANT: 'transactions' has Map structure to find transactions with hashes present in tx (O(1))
   public transactions!: TransactionsMap;
-  public status!: string;
+  public status!: BatchStatuses;
   // IMPORTANT: 'index' - this is the batch's number in the block.
   // [0, infinite]. 0 - means the first batch in the block
   public index!: number;
@@ -66,7 +68,7 @@ export class TransactionsBatch extends AggregateRoot {
   public async create({
     aggregateId,
     requestId,
-    transactionIds,
+    transactions,
     blockHeight,
     blockHash,
     index,
@@ -74,22 +76,26 @@ export class TransactionsBatch extends AggregateRoot {
   }: {
     aggregateId: string;
     requestId: string;
-    transactionIds: string[];
+    transactions: Transaction[];
     blockHeight: bigint;
     blockHash: string;
     index: number;
     isFinalBatch: boolean;
   }) {
+    const batch = {
+      transactions,
+      index,
+      isFinalBatch,
+    };
+
     await this.apply(
       new BitcoinIndexerTransactionsBatchCreatedEvent({
         aggregateId,
         requestId,
-        transactionIds,
+        batch,
         blockHeight: blockHeight.toString(),
         blockHash,
         status: BatchStatuses.CREATED,
-        index,
-        isFinalBatch,
       })
     );
   }
@@ -112,7 +118,6 @@ export class TransactionsBatch extends AggregateRoot {
     isFinalBatch: boolean;
   }) {
     // Check transactions
-    // Make sure that the sum of the inputs equals the sum of the outputs plus the commission.
     const batch = {
       transactions,
       index,
@@ -130,13 +135,12 @@ export class TransactionsBatch extends AggregateRoot {
     );
   }
 
-  public async indexing({ transactions, requestId }: { transactions: Transaction[]; requestId: string }) {
+  public async indexing({ requestId }: { requestId: string }) {
     // Check transactions
-    // Make sure that the sum of the inputs equals the sum of the outputs plus the commission.
     const batch = {
-      transactions,
+      transactions: this.transactions,
       index: this.index,
-      isFInalBatch: this.isFinalBatch,
+      isFinalBatch: this.isFinalBatch,
     };
     await this.apply(
       new BitcoinIndexerTransactionsBatchIndexedEvent({
@@ -150,20 +154,34 @@ export class TransactionsBatch extends AggregateRoot {
     );
   }
 
+  public async suspend({ aggregateId, requestId }: { aggregateId: string; requestId: string }) {
+    await this.apply(
+      new BitcoinIndexerTransactionsBatchSuspendedEvent({
+        aggregateId,
+        requestId,
+        status: BatchStatuses.SUSPENDED,
+      })
+    );
+  }
+
   private onBitcoinIndexerTransactionsBatchCreatedEvent({ payload }: BitcoinIndexerTransactionsBatchCreatedEvent) {
-    const { aggregateId, transactionIds, blockHeight, blockHash, status, index } = payload;
+    const { aggregateId, batch, blockHeight, blockHash, status } = payload;
+    const { transactions, index, isFinalBatch } = batch;
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
     this.blockHash = blockHash;
-    this.status = status;
+    this.status = status as BatchStatuses;
     this.index = index;
-    this.transactions = new Map(transactionIds.map((txid: string) => [txid, null]));
+    this.isFinalBatch = isFinalBatch;
+    this.transactions = new Map(
+      transactions.map((transaction: Transaction) => [transaction.txid, { ...transaction, txid: null }])
+    );
   }
 
   private onBitcoinIndexerTransactionsBatchIndexedEvent({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
     const { status, batch, blockHash, blockHeight } = payload;
     const { transactions, index, isFInalBatch } = batch;
-    this.status = status;
+    this.status = status as BatchStatuses;
     this.transactions = new Map(
       transactions.map((transaction: Transaction) => [transaction.txid, { ...transaction, txid: null }])
     );
@@ -181,11 +199,16 @@ export class TransactionsBatch extends AggregateRoot {
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
     this.blockHash = blockHash;
-    this.status = status;
+    this.status = status as BatchStatuses;
     this.index = index;
     this.isFinalBatch = isFinalBatch;
     this.transactions = new Map(
       transactions.map((transaction: Transaction) => [transaction.txid, { ...transaction, txid: null }])
     );
+  }
+
+  private onBitcoinIndexerTransactionsBatchSuspendedEvent({ payload }: BitcoinIndexerTransactionsBatchSuspendedEvent) {
+    const { status } = payload;
+    this.status = status as BatchStatuses;
   }
 }

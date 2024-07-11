@@ -1,7 +1,7 @@
 export * from './indexer-index-block-confirmed.event';
 export * from './indexer-initialized.event';
 export * from './indexer-block-added.event';
-export * from './indexer-reorganisation.event';
+export * from './indexer-reorganisation-started.event';
 export * from './transactions-batch-created.event';
 export * from './transactions-batch-indexed.event';
 export * from './block-index-started.event';
@@ -10,3 +10,6 @@ export * from './block-batches-updated.event';
 export * from './indexer-block-with-confirm-added.event';
 export * from './block-with-complete-indexed.event';
 export * from './transactions-batch-with-index-created.event';
+export * from './indexer-reorganisation-finished.event';
+export * from './block-suspended.event';
+export * from './transactions-batch-suspended.event';

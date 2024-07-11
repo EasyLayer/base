@@ -5,6 +5,7 @@ interface BitcoinIndexerChainBlockAddedEventPayload {
   requestId: string;
   block: any;
   status: string;
+  batches: string[];
 }
 
 export class BitcoinIndexerChainBlockAddedEvent implements BasicEvent<BitcoinIndexerChainBlockAddedEventPayload> {

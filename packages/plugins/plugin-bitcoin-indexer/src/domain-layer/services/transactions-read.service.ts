@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@easylayer/read-database';
-import { TransactionViewModel } from '../view-models/transaction.view-model';
+import { BlockViewModel, TransactionViewModel } from '../view-models';
 
 @Injectable()
 export class TransactionsReadService {
@@ -16,21 +16,24 @@ export class TransactionsReadService {
   // }
 
   async createMany({
-    block,
+    blockHash,
     batch,
     status,
   }: {
-    block: any;
+    blockHash: string;
     status: string;
     batch: any;
   }): Promise<TransactionViewModel[]> {
     const transactions: TransactionViewModel[] = [];
+    const block = new BlockViewModel({ hash: blockHash });
 
     batch.transactions.forEach((item: any) => {
       const tx = new TransactionViewModel({
         txid: item.txid,
-        block,
+        vin: item.vin,
+        vout: item.vout,
         status,
+        block,
       });
       transactions.push(tx);
     });
@@ -39,9 +42,9 @@ export class TransactionsReadService {
     return transactions;
   }
 
-  async update(transactionViewModel: TransactionViewModel): Promise<TransactionViewModel> {
-    // TODO: check first or not??
-    return await this.readDb.save(transactionViewModel);
+  async update(criteria: any, dto: any): Promise<any> {
+    const tx = new TransactionViewModel(dto);
+    return await this.readDb.update(criteria, tx);
   }
 
   async findOneById(txid: string): Promise<TransactionViewModel | null> {
@@ -54,7 +57,7 @@ export class TransactionsReadService {
 
   async findAll(): Promise<TransactionViewModel[]> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [blocks, total] = await this.readDb.findAndCount();
-    return blocks;
+    const [tx, total] = await this.readDb.findAndCount();
+    return tx;
   }
 }

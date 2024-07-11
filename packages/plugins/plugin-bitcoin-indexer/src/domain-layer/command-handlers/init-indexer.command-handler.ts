@@ -1,17 +1,10 @@
-// import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore/transactional-hooks';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { AppLogger } from '@easylayer/logger';
 import { Indexer } from '../models/indexer.model';
-import { Block } from '../models/block.model';
-// import { TransactionsBatch } from '../models/transactions-batch.model';
-import {
-  IndexerModelFactoryService,
-  BlockModelFactoryService,
-  TransactionsBatchModelFactoryService,
-} from '../services';
+import { IndexerModelFactoryService, BlockModelFactoryService } from '../services';
 
 @CommandHandler(InitIndexerCommand)
 export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCommand> {
@@ -19,8 +12,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     private readonly log: AppLogger,
     private readonly eventStore: EventStoreRepository,
     private readonly indexerModelFactory: IndexerModelFactoryService,
-    private readonly blocksModelFactory: BlockModelFactoryService,
-    private readonly batchesModelFactory: TransactionsBatchModelFactoryService
+    private readonly blocksModelFactory: BlockModelFactoryService
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -36,20 +28,15 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         startHeight,
       });
 
-      if (indexerModel.status === 'indexing' || indexerModel.status === 'awaiting') {
-        // Publish last block event and last transactions batch (if its exist)
+      if (indexerModel.status === 'indexing') {
+        // Publish last block event (if its exist)
         const lastBlockAggregateId = String(indexerModel.chain.lastBlockHash);
         if (lastBlockAggregateId) {
-          // Publish last block event
           await this.blocksModelFactory.publishLastEvent(lastBlockAggregateId);
-          const blockModel: Block = await this.blocksModelFactory.initExistingModel(lastBlockAggregateId);
-          if (blockModel) {
-            const lastBatchAggregateId = String(blockModel.lastBatch?.aggregateId);
-            if (lastBatchAggregateId) {
-              // Publish last batch event
-              await this.batchesModelFactory.publishLastEvent(lastBatchAggregateId);
-            }
-          }
+
+          // NOTE: We don't need to publish the latest TransactionsBatch events here
+          // because we process them through BlockUpdated events.
+          // If this changes in the future, it will be necessary to publish here the last event of the last batch.
         }
       }
 

@@ -11,10 +11,22 @@ export class BlocksReadService {
     private readDb: Repository<BlockViewModel>
   ) {}
 
-  async create({ hash, status }: { hash: string; status: string }): Promise<BlockViewModel> {
+  async create({
+    hash,
+    status,
+    height,
+    prevHash,
+  }: {
+    hash: string;
+    status: string;
+    height: string;
+    prevHash: string;
+  }): Promise<BlockViewModel> {
     const block = new BlockViewModel({
       hash,
       status,
+      height,
+      prevHash,
     });
     // IMPORTANT: we do not use the save method here because there is a bug with it
     // Since he uses his own transactions (get and then insert) then
@@ -27,9 +39,9 @@ export class BlocksReadService {
     return block;
   }
 
-  async update(blockViewModel: BlockViewModel): Promise<BlockViewModel> {
-    // TODO: check first or not??
-    return await this.readDb.save(blockViewModel);
+  async update(criteria: any, dto: any): Promise<any> {
+    const block = new BlockViewModel(dto);
+    return await this.readDb.update(criteria, block);
   }
 
   async findOne({ where, relations = [] }: { where: object; relations?: string[] }): Promise<BlockViewModel | null> {

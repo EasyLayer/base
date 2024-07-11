@@ -4,11 +4,13 @@ import {
   BitcoinIndexerBlockIndexCompletedEvent,
   BitcoinIndexerBlockBatchesUpdatedEvent,
   BitcoinIndexerBlockWithCompleteIndexedEvent,
+  BitcoinIndexerBlockSuspendedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 enum BlockStatuses {
   COMPLETED = 'completed',
   INDEXING = 'indexing',
+  SUSPENDED = 'suspended',
 }
 
 interface BitcoinBlock {
@@ -163,6 +165,16 @@ export class Block extends AggregateRoot {
     }
   }
 
+  public async suspend({ aggregateId, requestId }: { aggregateId: string; requestId: string }) {
+    await this.apply(
+      new BitcoinIndexerBlockSuspendedEvent({
+        aggregateId,
+        requestId,
+        status: BlockStatuses.SUSPENDED,
+      })
+    );
+  }
+
   private onBitcoinIndexerBlockIndexStartedEvent({ payload }: BitcoinIndexerBlockIndexStartedEvent) {
     const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
@@ -194,5 +206,10 @@ export class Block extends AggregateRoot {
     if (status) {
       this.status = status as BlockStatuses;
     }
+  }
+
+  private onBitcoinIndexerBlockSuspendedEvent({ payload }: BitcoinIndexerBlockSuspendedEvent) {
+    const { status } = payload;
+    this.status = status as BlockStatuses;
   }
 }

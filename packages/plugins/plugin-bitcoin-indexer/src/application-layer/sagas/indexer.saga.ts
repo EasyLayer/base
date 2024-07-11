@@ -1,7 +1,5 @@
-import { v4 as uuidv4 } from 'uuid';
 import { Injectable, Inject } from '@nestjs/common';
 import { Observable } from 'rxjs';
-// import { catchError } from 'rxjs/operators';
 import { Saga, ICommand, executeWithRetry } from '@easylayer/cqrs';
 import { BlocksQueueService } from '@easylayer/bitcoin-blocks-queue';
 import {
@@ -9,14 +7,16 @@ import {
   BitcoinIndexerBlockIndexStartedEvent,
   BitcoinIndexerChainIndexBlockConfirmedEvent,
   BitcoinIndexerBlockBatchesUpdatedEvent,
-  BitcoinIndexerReorganisationEvent,
+  BitcoinIndexerReorganisationStartedEvent,
   BitcoinIndexerBlockWithCompleteIndexedEvent,
+  BitcoinIndexerReorganisationFinishedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { TransactionsCommandFactoryService } from '../services';
+import { TransactionsCommandFactoryService, IndexerCommandFactoryService } from '../services';
 
 @Injectable()
 export class IndexerSaga {
   constructor(
+    private readonly indexerCommandFactoryService: IndexerCommandFactoryService,
     private readonly transactionsCommandFactoryService: TransactionsCommandFactoryService,
     @Inject('BlocksQueueService') private readonly blocksQueueService: BlocksQueueService
   ) {}
@@ -32,16 +32,27 @@ export class IndexerSaga {
   }
 
   @Saga()
-  onBitcoinIndexerReorganisationEvent(events$: Observable<any>): Observable<ICommand> {
+  onBitcoinIndexerReorganisationFinishedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
       executeWithRetry({
-        event: BitcoinIndexerReorganisationEvent,
+        event: BitcoinIndexerReorganisationFinishedEvent,
         command: ({ payload }) => this.blocksQueueService.reorganizeBlocks(payload.height),
       })
-      // catchError((error) => {
-      //   console.error(`Error handling <BitcoinIndexerReorganisationEvent> for event: ${error}`);
-      //   return of();
-      // })
+    );
+  }
+
+  @Saga()
+  onBitcoinIndexerReorganisationStartedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      executeWithRetry({
+        event: BitcoinIndexerReorganisationStartedEvent,
+        command: ({ payload }) =>
+          this.indexerCommandFactoryService.processReorganisation({
+            blocks: payload.blocks,
+            height: payload.height,
+            reuestId: payload.requestId,
+          }), //this.blocksQueueService.reorganizeBlocks(payload.height),
+      })
     );
   }
 
@@ -54,7 +65,7 @@ export class IndexerSaga {
           this.transactionsCommandFactoryService.indexTransactionsBatch({
             batches: payload.batches,
             block: payload.block,
-            requestId: uuidv4(),
+            requestId: payload.requestId,
           }),
       })
       // catchError((error) => {
@@ -101,7 +112,7 @@ export class IndexerSaga {
           this.transactionsCommandFactoryService.indexTransactionsBatch({
             batches: payload.batches,
             block: payload.block,
-            requestId: uuidv4(),
+            requestId: payload.requestId,
           }),
       })
       // catchError((error) => {

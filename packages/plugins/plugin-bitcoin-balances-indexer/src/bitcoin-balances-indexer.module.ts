@@ -4,17 +4,16 @@ import { LoggerModule } from '@easylayer/logger';
 import { ArithmeticService } from '@easylayer/arithmetic';
 import { EventStoreModule } from '@easylayer/eventstore';
 import { ReadDatabaseModule } from '@easylayer/read-database';
-import { BlocksQueueModule } from '@easylayer/bitcoin-blocks-queue';
 import { BitcoinNetworkProviderModule } from '@easylayer/bitcoin-network-provider';
 import { BitcoinBalancesIndexerController } from './bitcoin-balances-indexer.controller';
 import { BitcoinBalancesIndexerService } from './bitcoin-balances-indexer.service';
 import { IndexerSaga } from './application-layer/sagas';
+import { IndexerCommandFactoryService, ReadStateExceptionHandlerService } from './application-layer/services';
 import {
-  IndexerCommandFactoryService,
-  ReadStateExceptionHandlerService,
-  BlocksCommandFactoryService,
-} from './application-layer/services';
-import { BalancesIndexerModelFactoryService } from './domain-layer/services';
+  BalancesIndexerModelFactoryService,
+  TransactionModelFactoryService,
+  OutputsReadService,
+} from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 import { EventsHandlers } from './domain-layer/events-handlers';
 import { AppConfig, EventStoreConfig, ReadDatabaseConfig, BusinessConfig } from './config';
@@ -64,11 +63,6 @@ export class BitcoinBalancesIndexerModule {
         BitcoinNetworkProviderModule.forRootAsync({
           isGlobal: true,
         }),
-        BlocksQueueModule.forRootAsync({
-          blocksCommandExecutor: BlocksCommandFactoryService,
-          isTransportMode: appConfig.BITCOIN_BALANCES_INDEXER_IS_TRANSPORT_MODE,
-          maxBlockHeight: businessConfig.BITCOIN_BALANCES_INDEXER_MAX_BLOCK_HEIGHT,
-        }),
       ],
       providers: [
         {
@@ -93,6 +87,8 @@ export class BitcoinBalancesIndexerModule {
         IndexerSaga,
         IndexerCommandFactoryService,
         ReadStateExceptionHandlerService,
+        TransactionModelFactoryService,
+        OutputsReadService,
         ...CommandHandlers,
         ...EventsHandlers,
       ],

@@ -1,29 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/cqrs';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { TransactionsBatch } from '../models/transactions-batch.model';
+import { Transaction } from '../models/transaction.model';
 
 @Injectable()
-export class TransactionsBatchModelFactoryService {
+export class TransactionModelFactoryService {
   constructor(
     private readonly publisher: EventPublisher,
-    private readonly batchesRepository: EventStoreRepository<TransactionsBatch>
+    private readonly txRepository: EventStoreRepository<Transaction>
   ) {}
 
-  public createNewModel(): TransactionsBatch {
-    return this.publisher.mergeObjectContext(new TransactionsBatch());
+  public createNewModel(): Transaction {
+    return this.publisher.mergeObjectContext(new Transaction());
   }
 
-  public async initExistingModel(aggragatorId: string): Promise<TransactionsBatch> {
+  public async initExistingModel(aggragatorId: string): Promise<Transaction> {
     const model = this.createNewModel();
     model.aggregateId = aggragatorId;
-    return await this.batchesRepository.getOne(model);
+    return await this.txRepository.getOne(model);
   }
 
   public async publishLastEvent(aggragatorId: string): Promise<void> {
     const model = this.createNewModel();
     model.aggregateId = aggragatorId;
-    const event = await this.batchesRepository.fetchLastEvent(model);
+    const event = await this.txRepository.fetchLastEvent(model);
     if (event) {
       await model.republish(event);
     }
