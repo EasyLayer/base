@@ -1,11 +1,11 @@
 import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
 import { AppLogger } from '@easylayer/logger';
-import { BitcoinIndexerTransactionsBatchWithIndexCreatedEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
+import { BitcoinIndexerTransactionsBatchIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { BlocksReadService, TransactionsReadService } from '../services';
 
-@EventsHandler(BitcoinIndexerTransactionsBatchWithIndexCreatedEvent)
-export class BitcoinIndexerTransactionsBatchWithIndexCreatedEventHandler
-  implements IEventHandler<BitcoinIndexerTransactionsBatchWithIndexCreatedEvent>
+@EventsHandler(BitcoinIndexerTransactionsBatchIndexedEvent)
+export class BitcoinIndexerTransactionsBatchIndexedEventHandler
+  implements IEventHandler<BitcoinIndexerTransactionsBatchIndexedEvent>
 {
   constructor(
     private readonly log: AppLogger,
@@ -15,7 +15,7 @@ export class BitcoinIndexerTransactionsBatchWithIndexCreatedEventHandler
 
   // IMPORTANT: at this stage if this method would throw an error
   // - we won't catch it! (the app should restart after that)
-  async handle({ payload }: BitcoinIndexerTransactionsBatchWithIndexCreatedEvent) {
+  async handle({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
     try {
       this.log.debug('handle()', payload, this.constructor.name);
 

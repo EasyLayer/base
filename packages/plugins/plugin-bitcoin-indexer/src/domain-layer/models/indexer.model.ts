@@ -1,4 +1,3 @@
-// import { v4 as uuidv4 } from 'uuid';
 import { AggregateRoot } from '@easylayer/cqrs';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import {
@@ -6,13 +5,10 @@ import {
   BitcoinIndexerChainBlockAddedEvent,
   BitcoinIndexerReorganisationStartedEvent,
   BitcoinIndexerReorganisationFinishedEvent,
-  BitcoinIndexerChainIndexBlockConfirmedEvent,
-  BitcoinIndexerChainBlockWithConfirmAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 enum IndexerStatuses {
   AWAITING = 'awaiting',
-  INDEXING = 'indexing',
   REORGANISATION = 'reorganisation',
 }
 
@@ -347,53 +343,9 @@ export class Indexer extends AggregateRoot {
       new BitcoinIndexerChainBlockAddedEvent({
         aggregateId: this.aggregateId,
         requestId,
-        status: IndexerStatuses.INDEXING,
-        block,
-        batches,
-      })
-    );
-  }
-
-  public async addBlockWithImmediatelyConfirm({ block, requestId }: { block: any; requestId: string }) {
-    if (this.status !== IndexerStatuses.AWAITING) {
-      throw new Error('addBlock() Previous Block did not complete indexing');
-    }
-
-    const { height, previousblockhash, batches } = block;
-
-    if (!this.chain.validateNextBlock(height, previousblockhash)) {
-      throw new Error('Need reorganisation');
-    }
-
-    await this.apply(
-      new BitcoinIndexerChainBlockWithConfirmAddedEvent({
-        aggregateId: this.aggregateId,
-        requestId,
         status: IndexerStatuses.AWAITING,
         block,
         batches,
-      })
-    );
-  }
-
-  public async confirmIndexBlock({ block, requestId }: { block: any; requestId: string }) {
-    if (this.status !== IndexerStatuses.INDEXING) {
-      throw new Error('Any Block did not start indexing');
-    }
-
-    const { height, hash, previousblockhash } = block;
-
-    // Check this block in state
-    if (!this.chain.validateLastBlock(height, hash, previousblockhash)) {
-      throw new Error('Last block chain mismatch');
-    }
-
-    await this.apply(
-      new BitcoinIndexerChainIndexBlockConfirmedEvent({
-        aggregateId: this.aggregateId,
-        requestId,
-        status: IndexerStatuses.AWAITING,
-        block,
       })
     );
   }
@@ -474,11 +426,10 @@ export class Indexer extends AggregateRoot {
   }
 
   private onBitcoinIndexerChainBlockAddedEvent({ payload }: BitcoinIndexerChainBlockAddedEvent) {
-    const { block, status, batches } = payload;
+    const { block, status } = payload;
 
-    const { height, hash, previousblockhash } = block;
+    const { height, hash, previousblockhash, batches } = block;
     this.chain.addBlock(height, hash, previousblockhash, batches);
-
     this.status = status as IndexerStatuses;
   }
 
@@ -491,18 +442,5 @@ export class Indexer extends AggregateRoot {
     const { height, status } = payload;
     this.status = status as IndexerStatuses;
     this.chain.truncateToBlock(BigInt(height));
-  }
-
-  private onBitcoinIndexerChainIndexBlockConfirmedEvent({ payload }: BitcoinIndexerChainIndexBlockConfirmedEvent) {
-    const { status } = payload;
-    this.status = status as IndexerStatuses;
-  }
-
-  private onBitcoinIndexerChainBlockWithConfirmAddedEvent({ payload }: BitcoinIndexerChainBlockWithConfirmAddedEvent) {
-    const { block, status } = payload;
-
-    const { height, hash, previousblockhash, batches } = block;
-    this.chain.addBlock(height, hash, previousblockhash, batches);
-    this.status = status as IndexerStatuses;
   }
 }

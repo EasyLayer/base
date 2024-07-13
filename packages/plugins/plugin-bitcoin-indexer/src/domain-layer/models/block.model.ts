@@ -1,15 +1,11 @@
 import { AggregateRoot } from '@easylayer/cqrs';
 import {
-  BitcoinIndexerBlockIndexStartedEvent,
-  BitcoinIndexerBlockIndexCompletedEvent,
-  BitcoinIndexerBlockBatchesUpdatedEvent,
-  BitcoinIndexerBlockWithCompleteIndexedEvent,
+  BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerBlockSuspendedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 
 enum BlockStatuses {
-  COMPLETED = 'completed',
-  INDEXING = 'indexing',
+  INDEXED = 'indexed',
   SUSPENDED = 'suspended',
 }
 
@@ -65,37 +61,6 @@ export class Block extends AggregateRoot {
     aggregateId,
     block,
     batches,
-    txCount,
-    requestId,
-  }: {
-    aggregateId: string;
-    block: BlockType;
-    requestId: string;
-    batches: Map<string, string>;
-    txCount: number;
-  }) {
-    // QUESTION: if the status does not match, should I throw an error or just skip it?
-    if (this.status === BlockStatuses.INDEXING) {
-      throw new Error('Block already start indexing');
-    }
-
-    await this.apply(
-      new BitcoinIndexerBlockIndexStartedEvent({
-        aggregateId,
-        block,
-        batches: Object.fromEntries(batches),
-        requestId,
-        txCount,
-        status: BlockStatuses.INDEXING,
-      })
-    );
-  }
-
-  // This is create aggregate method
-  public async indexWithComplete({
-    aggregateId,
-    block,
-    batches,
     requestId,
     txCount,
   }: {
@@ -105,64 +70,23 @@ export class Block extends AggregateRoot {
     batches: Map<string, string>;
     txCount: number;
   }) {
-    // QUESTION: if the status does not match, should I throw an error or just skip it?
-    if (this.status === BlockStatuses.INDEXING) {
-      throw new Error('Block already start indexing');
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const [_, status] of batches) {
-      if (status !== 'completed') {
+      if (status !== 'indexed') {
         throw new Error('Not all transactions batches have been indexed');
       }
     }
 
     await this.apply(
-      new BitcoinIndexerBlockWithCompleteIndexedEvent({
+      new BitcoinIndexerBlockIndexedEvent({
         aggregateId,
         block,
         batches: Object.fromEntries(batches),
         requestId,
         txCount,
-        status: BlockStatuses.COMPLETED,
+        status: BlockStatuses.INDEXED,
       })
     );
-  }
-
-  public async updateBatches({ batches, requestId }: { batches: Map<string, string>; requestId: string }) {
-    // IMPORTANT: here we all the time rewrite all batches
-    // that is because we optimaze resoring state
-    await this.apply(
-      new BitcoinIndexerBlockBatchesUpdatedEvent({
-        aggregateId: this.aggregateId,
-        requestId,
-        batches: Object.fromEntries(batches),
-        block: this.block,
-      })
-    );
-  }
-
-  // NOTE: this method needs for complete transactions between all batches
-  public async completeIndexBlock({ requestId }: { requestId: string }) {
-    if (this.status === BlockStatuses.INDEXING) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for (const [id, status] of this.batches) {
-        if (status !== 'completed') {
-          throw new Error('Not all transactions batches have been indexed');
-        }
-      }
-
-      await this.apply(
-        new BitcoinIndexerBlockIndexCompletedEvent({
-          aggregateId: this.aggregateId,
-          requestId,
-          batches: Object.fromEntries(this.batches),
-          status: BlockStatuses.COMPLETED,
-          block: this.block,
-          txCount: this.txCount,
-        })
-      );
-    }
   }
 
   public async suspend({ aggregateId, requestId }: { aggregateId: string; requestId: string }) {
@@ -175,30 +99,7 @@ export class Block extends AggregateRoot {
     );
   }
 
-  private onBitcoinIndexerBlockIndexStartedEvent({ payload }: BitcoinIndexerBlockIndexStartedEvent) {
-    const { aggregateId, block, status, batches } = payload;
-    this.aggregateId = aggregateId;
-    this.block = block;
-    this.batches = new Map(Object.entries(batches));
-    if (status) {
-      this.status = status as BlockStatuses;
-    }
-  }
-
-  private onBitcoinIndexerBlockIndexCompletedEvent({ payload }: BitcoinIndexerBlockIndexCompletedEvent) {
-    const { status, batches } = payload;
-    this.batches = new Map(Object.entries(batches));
-    if (status) {
-      this.status = status as BlockStatuses;
-    }
-  }
-
-  private onBitcoinIndexerBlockBatchesUpdatedEvent({ payload }: BitcoinIndexerBlockBatchesUpdatedEvent) {
-    const { batches } = payload;
-    this.batches = new Map(Object.entries(batches));
-  }
-
-  private onBitcoinIndexerBlockWithCompleteIndexedEvent({ payload }: BitcoinIndexerBlockWithCompleteIndexedEvent) {
+  private onBitcoinIndexerBlockIndexedEvent({ payload }: BitcoinIndexerBlockIndexedEvent) {
     const { aggregateId, block, status, batches } = payload;
     this.aggregateId = aggregateId;
     this.block = block;

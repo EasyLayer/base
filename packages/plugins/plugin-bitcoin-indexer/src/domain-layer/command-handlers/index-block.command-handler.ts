@@ -13,11 +13,13 @@ import {
   TransactionsBatchModelFactoryService,
   IndexerModelFactoryService,
 } from '../services';
+import { AppConfig } from '../../config';
 
 @CommandHandler(IndexBlockCommand)
 export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockCommand> {
   constructor(
     private readonly log: AppLogger,
+    private readonly appConfig: AppConfig,
     private readonly blocksModelFactory: BlockModelFactoryService,
     private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
@@ -61,131 +63,46 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // but overwrite the state if so
       const blockModel: Block = this.blocksModelFactory.createNewModel();
 
-      // TODO: move into env
-      const MAX_TRANSACTIONS_BATCH_SIZE = 10 * 1000 * 1024; // 1000 KB
-
       const batches = [];
 
-      this.log.info('Transactions lenght', { length: tx.length }, this.constructor.name);
+      this.log.debug('Transactions lenght', { length: tx.length }, this.constructor.name);
 
-      if (tx.length > 0) {
-        // Split transactions by batches
-        const transactionSlices = this.splitTransactionsIntoSlices(tx, MAX_TRANSACTIONS_BATCH_SIZE);
+      // Split transactions by batches
+      const transactionSlices = this.splitTransactionsIntoSlices(
+        tx,
+        this.appConfig.BITCOIN_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE
+      );
 
-        if (transactionSlices.length === 1) {
-          // NOTE: Case when we have single batch
-          // we indexing it immediately
-          const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
-          await transactionBatch.createWithIndexing({
-            aggregateId: uuidv4(),
-            requestId,
-            transactions: transactionSlices[0],
-            blockHeight: height,
-            blockHash: hash,
-            isFinalBatch: true,
-            index: 0,
-          });
+      for (let n = 0; n < transactionSlices.length; n++) {
+        const slice = transactionSlices[n];
 
-          batches.push(transactionBatch);
-        } else {
-          for (let index = 0; index < transactionSlices.length; index++) {
-            const slice = transactionSlices[index];
+        // TODO: add type
+        const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
 
-            // TODO: add type
-            // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
-            // that because we don't want to send all transactions by Transport, so we will get it from cache
-            const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
+        // Check if this is the last batch
+        const isFinalBatch = n === transactionSlices.length - 1;
 
-            // Check if this is the last batch
-            const isFinalBatch = index === transactionSlices.length - 1;
+        await transactionBatch.index({
+          aggregateId: uuidv4(),
+          requestId,
+          tx: slice,
+          blockHeight: height,
+          blockHash: hash,
+          n,
+          isFinalBatch,
+        });
 
-            await transactionBatch.create({
-              aggregateId: uuidv4(),
-              requestId,
-              transactions: slice,
-              blockHeight: height,
-              blockHash: hash,
-              index,
-              isFinalBatch,
-            });
-
-            batches.push(transactionBatch);
-          }
-        }
+        batches.push(transactionBatch);
       }
 
-      this.log.info('Batches lenght', { length: batches.length }, this.constructor.name);
+      this.log.debug('Batches lenght', { length: batches.length }, this.constructor.name);
 
-      /* Index block with batch immediately */
-      // IMPORTANT: this is case when we have just 0 or 1 transactions batch
-      // so in order not to waste time, we index the entire block and transactions at once in one command
-      if (batches.length < 2) {
-        // { <aggregateId>:<status> }
-        const batchesMap: Map<string, string> = new Map();
-        batches.forEach((batch) => {
-          batchesMap.set(batch.aggregateId, 'completed');
-        });
-
-        await blockModel.indexWithComplete({
-          aggregateId: hash,
-          block: blockWithoutTx,
-          batches: batchesMap,
-          txCount: tx.lenght,
-          requestId,
-        });
-
-        await indexerModel.addBlockWithImmediatelyConfirm({
-          requestId,
-          block: {
-            ...blockWithoutTx,
-            // NOTE: we store batches ids with block in Indexer Blockchain structure
-            batches: batches.map((item) => item.aggregateId),
-          },
-        });
-
-        await this.eventStore.save([...batches, indexerModel, blockModel]);
-
-        await blockModel.commit();
-        await indexerModel.commit();
-
-        for (const batch of batches) {
-          await batch.commit();
-        }
-
-        this.log.info(
-          `Block successfull indexed`,
-          {
-            block: { height, hash },
-            alreadyIndexedLength: indexerModel.chain.lastBlockHeight,
-          },
-          this.constructor.name
-        );
-        return;
-      }
-
-      /* Continue starting to index block */
+      // NOTE: If in the future we process each batch in a separate command, we will need these statuses
       // { <aggregateId>:<status> }
       const batchesMap: Map<string, string> = new Map();
       batches.forEach((batch) => {
-        batchesMap.set(batch.aggregateId, 'created');
+        batchesMap.set(batch.aggregateId, 'indexed');
       });
-
-      await indexerModel.addBlock({
-        requestId,
-        block: {
-          height,
-          hash,
-          previousblockhash,
-          // NOTE: we store batches ids with block in Indexer Blockchain structure
-          batches: batches.map((item) => item.aggregateId),
-        },
-      });
-
-      this.log.debug(
-        'Indexer added new block',
-        { aggregateId: indexerModel.aggregateId, block: { height, hash, previousblockhash } },
-        this.constructor.name
-      );
 
       await blockModel.index({
         aggregateId: hash,
@@ -195,14 +112,24 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         requestId,
       });
 
+      await indexerModel.addBlock({
+        requestId,
+        block: {
+          ...blockWithoutTx,
+          // NOTE: we store batches ids with block in Indexer Blockchain structure
+          batches: batches.map((item) => item.aggregateId),
+        },
+      });
+
       await this.eventStore.save([...batches, indexerModel, blockModel]);
 
-      await indexerModel.commit();
       await blockModel.commit();
 
       for (const batch of batches) {
         await batch.commit();
       }
+
+      await indexerModel.commit();
 
       this.log.debug('Block index started', { block: blockWithoutTx }, this.constructor.name);
     } catch (error) {

@@ -28,21 +28,15 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         startHeight,
       });
 
-      if (indexerModel.status === 'indexing') {
-        // Publish last block event (if its exist)
-        const lastBlockAggregateId = String(indexerModel.chain.lastBlockHash);
-        if (lastBlockAggregateId) {
-          await this.blocksModelFactory.publishLastEvent(lastBlockAggregateId);
+      // Publish last indexer event to process reorganisation
+      await this.indexerModelFactory.publishLastEvent();
 
-          // NOTE: We don't need to publish the latest TransactionsBatch events here
-          // because we process them through BlockUpdated events.
-          // If this changes in the future, it will be necessary to publish here the last event of the last batch.
-        }
-      }
+      // Publish last block event (if its exist)
+      const lastBlockAggregateId = String(indexerModel.chain.lastBlockHash);
+      if (lastBlockAggregateId) {
+        await this.blocksModelFactory.publishLastEvent(lastBlockAggregateId);
 
-      if (indexerModel.status === 'reorganisation') {
-        // Publish last indexer event to process reorganisation
-        await this.indexerModelFactory.publishLastEvent();
+        // TODO: add transactionsBatch publish last events
       }
 
       await this.eventStore.save(indexerModel);
