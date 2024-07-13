@@ -8,15 +8,6 @@ import {
   BitcoinBalancesIndexerChainByBlockTruncatedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 
-// const batch = {
-//   blockHash: '',
-//   blockHeight: '',
-//   preBlockHash: '',
-//   index: 0,
-//   isFinalBatch: false,
-//   tx: ['qwe', 'ewq']
-// }
-
 enum IndexerStatuses {
   AWAITING = 'awaiting',
   REORGANISATION = 'reorganisation',
@@ -33,7 +24,7 @@ type Block = {
   hash: string;
   height: bigint;
   prevHash: string;
-  batches: Map<Index, Batch[]>;
+  batches: Map<Index, Batch>;
 };
 
 type Chain = {
@@ -42,11 +33,24 @@ type Chain = {
   next: Chain | null;
 };
 
+type AddBatchParams = {
+  blockHash: string;
+  blockHeight: bigint;
+  preBlockHash: string | null;
+  index: number;
+  isFinalBatch: boolean;
+  tx: string[];
+};
+
+/**
+ * Blockchain class representing a doubly linked list of blocks.
+ * Each block contains a height, hash, and a previous hash. The blockchain has a fixed maximum size,
+ * and automatically removes the oldest blocks when new blocks are added beyond this size.
+ */
 export class Blockchain {
   private head: Chain | null = null;
   private tail: Chain | null = null;
   private _size: number = 0;
-  // NOTE: _maxSize - Maximum number of blocks allowed in the blockchain at any given time.
   private readonly _maxSize: number = 100;
 
   /**
@@ -91,8 +95,8 @@ export class Blockchain {
   get isLastBatchFinal(): boolean {
     const lastIndex = this.lastBatchIndex;
     if (this.tail && lastIndex !== -1) {
-      const lastBatches = this.tail.block.batches.get(lastIndex);
-      return lastBatches ? lastBatches[lastBatches.length - 1].isFinalBatch : false;
+      const lastBatch = this.tail.block.batches.get(lastIndex);
+      return lastBatch ? lastBatch.isFinalBatch : false;
     }
     return false;
   }
@@ -112,27 +116,22 @@ export class Blockchain {
    * @returns true if the batch is added successfully, false otherwise.
    * @complexity O(1)
    */
-  public addBatch(batch: any): boolean {
+  public addBatch(batch: AddBatchParams): boolean {
+    const { blockHash, blockHeight, preBlockHash, index, isFinalBatch, tx } = batch;
+
     if (!this.validateNextBatch(batch)) {
       return false;
     }
 
-    const { blockHash, blockHeight, blockPrevHash, index, isFinalBatch, tx } = batch;
     const newBatch: Batch = { tx, isFinalBatch };
-
     if (this.tail && this.tail.block.hash === blockHash) {
-      const block = this.tail.block;
-      if (block.batches.has(index)) {
-        block.batches.get(index)?.push(newBatch);
-      } else {
-        block.batches.set(index, [newBatch]);
-      }
+      this.tail.block.batches.set(index, newBatch);
     } else {
       const newBlock: Block = {
         hash: blockHash,
         height: blockHeight,
-        prevHash: blockPrevHash,
-        batches: new Map([[index, [newBatch]]]),
+        prevHash: preBlockHash || '',
+        batches: new Map([[index, newBatch]]),
       };
 
       const newChain: Chain = {
@@ -181,35 +180,30 @@ export class Blockchain {
    * @returns true if the block and batch are valid and can be added, false otherwise.
    * @complexity O(1)
    */
-  public validateNextBatch(newBatch: any): boolean {
-    // // Check if the new block correctly follows the hash of the last block in the chain
-    // if (this.tail && this.tail.block.hash !== newBlock.prevHash) {
-    //   return false;
-    // }
-    console.log(newBatch);
-    // // Check the height sequence of the new block
-    // if (this.tail && this.tail.block.height + 1n !== newBlock.height) {
-    //   return false;
-    // }
+  public validateNextBatch(newBatch: AddBatchParams): boolean {
+    if (!this.tail) {
+      // If there are no blocks, the new batch should have index 0
+      return newBatch.index === 0;
+    }
 
-    // // If it's the first batch in the new block, ensure the last batch in the last block is final
-    // if (newBlock.batches.size === 0 && this.tail && !this.isLastBatchFinal) {
-    //   return false;
-    // }
+    const lastBlock = this.tail.block;
 
-    // // Ensure the batch index is sequential
-    // const lastIndex = this.lastBatchIndex;
-    // if (newBatchIndex !== lastIndex + 1) {
-    //   return false;
-    // }
-
-    // // Ensure that the batch index is valid for the new block
-    // if (newBlock.batches.has(newBatchIndex)) {
-    //   return false;
-    // }
-
-    // // Add the batch to the block for further validation or actual insertion
-    // newBlock.batches.set(newBatchIndex, [newBatch]);
+    // If this is a new block, check if the hash of the previous block matches
+    if (lastBlock.hash !== newBatch.blockHash) {
+      if (lastBlock.hash !== newBatch.preBlockHash) {
+        return false;
+      }
+      // Check the height of the new block
+      if (lastBlock.height + 1n !== newBatch.blockHeight) {
+        return false;
+      }
+    } else {
+      // Checking the batch index sequence in the same block
+      const lastBatchIndex = this.lastBatchIndex;
+      if (newBatch.index !== lastBatchIndex + 1) {
+        return false;
+      }
+    }
 
     return true;
   }
@@ -243,14 +237,8 @@ export class Blockchain {
     while (current) {
       if (current.block.height === blockHeight) {
         if (current.block.batches.has(batchIndex)) {
-          const batches = current.block.batches.get(batchIndex);
-          if (batches && batches.length > 1) {
-            batches.pop(); // Remove the last batch from the array
-            return true;
-          } else if (batches && batches.length === 1) {
-            current.block.batches.delete(batchIndex);
-            return true;
-          }
+          current.block.batches.delete(batchIndex);
+          return true;
         }
         break;
       }
@@ -288,14 +276,15 @@ export class Blockchain {
    * @complexity O(n + m), where n is the number of blocks and m is the number of batches removed.
    */
   public truncateToBatch(blockHeight: bigint, batchIndex: number): Batch[] {
-    let removedBatches: Batch[] = [];
+    const removedBatches: Batch[] = [];
     const block = this.findBlockByHeight(blockHeight);
-    if (block && block.batches.has(batchIndex)) {
-      const batches = block.batches.get(batchIndex);
-      if (batches) {
-        removedBatches = batches.slice(batchIndex + 1);
-        batches.splice(batchIndex + 1); // Remove batches after the given index
-        block.batches.set(batchIndex, batches.slice(0, batchIndex + 1));
+    if (block) {
+      for (let i = batchIndex + 1; i <= this.lastBatchIndex; i++) {
+        const batch = block.batches.get(i);
+        if (batch) {
+          removedBatches.push(batch);
+          block.batches.delete(i);
+        }
       }
     }
     return removedBatches;
@@ -309,23 +298,44 @@ export class Blockchain {
    * @complexity O(1)
    */
   public validateLastBatch(blockHeight: bigint, batchIndex: number): boolean {
-    // Check if the tail exists and the block at the tail has the specified height
     if (this.tail && this.tail.block.height === blockHeight) {
-      // Check if the last index in the block's batch map equals the specified batch index
       const lastIndex = this.lastBatchIndex;
       if (lastIndex === batchIndex) {
-        // Further check if the specified batch is actually the last batch in the sequence
-        const lastBatches = this.tail.block.batches.get(lastIndex);
-        if (lastBatches && lastBatches.length > 0) {
-          // Check if the last entry in the last batches array is marked as the final batch
-          return lastBatches[lastBatches.length - 1].isFinalBatch;
+        const lastBatch = this.tail.block.batches.get(lastIndex);
+        if (lastBatch) {
+          return lastBatch.isFinalBatch;
         }
       }
     }
     return false;
   }
 
-  // public findBatchByBlock() {}
+  /**
+   * Validates the entire blockchain.
+   * @returns true if the blockchain is valid, false otherwise.
+   * @complexity O(n), where n is the number of blocks in the chain.
+   */
+  public validateChain(): boolean {
+    let current = this.head;
+
+    if (!current) {
+      return true; // Пустая цепочка считается валидной
+    }
+
+    while (current && current.next) {
+      // First check if the block heights increment by 1
+      if (current.next.block.height !== current.block.height + 1n) {
+        return false; // Height mismatch
+      }
+      // Then check if the hashes match
+      if (current.next.block.prevHash !== current.block.hash) {
+        return false; // Hash mismatch
+      }
+      current = current.next;
+    }
+
+    return current === this.tail;
+  }
 }
 
 export class BalancesIndexer extends AggregateRoot {

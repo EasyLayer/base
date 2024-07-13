@@ -37,6 +37,12 @@ export class Blockchain {
   // NOTE: _maxSize - Maximum number of blocks allowed in the blockchain at any given time.
   private readonly _maxSize: number = 100;
 
+  // Gets the hash of the first block in the chain.
+  // Complexity: O(1)
+  get firstBlockHash(): string {
+    return this.head ? this.head.block.hash : '';
+  }
+
   /**
    * Gets the previous hash of the last block in the chain.
    * @returns {string} The previous hash of the last block, or an empty string if the chain is empty.
@@ -330,7 +336,7 @@ export class Indexer extends AggregateRoot {
 
   public async addBlock({ block, requestId }: { block: any; requestId: string }) {
     if (this.status !== IndexerStatuses.AWAITING) {
-      throw new Error('addBlock() Previous Block did not complete indexing');
+      throw new Error("addBlock() Reorganisation hasn't finished yet");
     }
 
     const { height, previousblockhash, batches } = block;
