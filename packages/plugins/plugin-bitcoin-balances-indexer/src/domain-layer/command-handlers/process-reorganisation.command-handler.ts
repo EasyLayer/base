@@ -66,9 +66,9 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
         }
       }
 
-      // TODO:
       await indexerModel.truncateByBlock({
-        height: BigInt(height),
+        height: BigInt(height), // reorganisation height
+        block, // block need to be truncate
         requestId,
       });
 

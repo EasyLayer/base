@@ -27,17 +27,14 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
+      // NOTE: blocks - need to be reorganised,
+      // height - is height of reorganisation(the last height where the blocks matched)
       const { blocks, height, requestId } = payload;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
 
       this.log.debug('Init Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
-
-      // Тут я хочу пройтись по всем блокам, и по батчам в ним, до высоты определенной
-      // и поставить им всем статус suspended.
-      // Дальше сохранить и опубликовать ивент про FinishReorganisation.
-      // Можно один ивент Indexer публиковать, а блоки и батчи нет.
 
       const blocksModels: Block[] = [];
       const batchesModels: TransactionsBatch[] = [];

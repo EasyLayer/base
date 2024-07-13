@@ -433,7 +433,7 @@ export class Indexer extends AggregateRoot {
           aggregateId: this.aggregateId,
           requestId,
           status: IndexerStatuses.REORGANISATION,
-          // NOTE: height - height of reorganization (last correct block)
+          // NOTE: height - is height of reorganisation(the last height where the blocks matched)
           height: localBlock.height.toString(),
           blocks,
         })

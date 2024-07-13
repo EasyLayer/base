@@ -94,8 +94,6 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
             // TODO: add type
             // IMPORTANT: Here we just get the txid and put them in the array of non-indexed transactions.
             // that because we don't want to send all transactions by Transport, so we will get it from cache
-            // ЗАЧЕМ? - они же в разных событиях идут!
-            // const transactionSliceIds: string[] = slice.map((transaction: { txid: string }) => transaction.txid);
             const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
 
             // Check if this is the last batch

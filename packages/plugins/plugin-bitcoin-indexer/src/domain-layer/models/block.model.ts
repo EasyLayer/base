@@ -106,7 +106,7 @@ export class Block extends AggregateRoot {
     txCount: number;
   }) {
     // QUESTION: if the status does not match, should I throw an error or just skip it?
-    if (this.status === 'indexing') {
+    if (this.status === BlockStatuses.INDEXING) {
       throw new Error('Block already start indexing');
     }
 
@@ -124,7 +124,7 @@ export class Block extends AggregateRoot {
         batches: Object.fromEntries(batches),
         requestId,
         txCount,
-        status: 'completed',
+        status: BlockStatuses.COMPLETED,
       })
     );
   }

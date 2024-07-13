@@ -19,7 +19,6 @@ import {
 
 enum IndexerStatuses {
   AWAITING = 'awaiting',
-  INDEXING = 'indexing',
   REORGANISATION = 'reorganisation',
 }
 
@@ -449,23 +448,31 @@ export class BalancesIndexer extends AggregateRoot {
     );
   }
 
-  public async truncateByBlock({ height, requestId }: { height: bigint; requestId: string }) {
+  public async truncateByBlock({ height, block, requestId }: { height: bigint; block: any; requestId: string }) {
     if (this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error('reorganisation () Previous Block did not complete indexing');
     }
 
-    const block = this.chain.lastBlock;
+    const blockNeedToBeTruncate = this.chain.lastBlock;
 
-    if (height !== block?.height) {
+    if (!blockNeedToBeTruncate) {
+      throw new Error('Blockchain is empty');
+    }
+
+    if (block.height !== blockNeedToBeTruncate.height) {
       throw new Error('Wrong block height');
     }
+
+    // NOTE: We have to get the new last block (height -1n)
+    // and send it in the event
+    const prevBlock = this.chain.findBlockByHeight(blockNeedToBeTruncate.height - 1n);
 
     await this.apply(
       new BitcoinBalancesIndexerChainByBlockTruncatedEvent({
         aggregateId: this.aggregateId,
         requestId,
         height: height.toString(),
-        block,
+        block: prevBlock,
       })
     );
   }
