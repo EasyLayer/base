@@ -89,7 +89,7 @@ export class TransactionsQueueService {
       if (
         batch.blockHash === blockHash &&
         batch.blockHeight === BigInt(blockHeight) &&
-        batch.blockPrevHash === prevBlockHash &&
+        batch.prevBlockHash === prevBlockHash &&
         batch.n === n
       ) {
         this._batchQueue.dequeue();

@@ -111,13 +111,14 @@ describe('BlocksQueueIteratorService', () => {
   describe('blocksIterator', () => {
     it('should wait for blockProcessedPromise before yielding the next block', async () => {
       jest.useFakeTimers({ advanceTimers: true });
+
       const blockMock = new TestBlock(0n);
       mockQueue.enqueue(blockMock);
 
       const blockProcessedPromise = new Promise<void>((resolve) => setTimeout(resolve, 50));
       service['blockProcessedPromise'] = blockProcessedPromise;
 
-      jest.spyOn(mockQueue, 'peekFirstBlock').mockResolvedValue(blockMock);
+      jest.spyOn(mockQueue, 'peekFirstBlock').mockReturnValue(blockMock);
 
       const blocks = [];
       const iterator = service['blocksIterator']();

@@ -1,7 +1,7 @@
 export interface Block {
   height: bigint;
   hash: string;
-  prevblockhash: string;
+  prevblockhash: string | null;
   tx?: Transaction[];
 }
 
@@ -10,8 +10,8 @@ export interface TransactionsBatch {
   n: number;
   blockHash: string;
   blockHeight: bigint;
-  blockPrevHash: string;
-  tx: Omit<Transaction, 'blockHash' | 'blockHeight' | 'blockPrevHash'>[];
+  prevBlockHash: string | null;
+  tx: Omit<Transaction, 'blockHash' | 'blockHeight' | 'prevBlockHash'>[];
   isFinalBatch: boolean;
 }
 
@@ -22,7 +22,7 @@ export interface Transaction {
   vout: any;
   blockHash: string;
   blockHeight: bigint;
-  blockPrevHash: string;
+  prevBlockHash: string;
 }
 
 export interface BatchesCommandExecutor {

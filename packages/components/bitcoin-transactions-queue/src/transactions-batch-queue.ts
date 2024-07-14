@@ -30,7 +30,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    * @complexity O(1)
    */
   get isMaxHeightReached(): boolean {
-    return this._lastHeight >= this._maxBlockHeight;
+    return this._lastHeight > this._maxBlockHeight;
   }
 
   /**
@@ -139,7 +139,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    * @complexity O(1)
    */
   public enqueue(batch: T): boolean {
-    if (this.isQueueFull || this.isMaxHeightReached) {
+    if (this.isQueueFull || (batch.blockHeight > this._maxBlockHeight && batch.n === 0)) {
       return false;
     }
 
@@ -208,22 +208,26 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
 
   /**
    * Fetches a batch by its index from the inStack using binary search.
+   * @param blockHeight The height of the block.
+   * @param blockHash The hash of the block.
    * @param index The index of the batch to be retrieved.
    * @returns {T | undefined} The batch with the specified index or undefined if not found.
    * @complexity O(log n)
    */
-  public fetchBatchFromInStack(index: number): T | undefined {
-    return this.binarySearch(this.inStack, index, true);
+  public fetchBatchFromInStack(blockHeight: bigint, blockHash: string, index: number): T | undefined {
+    return this.binarySearch(this.inStack, blockHeight, blockHash, index, true);
   }
 
   /**
    * Fetches a batch by its index from the outStack using binary search.
+   * @param blockHeight The height of the block.
+   * @param blockHash The hash of the block.
    * @param index The index of the batch to be retrieved.
    * @returns {T | undefined} The batch with the specified index or undefined if not found.
    * @complexity O(log n)
    */
-  public fetchBatchFromOutStack(index: number): T | undefined {
-    return this.binarySearch(this.outStack, index, false);
+  public fetchBatchFromOutStack(blockHeight: bigint, blockHash: string, index: number): T | undefined {
+    return this.binarySearch(this.outStack, blockHeight, blockHash, index, false);
   }
 
   /**
@@ -250,20 +254,44 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
 
   /**
    * Validates if the batch is in the correct order and follows the sequence rules.
+   * Ensures the batch is unique within the queue and follows the correct sequence.
    * @param batch The batch to be validated.
    * @returns {boolean} True if the batch is valid, false otherwise.
    * @complexity O(1)
    */
   private isValidBatch(batch: T): boolean {
+    // Ensure the batch is unique within the queue
+    if (
+      this.inStack.some(
+        (b) =>
+          b.blockHeight === batch.blockHeight &&
+          b.blockHash === batch.blockHash &&
+          b.prevBlockHash === batch.prevBlockHash &&
+          b.n === batch.n
+      ) ||
+      this.outStack.some(
+        (b) =>
+          b.blockHeight === batch.blockHeight &&
+          b.blockHash === batch.blockHash &&
+          b.prevBlockHash === batch.prevBlockHash &&
+          b.n === batch.n
+      )
+    ) {
+      return false;
+    }
+
+    // Validate batch sequence
     if (batch.blockHeight < this._lastHeight) {
       return false;
     }
 
     if (batch.blockHeight === this._lastHeight) {
+      // Same block
       if (batch.blockHash !== this._lastBlockHash) {
         return false;
       }
-      if (batch.n !== this._lastBatchIndex + 1) {
+      // Allow same height with increasing n
+      if (batch.n <= this._lastBatchIndex) {
         return false;
       }
     } else {
@@ -300,33 +328,36 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
   /**
    * Performs binary search to find a batch by index.
    * @param stack The stack to search within.
+   * @param blockHeight The height of the block.
+   * @param blockHash The hash of the block.
    * @param index The index of the batch to find.
    * @param isInStack Boolean indicating if the search is in the inStack.
    * @returns The batch if found, otherwise undefined.
    * @complexity O(log n)
    */
-  private binarySearch(stack: T[], index: number, isInStack: boolean): T | undefined {
+  private binarySearch(
+    stack: T[],
+    blockHeight: bigint,
+    blockHash: string,
+    index: number,
+    isInStack: boolean
+  ): T | undefined {
     let left = 0;
     let right = stack.length - 1;
 
     while (left <= right) {
       const mid = Math.floor((left + right) / 2);
-      const midIndex = stack[mid].n;
+      const batch = stack[mid];
 
-      if (midIndex === index) {
-        return stack[mid];
-      } else if (isInStack) {
-        if (midIndex < index) {
-          left = mid + 1;
-        } else {
-          right = mid - 1;
-        }
+      if (batch.blockHeight === blockHeight && batch.blockHash === blockHash && batch.n === index) {
+        return batch;
+      } else if (
+        (isInStack && (batch.blockHeight < blockHeight || (batch.blockHeight === blockHeight && batch.n < index))) ||
+        (!isInStack && (batch.blockHeight > blockHeight || (batch.blockHeight === blockHeight && batch.n > index)))
+      ) {
+        left = mid + 1;
       } else {
-        if (midIndex > index) {
-          left = mid + 1;
-        } else {
-          right = mid - 1;
-        }
+        right = mid - 1;
       }
     }
 

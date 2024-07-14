@@ -62,7 +62,7 @@ export class BatchesQueueCollectorService {
         batches.push({
           blockHash: hash,
           blockHeight: height,
-          blockPrevHash: prevblockhash,
+          prevBlockHash: prevblockhash,
           n: index,
           isFinalBatch,
           tx: transactionSlice,
@@ -73,7 +73,7 @@ export class BatchesQueueCollectorService {
       batches.push({
         blockHash: hash,
         blockHeight: height,
-        blockPrevHash: prevblockhash,
+        prevBlockHash: prevblockhash,
         n: 0,
         isFinalBatch: true,
         tx,

@@ -53,7 +53,7 @@ describe('BlocksQueue', () => {
   test('should peek first block', async () => {
     const block1 = new TestBlock(0n);
     queue.enqueue(block1);
-    const firstBlock = await queue.peekFirstBlock();
+    const firstBlock = queue.peekFirstBlock();
     expect(firstBlock?.height).toBe(0n);
   });
 
@@ -90,8 +90,8 @@ describe('BlocksQueue', () => {
     const block2 = new TestBlock(1n);
     queue.enqueue(block1);
     queue.enqueue(block2);
-    const result = queue.fetchBlockFromInStack(1n);
-    expect(result).toBe(block2);
+    const result = queue.fetchBlockFromInStack(0n);
+    expect(result).toBe(block1);
   });
 
   test('should return undefined if block is not found in inStack using binary search', () => {

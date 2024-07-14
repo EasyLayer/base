@@ -141,16 +141,17 @@ export class BlocksQueue<T extends Block> {
 
   /**
    * Peeks at the first block in the queue.
-   * @returns A promise that resolves to the first block in the queue or undefined if the queue is empty.
+   * @returns {T | undefined} The first block in the queue or undefined if the queue is empty.
+   * @complexity O(1)
    */
-  public peekFirstBlock(): Promise<T | undefined> {
+  public peekFirstBlock(): T | undefined {
     if (this.outStack.length === 0) {
       this.transferItems();
     }
 
     // IMPORTANT: We make sure to clone the block so that modifications to the object
     // later in the process cannot affect the block in the queue.
-    return Promise.resolve(this.outStack.length > 0 ? _.cloneDeep(this.outStack[this.outStack.length - 1]) : undefined);
+    return this.outStack.length > 0 ? _.cloneDeep(this.outStack[this.outStack.length - 1]) : undefined;
   }
 
   /**
