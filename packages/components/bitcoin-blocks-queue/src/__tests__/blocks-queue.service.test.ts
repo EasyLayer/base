@@ -113,25 +113,6 @@ describe('BlocksQueueService', () => {
     service['_blockQueue'] = mockBlockQueue;
   });
 
-  describe('getOneBlockByHeight', () => {
-    it('should return the block if it is found in the queue', async () => {
-      const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
-      jest.spyOn(service['queue'], 'fetchBlockFromOutStack').mockReturnValue(blockMock);
-
-      const result = await service.getOneBlockByHeight(1);
-
-      expect(result).toBe(blockMock);
-      expect(service['queue'].fetchBlockFromOutStack).toHaveBeenCalledWith(BigInt(1));
-    });
-
-    it('should throw an error if the block is not found', async () => {
-      jest.spyOn(service['queue'], 'fetchBlockFromOutStack').mockReturnValue(undefined);
-
-      await expect(service.getOneBlockByHeight(1)).rejects.toThrow();
-      expect(service['queue'].fetchBlockFromOutStack).toHaveBeenCalledWith(BigInt(1));
-    });
-  });
-
   describe('reorganizeBlocks', () => {
     it('should clear the queue and set a new starting height', async () => {
       jest.spyOn(service['queue'], 'clear');

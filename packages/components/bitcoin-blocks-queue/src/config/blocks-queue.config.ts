@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { IsNumber } from 'class-validator';
-// import { IsBigInt } from './is-bigint.decorator';
+import { IsNumber, IsString } from 'class-validator';
+import { StrategyNames } from '../blocks-loader/load-strategies';
 
 @Injectable()
 export class BlocksQueueConfig {
@@ -13,23 +13,7 @@ export class BlocksQueueConfig {
   @IsNumber()
   BITCOIN_BLOCKS_QUEUE_MAX_LENGTH: number = 100;
 
-  // @Transform(({ value }) => (value ? BigInt(value) : BigInt(Number.MAX_SAFE_INTEGER)))
-  // @IsBigInt()
-  // BITCOIN_BLOCKS_QUEUE_MAX_BLOCK_HEIGHT: bigint = BigInt(Number.MAX_SAFE_INTEGER); // перенести это отсюда в плагин
-
-  isAllowStreamLoad(): boolean {
-    return typeof process.env.BITCOIN_BLOCKS_QUEUE_ALLOW_STREAM_LOAD !== 'undefined';
-  }
-
-  // isPRODUCTION(): boolean {
-  //   return process.env.NODE_ENV === 'production';
-  // }
-
-  // isDEBUG(): boolean {
-  //   return process.env.DEBUG === 'y';
-  // }
-
-  // isTEST(): boolean {
-  //   return process.env.NODE_ENV === 'test';
-  // }
+  @Transform(({ value }) => value ?? StrategyNames.PULL_NETWORK_PROVIDER)
+  @IsString()
+  BITCOIN_BLOCKS_QUEUE_LOADER_STRATEGY_NAME: StrategyNames = StrategyNames.PULL_NETWORK_PROVIDER;
 }

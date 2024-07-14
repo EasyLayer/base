@@ -118,10 +118,10 @@ describe('BlocksQueueLoaderService', () => {
     });
   });
 
-  describe('addBlockToQueue', () => {
+  describe('handleBlockFromStream', () => {
     it('should add block to queue', async () => {
       const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
-      await service.addBlockToQueue(blockMock);
+      await service.handleBlockFromStream(blockMock);
       expect(mockQueue.enqueue).toHaveBeenCalledWith(blockMock);
     });
 
@@ -136,38 +136,9 @@ describe('BlocksQueueLoaderService', () => {
       const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
       mockQueue.enqueue.mockReturnValue(false); // Simulate enqueue failure
 
-      await service.addBlockToQueue(blockMock);
+      await service.handleBlockFromStream(blockMock);
 
       expect(service['_loadingStrategy'].destroy).toHaveBeenCalled();
-    });
-  });
-
-  describe('setupStrategy', () => {
-    it('should create PullNetworkProviderStrategy if stream not allowed', async () => {
-      service['_isStreamStrategyAllow'] = false;
-      service['createStrategy'] = jest.fn().mockReturnValue({
-        name: StrategyNames.PULL_NETWORK_PROVIDER,
-      });
-
-      mockNetworkProviderService.getCurrentBlockHeight.mockResolvedValue(BigInt(10));
-      await service['setupStrategy']();
-      expect(service['createStrategy']).toHaveBeenCalledWith(StrategyNames.PULL_NETWORK_PROVIDER, {
-        minThreads: mockBlocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
-        maxThreads: mockBlocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
-      });
-    });
-
-    it('should create WebhookStreamStrategy if stream allowed and queue height within range', async () => {
-      service['_isStreamStrategyAllow'] = true;
-      service['createStrategy'] = jest.fn().mockReturnValue({
-        name: StrategyNames.WEBHOOK_STREAM,
-      });
-
-      mockNetworkProviderService.getCurrentBlockHeight.mockResolvedValue(BigInt(10));
-      mockQueue.lastHeight = BigInt(5);
-      mockQueue.maxQueueLength = 10;
-      await service['setupStrategy']();
-      expect(service['createStrategy']).toHaveBeenCalledWith(StrategyNames.WEBHOOK_STREAM);
     });
   });
 
@@ -187,24 +158,6 @@ describe('BlocksQueueLoaderService', () => {
 
       expect(mockDestroy).toHaveBeenCalled();
       expect(service['_loadingStrategy']).toBeNull();
-      jest.useRealTimers();
-    });
-
-    it('should set delay before resetting strategy if current is WEBHOOK_STREAM', async () => {
-      jest.useFakeTimers();
-      service['_loadingStrategy'] = {
-        name: StrategyNames.WEBHOOK_STREAM,
-        isLoading: false,
-        destroy: jest.fn().mockResolvedValue(undefined),
-        load: jest.fn().mockResolvedValue(undefined),
-      };
-
-      await service.destroyStrategy();
-
-      expect(service['_isStreamStrategyAllow']).toBe(false);
-
-      jest.advanceTimersByTime(1000 * 60 * 5);
-      expect(service['_isStreamStrategyAllow']).toBe(true);
       jest.useRealTimers();
     });
   });

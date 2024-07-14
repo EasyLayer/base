@@ -1,15 +1,16 @@
 import { NetworkTransportService } from '@easylayer/network-transport';
 import { BlocksLoadingStrategy, StrategyNames } from './load-strategy.interface';
-import { Block } from '../../interfaces';
-import { BlocksQueue } from '../../blocks-queue';
+import { TransactionsBatch, Block } from '../../interfaces';
+import { TransactionsBatchQueue } from '../../transactions-batch-queue';
 
-export class PullNetworkTransportStrategy implements BlocksLoadingStrategy {
-  readonly name: StrategyNames = StrategyNames.PULL_NETWORK_TRANSPORT;
+// TODO: class is not working
+export class PullBlocksByNetworkTransportStrategy implements BlocksLoadingStrategy {
+  readonly name: StrategyNames = StrategyNames.PULL_BLOCKS_BY_NETWORK_TRANSPORT;
   private _isLoading: boolean = false;
 
   constructor(
     private readonly networkTransportService: NetworkTransportService,
-    private readonly queue: BlocksQueue<Block>
+    private readonly queue: TransactionsBatchQueue<TransactionsBatch>
   ) {}
 
   get isLoading(): boolean {
@@ -25,7 +26,6 @@ export class PullNetworkTransportStrategy implements BlocksLoadingStrategy {
 
     while (this.queue.length < this.queue.maxQueueLength || this.queue.lastHeight < currentNetworkHeight) {
       try {
-        // TODO: сюда нужно вписать как раз квери которая достанет массив блоков с транзакциями.
         const blocks = await this.networkTransportService.executeQuery('', {});
         this.enqueueBlocks(blocks);
       } catch (error) {
@@ -54,10 +54,10 @@ export class PullNetworkTransportStrategy implements BlocksLoadingStrategy {
       return 0;
     });
 
-    for (const block of blocks) {
-      if (!this.queue.enqueue(block)) {
-        return;
-      }
-    }
+    // for (const block of blocks) {
+    //   if (!this.queue.enqueue(block)) {
+    //     return;
+    //   }
+    // }
   }
 }

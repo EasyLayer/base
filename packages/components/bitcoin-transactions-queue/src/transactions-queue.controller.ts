@@ -1,36 +1,36 @@
 import { Controller, Post, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
-import { BlocksQueueLoaderService } from './blocks-loader/blocks-loader.service';
-import { Block } from './interfaces';
+import { BatchesQueueLoaderService } from './batches-loader';
 
-@Controller('blocks-queue')
-export class BlocksQueueController {
+@Controller('transactions-queue')
+export class TransactionsQueueController {
   constructor(
-    private readonly blocksQueueLoader: BlocksQueueLoaderService,
+    private readonly batchesQueueLoader: BatchesQueueLoaderService,
     private readonly webhookStreamService: BitcoinWebhookStreamService
   ) {}
 
   // TODO: add route path to .env
   @Post('/webhook/block')
   async handleBlockWebhook(@Req() req: Request, @Res() res: Response) {
-    // try {
     await this.webhookStreamService.handleStream({
       stream: req,
-      onDataCallback: async (block: Block) => await this.blocksQueueLoader.handleBlockFromStream(block),
+      onDataCallback: async (block: any) => await this.batchesQueueLoader.handleBlockFromStream(block),
       onFinishCallback: async () => {
-        //
-        await this.blocksQueueLoader.destroyStrategy();
+        await this.batchesQueueLoader.destroyStrategy();
         return res.status(200).send('OK');
       },
       onErrorCallback: async (error: any) => {
         console.error('Error processing stream:', error);
-        await this.blocksQueueLoader.destroyStrategy();
+        await this.batchesQueueLoader.destroyStrategy();
         return res.status(500).send('Error processing stream');
       },
     });
-    // } catch (error) {
-    //     res.status(500).send('Internal Server Error');
-    // }
   }
+
+  // TODO: add route path to .env
+  // @Post('/webhook/tx')
+  // async handleTxWebhook(@Req() req: Request, @Res() res: Response) {
+  //   // TODO
+  // }
 }

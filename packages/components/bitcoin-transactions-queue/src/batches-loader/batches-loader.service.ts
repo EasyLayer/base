@@ -2,30 +2,35 @@ import { backOff } from 'exponential-backoff';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
-import { BlocksQueue } from '../blocks-queue';
-import { Block } from '../interfaces';
+import { TransactionsBatchQueue } from '../transactions-batch-queue';
+import { BatchesQueueCollectorService } from '../batches-collector';
+import { TransactionsBatch } from '../interfaces';
 import {
-  WebhookStreamStrategy,
-  PullNetworkProviderStrategy,
+  BlocksWebhookStreamStrategy,
+  PullBlocksByNetworkProviderStrategy,
   BlocksLoadingStrategy,
   StrategyNames,
 } from './load-strategies';
-import { BlocksQueueConfig } from '../config/blocks-queue.config';
+import { TransactionsQueueConfig } from '../config/transactions-queue.config';
 
 @Injectable()
-export class BlocksQueueLoaderService implements OnModuleDestroy {
-  private _queue!: BlocksQueue<Block>;
+export class BatchesQueueLoaderService implements OnModuleDestroy {
+  private _queue!: TransactionsBatchQueue<TransactionsBatch>;
   private _isLoading: boolean = false;
   private _loadingStrategy: BlocksLoadingStrategy | null = null;
   private _currentNetworkHeight: bigint = -1n;
+  private _isTransportMode: boolean;
 
   constructor(
     private readonly log: AppLogger,
-    private readonly blocksQueueConfig: BlocksQueueConfig,
+    private readonly txQueueConfig: TransactionsQueueConfig,
+    private readonly batchesQueueCollectorService: BatchesQueueCollectorService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
     private readonly webhookStreamService: BitcoinWebhookStreamService,
     private readonly options: any
-  ) {}
+  ) {
+    this._isTransportMode = options.isTransportMode;
+  }
 
   get isLoading(): boolean {
     return this._isLoading;
@@ -35,11 +40,14 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     this.destroyStrategy();
   }
 
-  public async startBlocksLoading(indexedHeight: bigint | number | string, queue: BlocksQueue<Block>): Promise<void> {
-    this.log.debug('startBlocksLoading()', { indexedHeight }, this.constructor.name);
+  public async startTransactionsLoading(
+    indexedHeight: bigint | number | string,
+    queue: TransactionsBatchQueue<TransactionsBatch>
+  ): Promise<void> {
+    this.log.debug('startTransactionsLoading()', { indexedHeight }, this.constructor.name);
 
     // NOTE: We use this to make sure that
-    // method startQueueIterating() is executed only once in its entire life.
+    // method startTransactionsLoading() is executed only once in its entire life.
     if (this._isLoading) {
       return;
     }
@@ -71,7 +79,9 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
         }
 
         if (this._queue.lastHeight >= this._currentNetworkHeight) {
-          // IMPORTANT: If the strategy has caught up with the network, we recreate it
+          // IMPORTANT: At the moment, it’s easier for us to destroy the strategy
+          // and create a new one in the next interval rather than just stopping it.
+          // This is because in the future we want strategies to switch automatically
           await this.destroyStrategy();
         }
       },
@@ -84,14 +94,15 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     );
   }
 
-  public async handleBlockFromStream(block: Block): Promise<void> {
-    if (!this._queue.enqueue(block)) {
-      // NOTE: For now, we will get here only from the strategy of streaming via webhooks,
-      // in the future it will be possible to expand.
-      if (this._loadingStrategy?.name === StrategyNames.WEBHOOK_STREAM) {
-        await this._loadingStrategy.destroy();
-      }
+  public async handleBlockFromStream(block: any): Promise<void> {
+    if (!this.batchesQueueCollectorService.addBlock(block)) {
+      await this._loadingStrategy?.destroy();
     }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async handleTransactionFromStream(tx: any): Promise<void> {
+    throw new Error('This method has not yet been implemented');
   }
 
   private async setupStrategy(): Promise<void> {
@@ -99,7 +110,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     // then this provider method will be called many times at first
     // (until the intervals become longer).
     // This is expected behavior.
-    if (this.options && this.options.isTransportMode) {
+    if (this._isTransportMode) {
       // this._currentNetworkHeight = await this.networkProviderService.getCurrentBlockHeight();
     } else {
       this._currentNetworkHeight = await this.networkProviderService.getCurrentBlockHeight();
@@ -118,16 +129,21 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   private createStrategy(): BlocksLoadingStrategy {
-    const name = this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_STRATEGY_NAME;
+    const name = this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_LOADER_STRATEGY_NAME;
 
     switch (name) {
-      case StrategyNames.WEBHOOK_STREAM:
-        return new WebhookStreamStrategy(this.webhookStreamService, this._queue);
-      case StrategyNames.PULL_NETWORK_PROVIDER:
-        return new PullNetworkProviderStrategy(this.networkProviderService, this._queue, {
-          minThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
-          maxThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
-        });
+      case StrategyNames.BLOCKS_WEBHOOK_STREAM:
+        return new BlocksWebhookStreamStrategy(this.webhookStreamService, this._queue);
+      case StrategyNames.PULL_BLOCKS_BY_NETWORK_PROVIDER:
+        return new PullBlocksByNetworkProviderStrategy(
+          this.batchesQueueCollectorService,
+          this.networkProviderService,
+          this._queue,
+          {
+            minThreads: this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_WORKERS_NUM,
+            maxThreads: this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_WORKERS_NUM,
+          }
+        );
       // case StrategyNames.PULL_BLOCKS_BY_NETWORK_TRANSPORT:
       //   return new PullNetworkProviderStrategy({}, this._queue, options);
       default:

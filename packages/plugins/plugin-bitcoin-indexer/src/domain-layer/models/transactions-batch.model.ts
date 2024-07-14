@@ -15,7 +15,7 @@ interface Input {
 }
 
 interface Output {
-  value: number; // The value in BTC (e.g., 0.0001 BTC)
+  value: number;
   n: number;
   scriptPubKey: {
     asm: string;
@@ -43,7 +43,18 @@ interface Transaction {
   blocktime?: number; // Optional, might not be available if transaction is unconfirmed
 }
 
-type TransactionsMap = Map<string, Omit<Transaction, 'txid'> | null>;
+type TxId = string;
+type TransactionsMap = Map<TxId, Omit<Transaction, 'txid'> | null>; // nul???
+type Index = number;
+
+interface Batch {
+  // IMPORTANT: 'tx' has Map structure to find transactions with hashes present in block.tx (O(1))
+  tx: TransactionsMap;
+  // IMPORTANT: 'n' - this is the batch's number in the block.
+  // [0, infinite]. 0 - means the first batch in the block
+  n: Index;
+  isFinalBatch: boolean;
+}
 
 enum BatchStatuses {
   INDEXED = 'indexed',
@@ -54,13 +65,9 @@ export class TransactionsBatch extends AggregateRoot {
   public aggregateId!: string; // uuid
   public blockHeight!: bigint;
   public blockHash!: string;
-  // IMPORTANT: 'tx' has Map structure to find transactions with hashes present in block.tx (O(1))
-  public tx!: TransactionsMap;
+  public prevBlockHash!: string;
+  public batch!: Batch;
   public status!: BatchStatuses;
-  // IMPORTANT: 'n' - this is the batch's number in the block.
-  // [0, infinite]. 0 - means the first batch in the block
-  public n!: number;
-  public isFinalBatch!: boolean;
 
   public async index({
     aggregateId,
@@ -68,6 +75,7 @@ export class TransactionsBatch extends AggregateRoot {
     tx,
     blockHeight,
     blockHash,
+    prevBlockHash,
     n,
     isFinalBatch,
   }: {
@@ -76,15 +84,18 @@ export class TransactionsBatch extends AggregateRoot {
     tx: Transaction[];
     blockHeight: bigint;
     blockHash: string;
+    prevBlockHash: string;
     n: number;
     isFinalBatch: boolean;
   }) {
-    // Check transactions
+    // TODO: Check transactions
+
     const batch = {
       tx,
       n,
       isFinalBatch,
     };
+
     await this.apply(
       new BitcoinIndexerTransactionsBatchIndexedEvent({
         aggregateId,
@@ -92,6 +103,7 @@ export class TransactionsBatch extends AggregateRoot {
         batch, // TODO: serialize
         blockHeight: blockHeight.toString(),
         blockHash,
+        prevBlockHash,
         status: BatchStatuses.INDEXED,
       })
     );
@@ -108,15 +120,20 @@ export class TransactionsBatch extends AggregateRoot {
   }
 
   private onBitcoinIndexerTransactionsBatchIndexedEvent({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
-    const { aggregateId, blockHeight, blockHash, status, batch } = payload;
-    const { tx, index, isFinalBatch } = batch;
+    const { aggregateId, blockHeight, blockHash, status, batch, prevBlockHash } = payload;
+    const { tx, n, isFinalBatch } = batch;
+
     this.aggregateId = aggregateId;
     this.blockHeight = BigInt(blockHeight);
     this.blockHash = blockHash;
+    this.prevBlockHash = prevBlockHash;
     this.status = status as BatchStatuses;
-    this.index = index;
-    this.isFinalBatch = isFinalBatch;
-    this.tx = new Map(tx.map((transaction: Transaction) => [transaction.txid, { ...transaction, txid: null }]));
+
+    this.batch = {
+      n,
+      isFinalBatch,
+      tx: new Map(tx.map((t: Transaction) => [t.txid, { ...t, txid: null }])),
+    };
   }
 
   private onBitcoinIndexerTransactionsBatchSuspendedEvent({ payload }: BitcoinIndexerTransactionsBatchSuspendedEvent) {

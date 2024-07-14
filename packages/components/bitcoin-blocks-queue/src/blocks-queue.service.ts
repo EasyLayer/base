@@ -81,13 +81,4 @@ export class BlocksQueueService {
 
     this.blocksQueueIterator.resolveNextBlock();
   }
-
-  public async getOneBlockByHeight(height: bigint | string | number): Promise<Block> {
-    const block = this._blockQueue.fetchBlockFromOutStack(BigInt(height));
-    if (!block) {
-      throw new Error('No block found with height ${height.toString()}');
-    }
-
-    return block;
-  }
 }

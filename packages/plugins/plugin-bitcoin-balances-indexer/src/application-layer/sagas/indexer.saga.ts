@@ -1,18 +1,21 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Saga, ICommand, executeWithRetry } from '@easylayer/cqrs';
+import { TransactionsQueueService } from '@easylayer/bitcoin-transactions-queue';
 import {
   BitcoinBalancesIndexerInitializedEvent,
   BitcoinBalancesIndexerReorganisationStartedEvent,
   BitcoinBalancesIndexerReorganisationFinishedEvent,
   BitcoinBalancesIndexerChainByBlockTruncatedEvent,
+  BitcoinBalancesIndexerChainBacthAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
+import { BitcoinIndexerTransactionsBatchIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { IndexerCommandFactoryService } from '../services';
 
 @Injectable()
 export class IndexerSaga {
   constructor(
-    @Inject('TransactionsQueueService') private readonly transactionsQueueService: any,
+    @Inject('TransactionsQueueService') private readonly transactionsQueueService: TransactionsQueueService,
     private readonly indexerCommandFactory: IndexerCommandFactoryService
   ) {}
 
@@ -27,7 +30,6 @@ export class IndexerSaga {
     );
   }
 
-  // При старте реорганизации запускаем команду обработки реорганизации
   @Saga()
   onBitcoinBalancesIndexerReorganisationStartedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
@@ -39,7 +41,6 @@ export class IndexerSaga {
     );
   }
 
-  // На окончание реорганзиции мы вызываем метод очереди чтобы очистить очередь и отпустить итератор
   @Saga()
   onBitcoinBalancesIndexerReorganisationFinishedEvent(events$: Observable<any>): Observable<ICommand> {
     return events$.pipe(
@@ -58,6 +59,37 @@ export class IndexerSaga {
         event: BitcoinBalancesIndexerChainByBlockTruncatedEvent,
         command: ({ payload }: BitcoinBalancesIndexerChainByBlockTruncatedEvent) =>
           this.indexerCommandFactory.processReorganisation(payload),
+      })
+    );
+  }
+
+  @Saga()
+  onBitcoinIndexerTransactionsBatchIndexedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      executeWithRetry({
+        event: BitcoinIndexerTransactionsBatchIndexedEvent,
+        command: ({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) => {
+          return new Promise<void>((resolve) => {
+            this.transactionsQueueService.batchesCollector.addBatch(payload.batch);
+            resolve();
+          });
+        },
+      })
+    );
+  }
+
+  @Saga()
+  onBitcoinBalancesIndexerChainBacthAddedEvent(events$: Observable<any>): Observable<ICommand> {
+    return events$.pipe(
+      executeWithRetry({
+        event: BitcoinBalancesIndexerChainBacthAddedEvent,
+        command: ({ payload }) =>
+          this.transactionsQueueService.confirmIndexBatch({
+            n: payload.batch.n,
+            blockHash: payload.blockHash,
+            blockHeight: payload.blockHeight,
+            prevBlockHash: payload.prevBlockHash,
+          }),
       })
     );
   }

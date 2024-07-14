@@ -88,6 +88,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           tx: slice,
           blockHeight: height,
           blockHash: hash,
+          prevBlockHash: previousblockhash,
           n,
           isFinalBatch,
         });

@@ -4,9 +4,10 @@ interface BitcoinIndexerTransactionsBatchIndexedEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
-  batch: any; //: { transactions, index, isFinalBatch }
+  batch: any;
   blockHash: string;
   blockHeight: string;
+  prevBlockHash: string;
 }
 
 export class BitcoinIndexerTransactionsBatchIndexedEvent

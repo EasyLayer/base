@@ -41,11 +41,6 @@ export class BlocksQueueModule {
           provide: 'BlocksCommandExecutor',
           useClass: blocksCommandExecutor,
         },
-        // {
-        //   // IMPORTANT:
-        //   provide: 'BlocksQueueService',
-        //   useClass: BlocksQueueService,
-        // },
         {
           provide: 'BlocksQueueService',
           useFactory: (logger, iterator, loader, config, collector) =>
@@ -60,8 +55,8 @@ export class BlocksQueueModule {
         },
         {
           provide: BlocksQueueLoaderService,
-          useFactory: (logger, blocksQueueConfig, networkProvider, webhookStreamService) =>
-            new BlocksQueueLoaderService(logger, blocksQueueConfig, networkProvider, webhookStreamService, {
+          useFactory: (logger, config, networkProvider, webhookStreamService) =>
+            new BlocksQueueLoaderService(logger, config, networkProvider, webhookStreamService, {
               isTransportMode,
             }),
           inject: [AppLogger, BlocksQueueConfig, BitcoinNetworkProviderService, BitcoinWebhookStreamService],

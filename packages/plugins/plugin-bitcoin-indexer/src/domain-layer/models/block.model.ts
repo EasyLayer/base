@@ -37,7 +37,7 @@ type Batches = Map<TransactionBatchAggregateId, TransactionBatchStatus>;
 export class Block extends AggregateRoot {
   public aggregateId!: string; // block hash
   public block!: BlockType; // without transactions (or just with transactions hashes)
-  public status!: BlockStatuses; // indexing or completed
+  public status!: BlockStatuses;
   public batches!: Batches; // { <aggregateId>:<status> }
   public txCount!: number; // transactions lenght
 

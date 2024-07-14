@@ -26,7 +26,7 @@ export class IndexTransactionsCommandHandler implements ICommandHandler<IndexTra
       // NOTE: batch - is from TransactionsQueue
       const { batch, requestId } = payload;
       const { blockHeight, blockHash, ...restBatch } = batch;
-      const { transactions } = restBatch;
+      const { tx } = restBatch;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
@@ -47,8 +47,8 @@ export class IndexTransactionsCommandHandler implements ICommandHandler<IndexTra
 
       const transactionModels: Transaction[] = [];
 
-      for (const tx of transactions) {
-        const { txid, vin, vout } = tx;
+      for (const t of tx) {
+        const { txid, vin, vout } = t;
 
         // Create new outputs that we received in the transaction
         const newTxModel: Transaction = this.transactionModelFactory.createNewModel();

@@ -2,17 +2,19 @@ import { join } from 'node:path';
 import Piscina from 'piscina';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { BlocksLoadingStrategy, StrategyNames } from './load-strategy.interface';
-import { Block } from '../../interfaces';
-import { BlocksQueue } from '../../blocks-queue';
+import { BatchesQueueCollectorService } from '../../batches-collector';
+import { TransactionsBatch, Block } from '../../interfaces';
+import { TransactionsBatchQueue } from '../../transactions-batch-queue';
 
-export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
-  readonly name: StrategyNames = StrategyNames.PULL_NETWORK_PROVIDER;
+export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrategy {
+  readonly name: StrategyNames = StrategyNames.PULL_BLOCKS_BY_NETWORK_PROVIDER;
   private _workerPool!: Piscina;
   private _isLoading: boolean = false;
 
   constructor(
+    private readonly batchesQueueCollector: BatchesQueueCollectorService,
     private readonly networkProvider: BitcoinNetworkProviderService,
-    private readonly queue: BlocksQueue<Block>,
+    private readonly queue: TransactionsBatchQueue<TransactionsBatch>,
     config: {
       minThreads: number;
       maxThreads: number;
@@ -40,7 +42,7 @@ export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
       try {
         // IMPORTANT: This is a temp array
         // it needs to calculate blocks from parallel threds before enqueue
-        let blocksBatch: Block[] = [];
+        let blocks: any[] = [];
         const promises = [];
 
         for (let i = 0; i < this._workerPool.options.maxThreads; i++) {
@@ -54,21 +56,21 @@ export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
 
         results.forEach((result) => {
           if (result.status === 'fulfilled') {
-            blocksBatch.push(result.value as Block); //TODO: add map for create Block
+            blocks.push(result.value as Block); //TODO: add map for create Block
           } else {
             // NOTE: If we got here it means we've already used up all the attempts to reload the blocks,
             // so we just exit this while loop without enqueue blocks.
             // We'll try again.
 
             // Clear temp array after successful enqueue
-            blocksBatch = [];
+            blocks = [];
           }
         });
 
-        this.enqueueBlocksBatch(blocksBatch);
+        this.enqueueBlocks(blocks);
 
         // Clear temp array after successful enqueue
-        blocksBatch = [];
+        blocks = [];
       } catch (error) {
         await this.stop();
         // TODO: think about this case
@@ -90,17 +92,15 @@ export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
     }
   }
 
-  private enqueueBlocksBatch(blocksBatch: Block[]): void {
-    blocksBatch.sort((a, b) => {
+  private enqueueBlocks(blocks: Block[]): void {
+    blocks.sort((a, b) => {
       if (a.height < b.height) return -1;
       if (a.height > b.height) return 1;
       return 0;
     });
 
-    for (const block of blocksBatch) {
-      if (!this.queue.enqueue(block)) {
-        return;
-      }
+    for (const block of blocks) {
+      this.batchesQueueCollector.addBlock(block);
     }
   }
 
