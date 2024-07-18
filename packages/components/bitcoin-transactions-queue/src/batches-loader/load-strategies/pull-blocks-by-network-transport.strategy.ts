@@ -17,7 +17,7 @@ export class PullBlocksByNetworkTransportStrategy implements BlocksLoadingStrate
     return this._isLoading;
   }
 
-  async load(currentNetworkHeight: bigint): Promise<void> {
+  async load(currentNetworkHeight: number): Promise<void> {
     if (this._isLoading) {
       return;
     }

@@ -1,7 +1,6 @@
 export interface IInitIndexerCommand {
   requestId: string;
-  startHeight: bigint;
-  maxHeight: bigint;
+  startHeight: string | number;
 }
 
 export class InitIndexerCommand {

@@ -20,7 +20,7 @@ describe('BlocksQueueModule', () => {
   const moduleOptions: BlocksQueueModuleOptions = {
     blocksCommandExecutor: mockBlocksCommandExecutor,
     isTransportMode: false,
-    maxBlockHeight: 1n,
+    maxBlockHeight: 1,
   };
 
   beforeEach(async () => {

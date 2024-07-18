@@ -27,7 +27,7 @@ export class TransactionsReadService {
     const transactions: TransactionViewModel[] = [];
     const block = new BlockViewModel({ hash: blockHash });
 
-    batch.transactions.forEach((item: any) => {
+    batch.tx.forEach((item: any) => {
       const tx = new TransactionViewModel({
         txid: item.txid,
         vin: item.vin,
@@ -45,6 +45,19 @@ export class TransactionsReadService {
   async update(criteria: any, dto: any): Promise<any> {
     const tx = new TransactionViewModel(dto);
     return await this.readDb.update(criteria, tx);
+  }
+
+  async updateWithBuilder(criteria: any, dto: any): Promise<any> {
+    return await this.readDb.createQueryBuilder().update(TransactionViewModel).set(dto).where(criteria).execute();
+  }
+
+  async updateManyByTxIds(txids: string[], status: string): Promise<any> {
+    return await this.readDb
+      .createQueryBuilder()
+      .update(TransactionViewModel)
+      .set({ status })
+      .where('txid IN (:...txids)', { txids })
+      .execute();
   }
 
   async findOneById(txid: string): Promise<TransactionViewModel | null> {

@@ -10,11 +10,11 @@ export class BlocksQueue<T extends Block> {
   private inStack: T[] = [];
   private outStack: T[] = [];
   // IMPORTANT: the blockchain starts from block 0,
-  // so if there are no blocks at all, we use -1n
-  private _lastHeight: bigint = -1n;
+  // so if there are no blocks at all, we use -1
+  private _lastHeight: number = -1;
   private _size: number = 0; // NOTE: For debug only
   private _maxQueueLength: number = 100;
-  private _maxBlockHeight: bigint = BigInt(Number.MAX_SAFE_INTEGER);
+  private _maxBlockHeight: number = Number.MAX_SAFE_INTEGER;
 
   get isQueueFull(): boolean {
     return this.length >= this._maxQueueLength;
@@ -24,11 +24,11 @@ export class BlocksQueue<T extends Block> {
     return this._lastHeight >= this._maxBlockHeight;
   }
 
-  public get maxBlockHeight(): bigint {
+  public get maxBlockHeight(): number {
     return this._maxBlockHeight;
   }
 
-  public set maxBlockHeight(height: bigint) {
+  public set maxBlockHeight(height: number) {
     this._maxBlockHeight = height;
   }
 
@@ -52,11 +52,11 @@ export class BlocksQueue<T extends Block> {
    * Gets the height of the last block in the queue.
    * @returns The height as a bigint.
    */
-  public get lastHeight(): bigint {
+  public get lastHeight(): number {
     return this._lastHeight;
   }
 
-  public set lastHeight(height: bigint) {
+  public set lastHeight(height: number) {
     this._lastHeight = height;
   }
 
@@ -77,7 +77,7 @@ export class BlocksQueue<T extends Block> {
    * @returns The block with the specified height or undefined if not found.
    * @complexity O(log n)
    */
-  public fetchBlockFromInStack(height: bigint): T | undefined {
+  public fetchBlockFromInStack(height: number): T | undefined {
     return this.binarySearch(this.inStack, height, true);
   }
 
@@ -87,7 +87,7 @@ export class BlocksQueue<T extends Block> {
    * @returns The block with the specified height or undefined if not found.
    * @complexity O(log n)
    */
-  public fetchBlockFromOutStack(height: bigint): T | undefined {
+  public fetchBlockFromOutStack(height: number): T | undefined {
     return this.binarySearch(this.outStack, height, false);
   }
 
@@ -101,14 +101,16 @@ export class BlocksQueue<T extends Block> {
   // This queue have to works only with Block interface
   public enqueue(block: T): boolean {
     if (this.isQueueFull || this.isMaxHeightReached) {
+      console.log('this.isQueueFull || this.isMaxHeightReached', this.isQueueFull, this.isMaxHeightReached);
       return false;
     }
 
-    if (BigInt(block.height) !== this._lastHeight + 1n) {
+    if (Number(block.height) !== this._lastHeight + 1) {
+      console.log('Number(block.height) !== this._lastHeight + 1', Number(block.height) !== this._lastHeight + 1);
       return false;
     }
     this.inStack.push(block);
-    this._lastHeight = BigInt(block.height);
+    this._lastHeight = Number(block.height);
 
     if (process.env.DEBUG === 'y') {
       this._size += sizeof(block);
@@ -161,7 +163,7 @@ export class BlocksQueue<T extends Block> {
     // Clear the entire queue
     this.inStack = [];
     this.outStack = [];
-    this._lastHeight = -1n;
+    this._lastHeight = -1;
   }
 
   /**
@@ -182,13 +184,13 @@ export class BlocksQueue<T extends Block> {
    * @returns The block if found, otherwise undefined.
    * @complexity O(log n)
    */
-  private binarySearch(stack: T[], height: bigint, isInStack: boolean): T | undefined {
+  private binarySearch(stack: T[], height: number, isInStack: boolean): T | undefined {
     let left = 0;
     let right = stack.length - 1;
 
     while (left <= right) {
       const mid = Math.floor((left + right) / 2);
-      const midHeight = BigInt(stack[mid].height);
+      const midHeight = stack[mid].height;
 
       if (midHeight === height) {
         return stack[mid];

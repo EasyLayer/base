@@ -4,6 +4,7 @@ interface BitcoinIndexerTransactionsBatchSuspendedEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
+  batch: any;
 }
 
 export class BitcoinIndexerTransactionsBatchSuspendedEvent

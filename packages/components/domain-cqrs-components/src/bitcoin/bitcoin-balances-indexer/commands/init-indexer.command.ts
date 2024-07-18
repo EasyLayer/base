@@ -1,6 +1,6 @@
 export interface IInitIndexerCommand {
   requestId: string;
-  startHeight: bigint;
+  startHeight: string | number;
 }
 
 export class InitIndexerCommand {

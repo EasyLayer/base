@@ -28,4 +28,16 @@ export class TransactionsBatchModelFactoryService {
       await model.republish(event);
     }
   }
+
+  public async initExistingModels(aggregateIds: string[]): Promise<TransactionsBatch[]> {
+    const models: TransactionsBatch[] = [];
+
+    aggregateIds.forEach((item) => {
+      const model = this.createNewModel();
+      model.aggregateId = item;
+      models.push(model);
+    });
+
+    return await this.batchesRepository.getMany(models);
+  }
 }

@@ -55,15 +55,14 @@ export class IndexTransactionsCommandHandler implements ICommandHandler<IndexTra
         await newTxModel.index({ aggregateId: txid, vout, requestId, blockHeight, blockHash });
         transactionModels.push(newTxModel);
 
-        if (vin) {
-          // Update the old output knowing it through the input
-          // IMPORTANT: There can be many inputs and they can be from different transactions,
-          // so we create a new transaction aggregate for each input and spend it
-          for (const input of vin) {
-            const oldTxModel: Transaction = this.transactionModelFactory.createNewModel();
-            await oldTxModel.spend({ aggregateId: input.txid, voutIndex: input.vout, requestId });
-            transactionModels.push(oldTxModel);
-          }
+        // Update the old output knowing it through the input
+        // IMPORTANT: There can be many inputs and they can be from different transactions,
+        // so we create a new transaction aggregate for each input and spend it
+        for (const input of vin) {
+          const oldTxModel: Transaction = this.transactionModelFactory.createNewModel();
+          const voutIndex = input.vout ? input.vout : -1; // -1 mean coinbase tx
+          await oldTxModel.spend({ aggregateId: input.txid, voutIndex, requestId });
+          transactionModels.push(oldTxModel);
         }
       }
 

@@ -4,11 +4,17 @@ import { LoggerModule } from '@easylayer/logger';
 import { ArithmeticService } from '@easylayer/arithmetic';
 import { EventStoreModule } from '@easylayer/eventstore';
 import { ReadDatabaseModule } from '@easylayer/read-database';
+import { TransactionsQueueModule } from '@easylayer/bitcoin-transactions-queue';
 import { BitcoinNetworkProviderModule } from '@easylayer/bitcoin-network-provider';
-import { BitcoinBalancesIndexerController } from './bitcoin-balances-indexer.controller';
-import { BitcoinBalancesIndexerService } from './bitcoin-balances-indexer.service';
+import { BalancesIndexerController } from './balances-indexer.controller';
+import { BalancesIndexerService } from './balances-indexer.service';
 import { IndexerSaga } from './application-layer/sagas';
-import { IndexerCommandFactoryService, ReadStateExceptionHandlerService } from './application-layer/services';
+import { OutputViewModel } from './domain-layer/view-models';
+import {
+  BalancesIndexerCommandFactoryService,
+  ReadStateExceptionHandlerService,
+  BacthesCommandFactoryService,
+} from './application-layer/services';
 import {
   BalancesIndexerModelFactoryService,
   TransactionModelFactoryService,
@@ -36,28 +42,33 @@ export class BitcoinBalancesIndexerModule {
 
     return {
       module: BitcoinBalancesIndexerModule,
-      controllers: [BitcoinBalancesIndexerController],
+      controllers: [BalancesIndexerController],
       imports: [
         LoggerModule.forRoot({ componentName: 'BitcoinBalancesIndexerPlugin' }),
         EventStoreModule.forRoot({
-          type: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_TYPE,
-          name: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_NAME,
+          type: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
+          name: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
           // database: '',
-          synchronize: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
+          synchronize: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
-          enableWAL: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL,
+          enableWAL: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error.
           // busyTimeout: 1000
         }),
         ReadDatabaseModule.forRoot({
-          type: readdatabaseConfig.BITCOIN_INDEXER_EVENTSTORE_DB_TYPE,
-          name: readdatabaseConfig.BITCOIN_INDEXER_EVENTSTORE_DB_NAME,
+          type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
+          name: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
           // database: '',
-          synchronize: readdatabaseConfig.BITCOIN_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
+          synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
-          enableWAL: readdatabaseConfig.BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL,
-          entities: [],
+          enableWAL: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
+          entities: [OutputViewModel],
+        }),
+        TransactionsQueueModule.forRootAsync({
+          batchesCommandExecutor: BacthesCommandFactoryService,
+          isTransportMode: false,
+          maxBlockHeight: businessConfig.BITCOIN_BALANCES_INDEXER_MAX_BLOCK_HEIGHT,
         }),
         // IMPORTANT: BitcoinNetworkProviderModule must be global inside one plugin
         BitcoinNetworkProviderModule.forRootAsync({
@@ -81,14 +92,15 @@ export class BitcoinBalancesIndexerModule {
           provide: ReadDatabaseConfig,
           useValue: readdatabaseConfig,
         },
-        BalancesIndexerModelFactoryService,
+        OutputsReadService,
         ArithmeticService,
-        BitcoinBalancesIndexerService,
+        BalancesIndexerService,
+        BalancesIndexerModelFactoryService,
+        BacthesCommandFactoryService,
         IndexerSaga,
-        IndexerCommandFactoryService,
+        BalancesIndexerCommandFactoryService,
         ReadStateExceptionHandlerService,
         TransactionModelFactoryService,
-        OutputsReadService,
         ...CommandHandlers,
         ...EventsHandlers,
       ],

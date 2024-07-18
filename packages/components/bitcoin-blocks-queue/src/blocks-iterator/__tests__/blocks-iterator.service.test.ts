@@ -9,11 +9,11 @@ jest.mock('uuid', () => ({
 }));
 
 class TestBlock implements Block {
-  height: bigint;
+  height: number;
   hash: string;
   tx: any[];
 
-  constructor(height: bigint) {
+  constructor(height: number) {
     this.height = height;
     this.hash = '';
     this.tx = [];
@@ -73,7 +73,7 @@ describe('BlocksQueueIteratorService', () => {
 
   describe('peekFirstBlock', () => {
     it('should resolve the promise and return the first block', async () => {
-      const blockMock = new TestBlock(0n);
+      const blockMock = new TestBlock(0);
       mockQueue.enqueue(blockMock);
 
       service['initBlockProcessedPromise']();
@@ -92,7 +92,7 @@ describe('BlocksQueueIteratorService', () => {
     });
 
     it('should create a promise that can be resolved externally', async () => {
-      const blockMock = new TestBlock(0n);
+      const blockMock = new TestBlock(0);
       mockQueue.enqueue(blockMock);
 
       service['initBlockProcessedPromise']();
@@ -112,7 +112,7 @@ describe('BlocksQueueIteratorService', () => {
     it('should wait for blockProcessedPromise before yielding the next block', async () => {
       jest.useFakeTimers({ advanceTimers: true });
 
-      const blockMock = new TestBlock(0n);
+      const blockMock = new TestBlock(0);
       mockQueue.enqueue(blockMock);
 
       const blockProcessedPromise = new Promise<void>((resolve) => setTimeout(resolve, 50));

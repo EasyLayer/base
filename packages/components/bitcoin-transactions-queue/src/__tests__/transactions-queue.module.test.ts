@@ -19,7 +19,7 @@ describe('TransactionsQueueModule', () => {
   const moduleOptions: TransactionsQueueModuleOptions = {
     batchesCommandExecutor: mockBatchesCommandExecutor,
     isTransportMode: false,
-    maxBlockHeight: 1n,
+    maxBlockHeight: 1,
   };
   beforeEach(async () => {
     module = await Test.createTestingModule({

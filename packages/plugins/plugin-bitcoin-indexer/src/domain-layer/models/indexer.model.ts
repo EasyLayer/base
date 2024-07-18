@@ -13,7 +13,7 @@ enum IndexerStatuses {
 }
 
 type LightBlock = {
-  height: bigint;
+  height: number;
   hash: string;
   prevHash: string;
   batches: string[];
@@ -27,7 +27,7 @@ type Chain = {
 
 /**
  * Blockchain class representing a doubly linked list of blocks.
- * Each block contains a height, hash, and a previous hash. The blockchain has a fixed maximum size,
+ * Each block contains a height, hash, previous hash and batches. The blockchain has a fixed maximum size,
  * and automatically removes the oldest blocks when new blocks are added beyond this size.
  */
 export class Blockchain {
@@ -71,16 +71,16 @@ export class Blockchain {
 
   /**
    * Gets the height of the last block in the chain.
-   * @returns {bigint} The height of the last block, or -1n if the chain is empty.
+   * @returns {number} The height of the last block, or -1 if the chain is empty.
    * Complexity: O(1)
    */
-  get lastBlockHeight(): bigint {
+  get lastBlockHeight(): number {
     if (this.tail) {
       return this.tail.block.height;
     } else {
       // IMPORTANT: the blockchain starts from block 0,
-      // so if there are no blocks at all, we use -1n
-      return -1n;
+      // so if there are no blocks at all, we use -1
+      return -1;
     }
   }
 
@@ -95,19 +95,19 @@ export class Blockchain {
 
   /**
    * Adds a block to the end of the chain.
-   * @param {bigint | string | number} height - The height of the new block.
+   * @param {string | number} height - The height of the new block.
    * @param {string} hash - The hash of the new block.
    * @param {string} prevHash - The hash of the previous block.
    * @returns {boolean} True if the block was added successfully, false otherwise.
    * Complexity: O(1)
    */
-  public addBlock(height: bigint | string | number, hash: string, prevHash: string, batches: string[]): boolean {
+  public addBlock(height: string | number, hash: string, prevHash: string, batches: string[]): boolean {
     // Before adding a block, we validate it
     if (!this.validateNextBlock(height, prevHash)) {
       return false;
     }
 
-    const newBlock: LightBlock = { height: BigInt(height), hash, prevHash, batches };
+    const newBlock: LightBlock = { height: Number(height), hash, prevHash, batches };
     const newNode: Chain = { block: newBlock, next: null, prev: this.tail };
 
     if (this.tail) {
@@ -140,19 +140,19 @@ export class Blockchain {
 
   /**
    * Validates the next block to be added to the chain.
-   * @param {bigint | string | number} height - The height of the new block.
+   * @param {string | number} height - The height of the new block.
    * @param {string} prevHash - The hash of the previous block.
    * @returns {boolean} True if the block is valid, false otherwise.
    * Complexity: O(1)
    */
-  public validateNextBlock(height: bigint | string | number, prevHash: string): boolean {
+  public validateNextBlock(height: string | number, prevHash: string): boolean {
     if (!this.tail) {
       // If there's no blocks in the chain, we assume this is the first block.
       return true;
     }
 
     // Check if the given height is exactly one more than the last block's height.
-    if (this.tail.block.height + 1n !== BigInt(height)) {
+    if (this.tail.block.height + 1 !== height) {
       return false;
     }
 
@@ -173,12 +173,13 @@ export class Blockchain {
     let current = this.head;
 
     if (!current) {
-      return true; // Пустая цепочка считается валидной
+      // An empty chain is considered valid
+      return true;
     }
 
     while (current && current.next) {
       // First check if the block heights increment by 1
-      if (current.next.block.height !== current.block.height + 1n) {
+      if (current.next.block.height !== current.block.height + 1) {
         return false; // Height mismatch
       }
       // Then check if the hashes match
@@ -194,7 +195,7 @@ export class Blockchain {
 
   /**
    * Validates that the provided block data matches the last block in the chain.
-   * @param {bigint | string | number} height - The expected height of the last block.
+   * @param {number} height - The expected height of the last block.
    * @param {string} hash - The expected hash of the last block.
    * @param {string} prevHash - The expected previous hash of the last block.
    * @returns {boolean} True if the provided data matches the last block, false otherwise.
@@ -202,14 +203,14 @@ export class Blockchain {
    * in another command to make sure that the block we are passing exactly matches the chain
    * Complexity: O(1)
    */
-  public validateLastBlock(height: bigint | string | number, hash: string, prevHash: string): boolean {
+  public validateLastBlock(height: number, hash: string, prevHash: string): boolean {
     if (!this.tail) {
       // If there's no blocks in the chain, we assume this is the first block.
       return true;
     }
 
     // Check that the height of the last block matches the passed height.
-    if (this.tail.block.height !== BigInt(height)) {
+    if (this.tail.block.height !== height) {
       return false;
     }
 
@@ -228,11 +229,11 @@ export class Blockchain {
 
   /**
    * Finds a block by its height.
-   * @param {bigint} height - The height of the block to find.
+   * @param {number} height - The height of the block to find.
    * @returns {LightBlock | null} The block, or null if not found.
    * Complexity: O(n), where n - is the number of blocks in the chain
    */
-  public findBlockByHeight(height: bigint): LightBlock | null {
+  public findBlockByHeight(height: number): LightBlock | null {
     let currentNode = this.tail;
     while (currentNode) {
       if (currentNode.block.height === height) {
@@ -245,18 +246,18 @@ export class Blockchain {
 
   /**
    * Truncates the blockchain just before a specified block height.
-   * @param {bigint} height - The height before which the chain should be truncated.
+   * @param {number} height - The height before which the chain should be truncated.
    * @returns {boolean} Returns true if truncation was successful, false if the block was not found.
    * Complexity: O(n), where n - is the number of blocks in the chain
    */
-  public truncateToBlock(height: bigint): boolean {
+  public truncateToBlock(height: number): boolean {
     let currentNode = this.tail;
     let found = false;
 
     // Iterate backwards from the last block
     // until we find the block immediately before the given height
     while (currentNode && currentNode.prev) {
-      if (currentNode.prev.block.height === height - 1n) {
+      if (currentNode.prev.block.height === height - 1) {
         // Update the tail to the block before the specified height
         this.tail = currentNode.prev;
 
@@ -264,7 +265,7 @@ export class Blockchain {
         this.tail.next = null;
 
         // Update the size
-        this._size = Number(this.tail.block.height + 1n);
+        this._size = this.tail.block.height + 1;
 
         found = true;
         break;
@@ -273,7 +274,7 @@ export class Blockchain {
     }
 
     // Delete all blocks if the specified height is 1 (cut off the entire chain)
-    if (height === 0n && this.head) {
+    if (height === 0 && this.head) {
       this.head = null;
       this.tail = null;
       this._size = 0;
@@ -315,14 +316,14 @@ export class Indexer extends AggregateRoot {
   // IMPORTANT: this method doing two things:
   // 1 - create Indexer if it's first creation
   // 2 - use already created params but still publish event
-  public async init({ requestId, startHeight }: { requestId: string; startHeight: bigint }) {
+  public async init({ requestId, startHeight }: { requestId: string; startHeight: string | number }) {
     const status = this.status || IndexerStatuses.AWAITING;
     const lastBlockHeight = this.chain.lastBlockHeight;
     // NOTE: lastBlockHeight - is the last already indexed block and
     // if it's start of blockchain where genesis block height is '0'
-    // so we indicate the last indexed block adjusted by -1n.
+    // so we indicate the last indexed block adjusted by -1.
     // startHeight - is the height from which the user wants to index, it cannot be less than 0.
-    const height = lastBlockHeight + 1n > startHeight ? lastBlockHeight : startHeight - 1n;
+    const height = lastBlockHeight + 1 > Number(startHeight) ? lastBlockHeight : Number(startHeight) - 1;
 
     await this.apply(
       new BitcoinIndexerInitializedEvent({
@@ -339,7 +340,7 @@ export class Indexer extends AggregateRoot {
       throw new Error("addBlock() Reorganisation hasn't finished yet");
     }
 
-    const { height, previousblockhash, batches } = block;
+    const { height, previousblockhash } = block;
 
     if (!this.chain.validateNextBlock(height, previousblockhash)) {
       throw new Error('Need reorganisation');
@@ -351,7 +352,6 @@ export class Indexer extends AggregateRoot {
         requestId,
         status: IndexerStatuses.AWAITING,
         block,
-        batches,
       })
     );
   }
@@ -362,7 +362,7 @@ export class Indexer extends AggregateRoot {
     service,
     blocks,
   }: {
-    height: bigint;
+    height: string | number;
     requestId: string;
     service: BitcoinNetworkProviderService;
     blocks: any[];
@@ -372,10 +372,12 @@ export class Indexer extends AggregateRoot {
     }
 
     // Get previously blocks by height - 1
+    const prevHeight = Number(height) - 1;
+
     // IMPORTANT: Main indexer always works only with the provider,
     // so we can directly get the block from the provider’s service here.
-    const oldBlock = await service.getOneBlockByHeight(height - 1n);
-    const localBlock = this.chain.findBlockByHeight(height - 1n);
+    const oldBlock = await service.getOneBlockByHeight(prevHeight);
+    const localBlock = this.chain.findBlockByHeight(prevHeight);
 
     if (!localBlock) {
       // If we haven’t found a block by height in the chain by height,
@@ -386,7 +388,7 @@ export class Indexer extends AggregateRoot {
 
     if (oldBlock.hash === localBlock.hash && oldBlock.previousblockhash === localBlock.prevHash) {
       // Match found
-      await this.apply(
+      return await this.apply(
         new BitcoinIndexerReorganisationStartedEvent({
           aggregateId: this.aggregateId,
           requestId,
@@ -402,15 +404,21 @@ export class Indexer extends AggregateRoot {
     const newBlocks = [...blocks, localBlock];
 
     // Recursive check the previous block
-    return this.startReorganisation({ height: height - 1n, requestId, service, blocks: newBlocks });
+    return this.startReorganisation({ height: prevHeight, requestId, service, blocks: newBlocks });
   }
 
-  public async finishReorganisation({ height, requestId }: { height: bigint; requestId: string }): Promise<void> {
+  public async finishReorganisation({
+    height,
+    requestId,
+  }: {
+    height: string | number;
+    requestId: string;
+  }): Promise<void> {
     if (this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error("Reorganisation hasn't started yet");
     }
 
-    if (height !== this.chain.lastBlockHeight) {
+    if (Number(height) > this.chain.lastBlockHeight) {
       throw new Error('Wrong block height');
     }
 
@@ -447,6 +455,6 @@ export class Indexer extends AggregateRoot {
   private onBitcoinIndexerReorganisationFinishedEvent({ payload }: BitcoinIndexerReorganisationFinishedEvent) {
     const { height, status } = payload;
     this.status = status as IndexerStatuses;
-    this.chain.truncateToBlock(BigInt(height));
+    this.chain.truncateToBlock(Number(height));
   }
 }

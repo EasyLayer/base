@@ -29,18 +29,18 @@ interface Output {
 interface Transaction {
   txid: string;
   hash: string;
-  version: number;
-  size: number;
-  vsize: number;
-  weight: number;
-  locktime: number;
+  // version: number;
+  // size: number;
+  // vsize: number;
+  // weight: number;
+  // locktime: number;
   vin: Input[];
   vout: Output[];
-  hex: string;
-  blockhash?: string; // Optional, might not be available if transaction is unconfirmed
-  confirmations?: number; // Optional, might not be available if transaction is unconfirmed
-  time?: number; // Optional, might not be available if transaction is unconfirmed
-  blocktime?: number; // Optional, might not be available if transaction is unconfirmed
+  // hex: string;
+  // blockhash?: string; // Optional, might not be available if transaction is unconfirmed
+  // confirmations?: number; // Optional, might not be available if transaction is unconfirmed
+  // time?: number; // Optional, might not be available if transaction is unconfirmed
+  // blocktime?: number; // Optional, might not be available if transaction is unconfirmed
 }
 
 type TxId = string;
@@ -63,7 +63,7 @@ enum BatchStatuses {
 
 export class TransactionsBatch extends AggregateRoot {
   public aggregateId!: string; // uuid
-  public blockHeight!: bigint;
+  public blockHeight!: number;
   public blockHash!: string;
   public prevBlockHash!: string;
   public batch!: Batch;
@@ -82,7 +82,7 @@ export class TransactionsBatch extends AggregateRoot {
     aggregateId: string;
     requestId: string;
     tx: Transaction[];
-    blockHeight: bigint;
+    blockHeight: string | number;
     blockHash: string;
     prevBlockHash: string;
     n: number;
@@ -114,6 +114,7 @@ export class TransactionsBatch extends AggregateRoot {
       new BitcoinIndexerTransactionsBatchSuspendedEvent({
         aggregateId,
         requestId,
+        batch: this.batch,
         status: BatchStatuses.SUSPENDED,
       })
     );
@@ -124,7 +125,7 @@ export class TransactionsBatch extends AggregateRoot {
     const { tx, n, isFinalBatch } = batch;
 
     this.aggregateId = aggregateId;
-    this.blockHeight = BigInt(blockHeight);
+    this.blockHeight = Number(blockHeight);
     this.blockHash = blockHash;
     this.prevBlockHash = prevBlockHash;
     this.status = status as BatchStatuses;

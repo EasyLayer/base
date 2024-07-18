@@ -22,7 +22,7 @@ type Index = number;
 
 type Block = {
   hash: string;
-  height: bigint;
+  height: number;
   prevHash: string;
   batches: Map<Index, Batch>;
 };
@@ -35,7 +35,7 @@ type Chain = {
 
 type AddBatchParams = {
   blockHash: string;
-  blockHeight: bigint;
+  blockHeight: number;
   preBlockHash: string | null;
   index: number;
   isFinalBatch: boolean;
@@ -65,8 +65,8 @@ export class Blockchain {
    * Returns the height of the last block in the blockchain.
    * @complexity O(1)
    */
-  get lastBlockHeight(): bigint {
-    return this.tail ? this.tail.block.height : -1n;
+  get lastBlockHeight(): number {
+    return this.tail ? this.tail.block.height : -1;
   }
 
   /**
@@ -194,7 +194,7 @@ export class Blockchain {
         return false;
       }
       // Check the height of the new block
-      if (lastBlock.height + 1n !== newBatch.blockHeight) {
+      if (lastBlock.height + 1 !== newBatch.blockHeight) {
         return false;
       }
     } else {
@@ -214,7 +214,7 @@ export class Blockchain {
    * @returns The block if found, null otherwise.
    * @complexity O(n), where n is the number of blocks in the chain.
    */
-  public findBlockByHeight(height: bigint): Block | null {
+  public findBlockByHeight(height: number): Block | null {
     let current = this.head;
     while (current) {
       if (current.block.height === height) {
@@ -232,7 +232,7 @@ export class Blockchain {
    * @returns true if the batch was removed successfully, false otherwise.
    * @complexity O(n + m), where n is the number of blocks and m is the number of batches in the block.
    */
-  public removeOneBatchByBlock(blockHeight: bigint, batchIndex: number): boolean {
+  public removeOneBatchByBlock(blockHeight: number, batchIndex: number): boolean {
     let current = this.head;
     while (current) {
       if (current.block.height === blockHeight) {
@@ -253,7 +253,7 @@ export class Blockchain {
    * @returns An array of blocks that were removed.
    * @complexity O(n), where n is the number of blocks to be removed.
    */
-  public truncateToBlock(height: bigint): Block[] {
+  public truncateToBlock(height: number): Block[] {
     const removedBlocks: Block[] = [];
     while (this.tail && this.tail.block.height > height) {
       removedBlocks.push(this.tail.block);
@@ -275,7 +275,7 @@ export class Blockchain {
    * @returns An array of batches that were removed from the specified block.
    * @complexity O(n + m), where n is the number of blocks and m is the number of batches removed.
    */
-  public truncateToBatch(blockHeight: bigint, batchIndex: number): Batch[] {
+  public truncateToBatch(blockHeight: number, batchIndex: number): Batch[] {
     const removedBatches: Batch[] = [];
     const block = this.findBlockByHeight(blockHeight);
     if (block) {
@@ -297,7 +297,7 @@ export class Blockchain {
    * @returns true if the specified block and batch are the last ones in the blockchain, false otherwise.
    * @complexity O(1)
    */
-  public validateLastBatch(blockHeight: bigint, batchIndex: number): boolean {
+  public validateLastBatch(blockHeight: number, batchIndex: number): boolean {
     if (this.tail && this.tail.block.height === blockHeight) {
       const lastIndex = this.lastBatchIndex;
       if (lastIndex === batchIndex) {
@@ -324,7 +324,7 @@ export class Blockchain {
 
     while (current && current.next) {
       // First check if the block heights increment by 1
-      if (current.next.block.height !== current.block.height + 1n) {
+      if (current.next.block.height !== current.block.height + 1) {
         return false; // Height mismatch
       }
       // Then check if the hashes match
@@ -348,21 +348,21 @@ export class BalancesIndexer extends AggregateRoot {
   // IMPORTANT: this method doing two things:
   // 1 - create Indexer if it's first creation
   // 2 - use already created params but still publish event
-  public async init({ requestId, startHeight }: { requestId: string; startHeight: bigint }) {
+  public async init({ requestId, startHeight }: { requestId: string; startHeight: string | number }) {
     const status = this.status || IndexerStatuses.AWAITING;
     const lastBlockHeight = this.chain.lastBlockHeight;
     // NOTE: lastBlockHeight - is the last already indexed block and
     // if it's start of blockchain where genesis block height is '0'
     // so we indicate the last indexed block adjusted by -1n.
     // startHeight - is the height from which the user wants to index, it cannot be less than 0.
-    const height = lastBlockHeight + 1n > startHeight ? lastBlockHeight : startHeight - 1n;
+    const height = lastBlockHeight + 1 > Number(startHeight) ? lastBlockHeight : Number(startHeight) - 1;
 
     await this.apply(
       new BitcoinBalancesIndexerInitializedEvent({
         aggregateId: this.aggregateId,
         requestId,
         status,
-        indexedHeight: height.toString(),
+        indexedHeight: String(height),
       })
     );
   }
@@ -384,7 +384,7 @@ export class BalancesIndexer extends AggregateRoot {
         requestId,
         status: IndexerStatuses.AWAITING,
         batch: restBatch,
-        blockHeight,
+        blockHeight: String(blockHeight),
         blockHash,
         prevBlockHash,
       })
@@ -396,7 +396,7 @@ export class BalancesIndexer extends AggregateRoot {
     requestId,
     service,
   }: {
-    height: bigint;
+    height: string | number;
     requestId: string;
     service: BitcoinNetworkProviderService; // TODO: here can be any service
   }): Promise<void> {
@@ -405,10 +405,12 @@ export class BalancesIndexer extends AggregateRoot {
     }
 
     // Get previously blocks by height - 1
+    const prevHeight = Number(height) - 1;
+
     // IMPORTANT: Here we get the block from the provider
     // (the service can be either networkTransport or networkProvider)
-    const oldBlock = await service.getOneBlockByHeight(height - 1n);
-    const localBlock = this.chain.findBlockByHeight(height - 1n);
+    const oldBlock = await service.getOneBlockByHeight(prevHeight);
+    const localBlock = this.chain.findBlockByHeight(prevHeight);
 
     if (!localBlock) {
       // If we haven’t found a block by height in the chain by height,
@@ -422,28 +424,34 @@ export class BalancesIndexer extends AggregateRoot {
 
       // IMPORTANT: Here we are sending the first block (in the chain this is the last block)
       // from the structure and the height to which we need to reorganize
-      await this.apply(
+      return await this.apply(
         new BitcoinBalancesIndexerReorganisationStartedEvent({
           aggregateId: this.aggregateId,
           requestId,
           status: IndexerStatuses.REORGANISATION,
           // NOTE: height - height of reorganization (last correct block)
-          height: localBlock.height.toString(),
+          height: String(localBlock.height),
           block: this.chain.lastBlock,
         })
       );
     }
 
     // Recursive check the previous block
-    return this.startReorganisation({ height: height - 1n, requestId, service });
+    return this.startReorganisation({ height: prevHeight, requestId, service });
   }
 
-  public async finishReorganisation({ height, requestId }: { height: bigint; requestId: string }): Promise<void> {
+  public async finishReorganisation({
+    height,
+    requestId,
+  }: {
+    height: string | number;
+    requestId: string;
+  }): Promise<void> {
     if (this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error("Reorganisation hasn't started yet");
     }
 
-    if (height !== this.chain.lastBlockHeight) {
+    if (Number(height) > this.chain.lastBlockHeight) {
       throw new Error('Wrong blockheight');
     }
 
@@ -453,12 +461,20 @@ export class BalancesIndexer extends AggregateRoot {
         requestId,
         status: IndexerStatuses.AWAITING,
         // NOTE: height - height of reorganization (last correct block)
-        height: height.toString(),
+        height: String(height),
       })
     );
   }
 
-  public async truncateByBlock({ height, block, requestId }: { height: bigint; block: any; requestId: string }) {
+  public async truncateByBlock({
+    height,
+    block,
+    requestId,
+  }: {
+    height: string | number;
+    block: any;
+    requestId: string;
+  }) {
     if (this.status !== IndexerStatuses.REORGANISATION) {
       throw new Error('reorganisation () Previous Block did not complete indexing');
     }
@@ -469,19 +485,19 @@ export class BalancesIndexer extends AggregateRoot {
       throw new Error('Blockchain is empty');
     }
 
-    if (block.height !== blockNeedToBeTruncate.height) {
+    if (Number(block.height) !== blockNeedToBeTruncate.height) {
       throw new Error('Wrong block height');
     }
 
-    // NOTE: We have to get the new last block (height -1n)
+    // NOTE: We have to get the new last block (height - 1)
     // and send it in the event
-    const prevBlock = this.chain.findBlockByHeight(blockNeedToBeTruncate.height - 1n);
+    const prevBlock = this.chain.findBlockByHeight(blockNeedToBeTruncate.height - 1);
 
     await this.apply(
       new BitcoinBalancesIndexerChainByBlockTruncatedEvent({
         aggregateId: this.aggregateId,
         requestId,
-        height: height.toString(),
+        height: String(height),
         block: prevBlock,
       })
     );
@@ -495,7 +511,7 @@ export class BalancesIndexer extends AggregateRoot {
 
   private onBitcoinBalancesIndexerChainBacthAddedEvent({ payload }: BitcoinBalancesIndexerChainBacthAddedEvent) {
     const { batch, status, blockHeight, blockHash, prevBlockHash } = payload;
-    this.chain.addBatch({ ...batch, blockHash, blockHeight: BigInt(blockHeight), prevBlockHash });
+    this.chain.addBatch({ ...batch, blockHash, blockHeight: Number(blockHeight), prevBlockHash });
     this.status = status as IndexerStatuses;
   }
 
@@ -519,6 +535,6 @@ export class BalancesIndexer extends AggregateRoot {
     payload,
   }: BitcoinBalancesIndexerChainByBlockTruncatedEvent) {
     const { height } = payload;
-    this.chain.truncateToBlock(BigInt(height));
+    this.chain.truncateToBlock(Number(height));
   }
 }

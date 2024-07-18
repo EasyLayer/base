@@ -18,7 +18,7 @@ describe('Blockchain', () => {
       const result = blockchain.addBlock(0, 'hash0', 'prevHash0', []);
       expect(result).toBe(true);
       expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(0));
+      expect(blockchain.lastBlockHeight).toBe(0);
       expect(blockchain.lastBlockHash).toBe('hash0');
     });
 
@@ -41,7 +41,7 @@ describe('Blockchain', () => {
       blockchain.addBlock(1, 'hash1', 'hash0', []);
       blockchain.addBlock(2, 'hash2', 'hash1', []);
       expect(blockchain.size).toBe(3);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(2));
+      expect(blockchain.lastBlockHeight).toBe(2);
       expect(blockchain.lastBlockHash).toBe('hash2');
     });
 
@@ -50,8 +50,8 @@ describe('Blockchain', () => {
         blockchain.addBlock(i, `hash${i}`, i === 0 ? 'prevHash0' : `hash${i - 1}`, []);
       }
       expect(blockchain.size).toBe(100);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(100));
-      expect(blockchain.findBlockByHeight(0n)).toBe(null);
+      expect(blockchain.lastBlockHeight).toBe(100);
+      expect(blockchain.findBlockByHeight(0)).toBe(null);
     });
   });
 
@@ -104,7 +104,7 @@ describe('Blockchain', () => {
       blockchain.addBlock(0, 'hash0', 'prevHash0', []);
       const lastBlock = blockchain.peekLast();
       expect(lastBlock).toEqual({
-        height: BigInt(0),
+        height: 0,
         hash: 'hash0',
         prevHash: 'prevHash0',
         batches: [],
@@ -117,15 +117,15 @@ describe('Blockchain', () => {
       blockchain.addBlock(0, 'hash0', 'prevHash0', []);
       blockchain.addBlock(1, 'hash1', 'hash0', []);
       blockchain.addBlock(2, 'hash2', 'hash1', []);
-      const truncated = blockchain.truncateToBlock(2n);
+      const truncated = blockchain.truncateToBlock(2);
       expect(truncated).toBe(true);
       expect(blockchain.size).toBe(2);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(1));
+      expect(blockchain.lastBlockHeight).toBe(1);
     });
 
     it('should return false if the block was not found', () => {
       blockchain.addBlock(0, 'hash0', 'prevHash0', []);
-      const truncated = blockchain.truncateToBlock(5n);
+      const truncated = blockchain.truncateToBlock(5);
       expect(truncated).toBe(false);
       expect(blockchain.size).toBe(1);
     });
@@ -137,7 +137,7 @@ describe('Blockchain', () => {
       blockchain.addBlock(1, 'hash1', 'hash0', []);
       const removedBlock = blockchain['removeOldestChain']();
       expect(removedBlock).toEqual({
-        height: BigInt(0),
+        height: 0,
         hash: 'hash0',
         prevHash: 'prevHash0',
         batches: [],
@@ -157,9 +157,9 @@ describe('Blockchain', () => {
     it('should find a block by its height', () => {
       blockchain.addBlock(0, 'hash0', 'prevHash0', []);
       blockchain.addBlock(1, 'hash1', 'hash0', []);
-      const block = blockchain.findBlockByHeight(1n);
+      const block = blockchain.findBlockByHeight(1);
       expect(block).toEqual({
-        height: BigInt(1),
+        height: 1,
         hash: 'hash1',
         prevHash: 'hash0',
         batches: [],
@@ -168,7 +168,7 @@ describe('Blockchain', () => {
 
     it('should return null if the block is not found', () => {
       blockchain.addBlock(0, 'hash0', 'prevHash0', []);
-      const block = blockchain.findBlockByHeight(1n);
+      const block = blockchain.findBlockByHeight(1);
       expect(block).toBeNull();
     });
   });

@@ -23,10 +23,22 @@ export class CustomEventBus<EventBase extends IEvent = IEvent> extends EventBus<
     super(ingectCommandBus, injectedModuleRef, injectedUnhandledExceptionBus);
   }
 
+  /**
+   * Returns an Observable that allows tracking events
+   * processed by the event handler.
+   *
+   * @returns Observable<IEvent> - An Observable that emits events after they have been processed.
+   */
   get eventHandlerCompletionSubject$(): Observable<IEvent> {
     return this._eventHandlerCompletionSubject$.asObservable();
   }
 
+  /**
+   * Returns an Observable that allows tracking events
+   * processed by the saga.
+   *
+   * @returns Observable<IEvent> - An Observable that emits events after they have been processed by the saga.
+   */
   get sagaCompletionSubject$(): Observable<IEvent> {
     return this._sagaCompletionSubject$.asObservable();
   }

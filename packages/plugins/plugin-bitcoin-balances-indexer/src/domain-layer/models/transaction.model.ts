@@ -32,7 +32,7 @@ export class Transaction extends AggregateRoot {
     aggregateId: string;
     vout: any; // vout object
     requestId: string;
-    blockHeight: bigint;
+    blockHeight: number;
     blockHash: string;
   }) {
     const outputs = vout.map((item: any) => ({
@@ -101,7 +101,7 @@ export class Transaction extends AggregateRoot {
     aggregateId: string;
     vout: any;
     requestId: string;
-    blockHeight: bigint;
+    blockHeight: number;
     blockHash: string;
   }) {
     const outputsIndexes = vout.map((item: any) => item.n);

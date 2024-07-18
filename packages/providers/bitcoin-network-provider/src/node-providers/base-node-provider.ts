@@ -25,7 +25,7 @@ export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseN
     throw new Error('Method sendTransaction() is not supported by this provider');
   }
 
-  async getBlockHeight(): Promise<bigint> {
+  async getBlockHeight(): Promise<number> {
     throw new Error('Method getBlockHeight() is not supported by this provider');
   }
 

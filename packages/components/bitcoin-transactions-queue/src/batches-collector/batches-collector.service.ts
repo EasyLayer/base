@@ -91,7 +91,7 @@ export class BatchesQueueCollectorService {
 
   private validateBlock(block: any): boolean {
     // Add custom batch validation logic here
-    if (BigInt(block?.height) !== this._queue.lastHeight + 1n) {
+    if (Number(block?.height) !== this._queue.lastHeight + 1) {
       return false;
     }
 

@@ -1,6 +1,5 @@
 import 'reflect-metadata';
-import { resolve, join } from 'node:path';
-import { readdir, unlink } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { EventEmitter } from 'node:events';
 import { config } from 'dotenv';
 import supertest from 'supertest';
@@ -9,34 +8,45 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CoreModule } from '@easylayer/core';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
 import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
-import { SQLiteService } from '../../helpers/sqlite/sqlite.service';
+import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
+import { cleanDataFolder } from '../../+helpers/clean-data-folder';
 
 describe('/First Initialization Application Write State Checkin', () => {
   let app: INestApplication;
   let dbService: SQLiteService;
 
+  afterAll(async () => {
+    if (app) {
+      try {
+        await app.close();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    if (dbService) {
+      try {
+        await dbService.close();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+
   beforeAll(async () => {
     jest.useFakeTimers();
     const eventEmitter = new EventEmitter();
 
-    // Mock the BlocksQueueService with runQueue() method
+    // Mock the BlocksQueueService with start() method
     const mockBlocksQueueService = {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      runQueue: jest.fn().mockImplementation(async (height: bigint | string | number) => {
-        // Emit an event to signal that runQueue() was called
-        eventEmitter.emit('runQueueCalled');
+      start: jest.fn().mockImplementation(async (height: string | number) => {
+        // Emit an event to signal that start() was called
+        eventEmitter.emit('startCalled');
       }),
     };
 
     // Clear the database
-    const dataDir = resolve(process.cwd(), 'data');
-    try {
-      const files = await readdir(dataDir);
-      const unlinkPromises = files.map((file) => unlink(join(dataDir, file)));
-      await Promise.all(unlinkPromises);
-    } catch (err) {
-      console.error('Failed to clean data directory', err);
-    }
+    await cleanDataFolder();
 
     // Initialize transactional context before any database interaction
     initializeTransactionalContext();
@@ -60,8 +70,8 @@ describe('/First Initialization Application Write State Checkin', () => {
 
     // Create a promise to wait for the event
     // Set up the event listener before app.init()
-    const runQueueCalled = new Promise<void>((resolve) => {
-      eventEmitter.once('runQueueCalled', resolve);
+    const startCalled = new Promise<void>((resolve) => {
+      eventEmitter.once('startCalled', resolve);
     });
 
     await app.init();
@@ -69,7 +79,7 @@ describe('/First Initialization Application Write State Checkin', () => {
     jest.runAllTimersAsync();
 
     // Wait for the startBlocksLoading() method
-    await runQueueCalled;
+    await startCalled;
 
     // We wait until startBlocksLoadingCalled() will be executed
     // This is because we want to test an app that has already initialized and stopped
@@ -95,23 +105,6 @@ describe('/First Initialization Application Write State Checkin', () => {
 
     const payload = JSON.parse(events[0].payload);
     expect(payload.status).toBe('awaiting');
-    expect(payload.height).toBe('-1');
-  });
-
-  afterAll(async () => {
-    if (app) {
-      try {
-        await app.close();
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    if (dbService) {
-      try {
-        await dbService.close();
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    expect(payload.indexedHeight).toBe('9');
   });
 });

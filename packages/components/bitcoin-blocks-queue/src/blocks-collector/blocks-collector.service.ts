@@ -8,7 +8,7 @@ import { BaseCollector, TransactionsBatchesCollector, TransactionsPagesCollector
 type TransactionsData = {
   tx: any[];
   blockHash: string;
-  blockHeight: bigint;
+  blockHeight: number;
 };
 
 @Injectable()
@@ -43,7 +43,7 @@ export class BlocksQueueCollectorService {
       return;
     }
 
-    if (block.height === this._queue.lastHeight + 1n) {
+    if (block.height === this._queue.lastHeight + 1) {
       this._block = block;
       this._transactionsCollector.setExpectedTransactionCount(transactionCount);
 
@@ -80,7 +80,7 @@ export class BlocksQueueCollectorService {
     this._block.tx = this._transactionsCollector.collectAllTransactions();
 
     // Check the height of the block before adding it to the queue
-    if (this._block.height !== this._queue.lastHeight + 1n) {
+    if (this._block.height !== this._queue.lastHeight + 1) {
       this.reset();
       return;
     }

@@ -130,6 +130,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         await batch.commit();
       }
 
+      // NOTE: This event is not currently being processed
       await indexerModel.commit();
 
       this.log.debug('Block index started', { block: blockWithoutTx }, this.constructor.name);

@@ -20,6 +20,7 @@
         "@easylayer/cqrs": "0.0.2-experimental.1",
         "@easylayer/domain-cqrs-components": "0.0.2-experimental.1",
         "@easylayer/eventstore": "0.0.2-experimental.1",
+        "@easylayer/plugin-bitcoin-balances-indexer": "0.0.2-experimental.1",
         "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.1",
         "@easylayer/utils": "0.0.2-experimental.1",
         "dotenv": "16.4.5",

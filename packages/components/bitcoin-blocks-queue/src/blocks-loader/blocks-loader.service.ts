@@ -1,7 +1,7 @@
-import { backOff } from 'exponential-backoff';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
+import { exponentialIntervalAsync } from '@easylayer/exponential-interval-async';
 import { BlocksQueue } from '../blocks-queue';
 import { Block } from '../interfaces';
 import {
@@ -17,7 +17,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   private _queue!: BlocksQueue<Block>;
   private _isLoading: boolean = false;
   private _loadingStrategy: BlocksLoadingStrategy | null = null;
-  private _currentNetworkHeight: bigint = -1n;
+  private _currentNetworkHeight: number = -1;
 
   constructor(
     private readonly log: AppLogger,
@@ -25,7 +25,9 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     private readonly networkProviderService: BitcoinNetworkProviderService,
     private readonly webhookStreamService: BitcoinWebhookStreamService,
     private readonly options: any
-  ) {}
+  ) {
+    // options.isTransportMode
+  }
 
   get isLoading(): boolean {
     return this._isLoading;
@@ -35,7 +37,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     this.destroyStrategy();
   }
 
-  public async startBlocksLoading(indexedHeight: bigint | number | string, queue: BlocksQueue<Block>): Promise<void> {
+  public async startBlocksLoading(indexedHeight: number | string, queue: BlocksQueue<Block>): Promise<void> {
     this.log.debug('startBlocksLoading()', { indexedHeight }, this.constructor.name);
 
     // NOTE: We use this to make sure that
@@ -51,9 +53,9 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
     // INPORTANT: Here we indicate the height that was actually the last processed
     // (NOT the next one)
-    this._queue.lastHeight = BigInt(indexedHeight);
+    this._queue.lastHeight = Number(indexedHeight);
 
-    await backOff(
+    await exponentialIntervalAsync(
       async () => {
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
           this.log.info('Reached max block height', { height: this._queue.lastHeight }, this.constructor.name);
@@ -76,10 +78,9 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
         }
       },
       {
-        startingDelay: 1000,
-        maxDelay: 10 * 60 * 1000, // TODO: add to env. Bitcoin block time
-        numOfAttempts: Infinity,
-        timeMultiple: 10,
+        interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
+        maxInterval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
+        multiplier: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
       }
     );
   }

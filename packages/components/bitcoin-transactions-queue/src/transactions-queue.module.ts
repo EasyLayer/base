@@ -13,7 +13,7 @@ import { TransactionsQueueConfig } from './config/transactions-queue.config';
 export interface TransactionsQueueModuleOptions {
   batchesCommandExecutor: Type<BatchesCommandExecutor>;
   isTransportMode: boolean;
-  maxBlockHeight: bigint;
+  maxBlockHeight: number;
 }
 
 @Module({})

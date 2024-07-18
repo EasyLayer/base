@@ -3,8 +3,10 @@ import { Entity, PrimaryGeneratedColumn, Column, Unique, Index } from '@easylaye
 @Entity('outputs')
 @Unique('UQ__txid__vout_index', ['txid', 'voutIndex'])
 export class OutputViewModel {
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  public id!: string;
+  // TODO: The autoinerment type must be passed from variables, since SQLite does not support bigint.
+  // OR remove autoinerment and put some uuid
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  public id!: string | number;
 
   @Index()
   @Column({ type: 'varchar' })

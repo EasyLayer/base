@@ -21,14 +21,6 @@ export class BitcoinIndexerTransactionsBatchIndexedEventHandler
 
       const { blockHash, status, batch } = payload;
 
-      // Check if block exists
-      // const block = await this.blocksService.findOne({
-      //   where: { hash: blockHash },
-      //   // relations: ['transactions']
-      // });
-      // if (!block) {
-      //   throw new Error('Block is not found');
-      // }
       return await this.transactionsService.createMany({ blockHash, batch, status });
     } catch (error) {
       this.log.error('handle()', error, this.constructor.name);

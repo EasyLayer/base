@@ -34,7 +34,7 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
       /* Check Finish Reorganisation */
       if (block.height === height) {
         // Reorganisation has already finished
-        await indexerModel.finishReorganisation({ height: BigInt(height), requestId });
+        await indexerModel.finishReorganisation({ height, requestId });
         await this.eventStore.save(indexerModel);
         await indexerModel.commit();
         return;
@@ -55,19 +55,18 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
           await removedUTXO.delete({ aggregateId: txid, vout, requestId, blockHeight, blockHash });
           transactionModels.push(removedUTXO);
 
-          if (vin) {
-            // We unspent all inputs from transactions that were previously spent
-            for (const input of vin) {
-              const unspentedUTXO: Transaction = this.transactionModelFactory.createNewModel();
-              await unspentedUTXO.unspent({ aggregateId: input.txid, voutIndex: input.vout, requestId });
-              transactionModels.push(unspentedUTXO);
-            }
+          // We unspent all inputs from transactions that were previously spent
+          for (const input of vin) {
+            const unspentedUTXO: Transaction = this.transactionModelFactory.createNewModel();
+            const voutIndex = input.vout ? input.vout : -1; // -1 mean coinbase tx
+            await unspentedUTXO.unspent({ aggregateId: input.txid, voutIndex, requestId });
+            transactionModels.push(unspentedUTXO);
           }
         }
       }
 
       await indexerModel.truncateByBlock({
-        height: BigInt(height), // reorganisation height
+        height, // reorganisation height
         block, // block need to be truncate
         requestId,
       });

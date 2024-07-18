@@ -17,7 +17,7 @@ describe('Blockchain', () => {
     it('should add a batch to a new block successfully', () => {
       const batch = {
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -26,14 +26,14 @@ describe('Blockchain', () => {
       const result = blockchain.addBatch(batch);
       expect(result).toBe(true);
       expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(1));
+      expect(blockchain.lastBlockHeight).toBe(1);
       expect(blockchain.lastBlockHash).toBe('qwe');
     });
 
     it('should not add a batch with invalid previous hash', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -41,7 +41,7 @@ describe('Blockchain', () => {
       });
       const batch = {
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 1,
         preBlockHash: 'invalidHash',
         index: 0,
         isFinalBatch: false,
@@ -55,7 +55,7 @@ describe('Blockchain', () => {
     it('should not add a batch with non-sequential index', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -63,7 +63,7 @@ describe('Blockchain', () => {
       });
       const batch = {
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 2,
         isFinalBatch: false,
@@ -77,7 +77,7 @@ describe('Blockchain', () => {
     it('should add multiple batches to the same block', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -85,14 +85,14 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
       expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(1));
+      expect(blockchain.lastBlockHeight).toBe(1);
       expect(blockchain.lastBlockHash).toBe('qwe');
       expect(blockchain.isLastBatchFinal).toBe(true);
     });
@@ -100,7 +100,7 @@ describe('Blockchain', () => {
     it('should add batches to different blocks sequentially', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: true,
@@ -108,7 +108,7 @@ describe('Blockchain', () => {
       });
       const result = blockchain.addBatch({
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 2,
         preBlockHash: 'qwe',
         index: 0,
         isFinalBatch: false,
@@ -116,7 +116,7 @@ describe('Blockchain', () => {
       });
       expect(result).toBe(true);
       expect(blockchain.size).toBe(2);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(2));
+      expect(blockchain.lastBlockHeight).toBe(2);
       expect(blockchain.lastBlockHash).toBe('ewq');
     });
   });
@@ -125,7 +125,7 @@ describe('Blockchain', () => {
     it('should validate the first batch correctly', () => {
       const batch = {
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -138,7 +138,7 @@ describe('Blockchain', () => {
     it('should not validate a batch with invalid previous hash', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -146,7 +146,7 @@ describe('Blockchain', () => {
       });
       const batch = {
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 2,
         preBlockHash: 'invalidHash',
         index: 0,
         isFinalBatch: false,
@@ -159,7 +159,7 @@ describe('Blockchain', () => {
     it('should not validate a batch with non-sequential index', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -167,7 +167,7 @@ describe('Blockchain', () => {
       });
       const batch = {
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 2,
         isFinalBatch: false,
@@ -180,7 +180,7 @@ describe('Blockchain', () => {
     it('should validate a correct batch', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -188,7 +188,7 @@ describe('Blockchain', () => {
       });
       const batch = {
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 1,
         isFinalBatch: true,
@@ -203,7 +203,7 @@ describe('Blockchain', () => {
     it('should validate the last batch correctly', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -211,20 +211,20 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
-      const isValid = blockchain.validateLastBatch(BigInt(1), 1);
+      const isValid = blockchain.validateLastBatch(1, 1);
       expect(isValid).toBe(true);
     });
 
     it('should not validate a non-final last batch', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -232,13 +232,13 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 1,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       });
-      const isValid = blockchain.validateLastBatch(BigInt(1), 1);
+      const isValid = blockchain.validateLastBatch(1, 1);
       expect(isValid).toBe(false);
     });
   });
@@ -247,7 +247,7 @@ describe('Blockchain', () => {
     it('should truncate the blockchain correctly', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: true,
@@ -255,16 +255,16 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 2,
         preBlockHash: 'qwe',
         index: 0,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
-      const removedBlocks = blockchain.truncateToBlock(1n);
+      const removedBlocks = blockchain.truncateToBlock(1);
       expect(removedBlocks.length).toBe(1);
       expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBlockHeight).toBe(BigInt(1));
+      expect(blockchain.lastBlockHeight).toBe(1);
     });
   });
 
@@ -272,7 +272,7 @@ describe('Blockchain', () => {
     it('should truncate the blockchain to a specific batch', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: true,
@@ -280,7 +280,7 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 2,
         preBlockHash: 'qwe',
         index: 0,
         isFinalBatch: false,
@@ -288,13 +288,13 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 2,
         preBlockHash: 'qwe',
         index: 1,
         isFinalBatch: true,
         tx: ['qwe5', 'ewq6'],
       });
-      const removedBatches = blockchain.truncateToBatch(2n, 0);
+      const removedBatches = blockchain.truncateToBatch(2, 0);
       expect(removedBatches.length).toBe(1);
       expect(blockchain.size).toBe(2);
       expect(blockchain.lastBatchIndex).toBe(0);
@@ -305,7 +305,7 @@ describe('Blockchain', () => {
     it('should remove a batch from a block', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
@@ -313,13 +313,13 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
-      const result = blockchain.removeOneBatchByBlock(BigInt(1), 1);
+      const result = blockchain.removeOneBatchByBlock(1, 1);
       expect(result).toBe(true);
       expect(blockchain.size).toBe(1);
       expect(blockchain.lastBatchIndex).toBe(0);
@@ -328,13 +328,13 @@ describe('Blockchain', () => {
     it('should return false if batch not found', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
-      const result = blockchain.removeOneBatchByBlock(BigInt(1), 1);
+      const result = blockchain.removeOneBatchByBlock(1, 1);
       expect(result).toBe(false);
     });
   });
@@ -343,7 +343,7 @@ describe('Blockchain', () => {
     it('should find a block by its height', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: true,
@@ -351,16 +351,16 @@ describe('Blockchain', () => {
       });
       blockchain.addBatch({
         blockHash: 'ewq',
-        blockHeight: BigInt(2),
+        blockHeight: 1,
         preBlockHash: 'qwe',
         index: 0,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       });
-      const block = blockchain.findBlockByHeight(1n);
+      const block = blockchain.findBlockByHeight(1);
       expect(block).toEqual({
         hash: 'qwe',
-        height: BigInt(1),
+        height: 1,
         prevHash: '',
         batches: new Map([[0, { tx: ['qwe1', 'ewq2'], isFinalBatch: true }]]),
       });
@@ -369,13 +369,13 @@ describe('Blockchain', () => {
     it('should return null if block not found', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         preBlockHash: null,
         index: 0,
         isFinalBatch: true,
         tx: ['qwe1', 'ewq2'],
       });
-      const block = blockchain.findBlockByHeight(2n);
+      const block = blockchain.findBlockByHeight(2);
       expect(block).toBeNull();
     });
   });

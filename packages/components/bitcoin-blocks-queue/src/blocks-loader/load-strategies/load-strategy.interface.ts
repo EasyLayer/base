@@ -1,7 +1,7 @@
 export interface BlocksLoadingStrategy {
   readonly name: StrategyNames;
   isLoading: boolean;
-  load(currentNetworkHeight: bigint): Promise<void>;
+  load(currentNetworkHeight: number): Promise<void>;
   destroy(): Promise<void>;
 }
 

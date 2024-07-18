@@ -13,7 +13,7 @@ import { BlocksQueueConfig } from './config/blocks-queue.config';
 export interface BlocksQueueModuleOptions {
   blocksCommandExecutor: Type<BlocksCommandExecutor>;
   isTransportMode: boolean;
-  maxBlockHeight: bigint;
+  maxBlockHeight: number;
 }
 
 @Module({})

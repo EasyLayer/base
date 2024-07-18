@@ -22,6 +22,7 @@
   "packageManager": "yarn@3.6.0",
   "dependencies": {
     "@easylayer/bitcoin-network-provider": "0.0.2-experimental.1",
+    "@easylayer/exponential-interval-async": "0.0.2-experimental.1",
     "@easylayer/logger": "0.0.2-experimental.1",
     "@easylayer/network-transport": "0.0.2-experimental.1",
     "@easylayer/shared-interfaces": "0.0.2-experimental.1",
@@ -30,7 +31,6 @@
     "class-transformer": "0.5.1",
     "class-transformer-validator": "0.9.1",
     "class-validator": "0.14.0",
-    "exponential-backoff": "3.1.1",
     "object-sizeof": "2.6.4",
     "piscina": "4.1.0",
     "reflect-metadata": "0.1.14",

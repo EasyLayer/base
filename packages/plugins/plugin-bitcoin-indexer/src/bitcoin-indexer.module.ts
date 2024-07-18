@@ -6,8 +6,8 @@ import { EventStoreModule } from '@easylayer/eventstore';
 import { BlocksQueueModule } from '@easylayer/bitcoin-blocks-queue';
 import { ReadDatabaseModule } from '@easylayer/read-database';
 import { BitcoinNetworkProviderModule } from '@easylayer/bitcoin-network-provider';
-import { BitcoinIndexerController } from './bitcoin-indexer.controller';
-import { BitcoinIndexerService } from './bitcoin-indexer.service';
+import { IndexerController } from './indexer.controller';
+import { IndexerService } from './indexer.service';
 import { IndexerSaga } from './application-layer/sagas';
 import { BlockViewModel, TransactionViewModel } from './domain-layer/view-models';
 import {
@@ -44,7 +44,7 @@ export class BitcoinIndexerModule {
 
     return {
       module: BitcoinIndexerModule,
-      controllers: [BitcoinIndexerController],
+      controllers: [IndexerController],
       imports: [
         LoggerModule.forRoot({ componentName: 'BitcoinIndexerPlugin' }),
         // TODO: move configs into envs
@@ -70,7 +70,7 @@ export class BitcoinIndexerModule {
         }),
         BlocksQueueModule.forRootAsync({
           blocksCommandExecutor: BlocksCommandFactoryService,
-          isTransportMode: appConfig.BITCOIN_INDEXER_IS_TRANSPORT_MODE,
+          isTransportMode: false,
           maxBlockHeight: businessConfig.BITCOIN_INDEXER_MAX_BLOCK_HEIGHT,
         }),
         BitcoinNetworkProviderModule.forRootAsync({
@@ -78,6 +78,10 @@ export class BitcoinIndexerModule {
         }),
       ],
       providers: [
+        {
+          provide: AppConfig,
+          useValue: appConfig,
+        },
         {
           provide: BusinessConfig,
           useValue: businessConfig,
@@ -93,7 +97,7 @@ export class BitcoinIndexerModule {
         BlocksReadService,
         TransactionsReadService,
         ArithmeticService,
-        BitcoinIndexerService,
+        IndexerService,
         IndexerSaga,
         BlocksCommandFactoryService,
         IndexerCommandFactoryService,

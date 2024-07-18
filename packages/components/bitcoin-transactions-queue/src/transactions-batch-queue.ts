@@ -9,11 +9,11 @@ import { TransactionsBatch } from './interfaces';
 export class TransactionsBatchQueue<T extends TransactionsBatch> {
   private inStack: T[] = [];
   private outStack: T[] = [];
-  private _lastHeight: bigint = -1n;
+  private _lastHeight: number = -1;
   private _lastBatchIndex: number = -1;
   private _lastBlockHash: string = '';
   private _maxQueueLength: number = 100;
-  private _maxBlockHeight: bigint = BigInt(Number.MAX_SAFE_INTEGER);
+  private _maxBlockHeight: number = Number.MAX_SAFE_INTEGER;
 
   /**
    * Checks if the queue is full.
@@ -35,10 +35,10 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
 
   /**
    * Gets the maximum block height.
-   * @returns {bigint} The maximum block height.
+   * @returns {number} The maximum block height.
    * @complexity O(1)
    */
-  public get maxBlockHeight(): bigint {
+  public get maxBlockHeight(): number {
     return this._maxBlockHeight;
   }
 
@@ -47,7 +47,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    * @param height The maximum block height.
    * @complexity O(1)
    */
-  public set maxBlockHeight(height: bigint) {
+  public set maxBlockHeight(height: number) {
     this._maxBlockHeight = height;
   }
 
@@ -80,10 +80,10 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
 
   /**
    * Gets the height of the last block in the queue.
-   * @returns {bigint} The height as a bigint.
+   * @returns {number} The height as a bigint.
    * @complexity O(1)
    */
-  public get lastHeight(): bigint {
+  public get lastHeight(): number {
     return this._lastHeight;
   }
 
@@ -92,7 +92,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    * @param height The height as a bigint.
    * @complexity O(1)
    */
-  public set lastHeight(height: bigint) {
+  public set lastHeight(height: number) {
     this._lastHeight = height;
   }
 
@@ -214,7 +214,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    * @returns {T | undefined} The batch with the specified index or undefined if not found.
    * @complexity O(log n)
    */
-  public fetchBatchFromInStack(blockHeight: bigint, blockHash: string, index: number): T | undefined {
+  public fetchBatchFromInStack(blockHeight: number, blockHash: string, index: number): T | undefined {
     return this.binarySearch(this.inStack, blockHeight, blockHash, index, true);
   }
 
@@ -226,7 +226,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    * @returns {T | undefined} The batch with the specified index or undefined if not found.
    * @complexity O(log n)
    */
-  public fetchBatchFromOutStack(blockHeight: bigint, blockHash: string, index: number): T | undefined {
+  public fetchBatchFromOutStack(blockHeight: number, blockHash: string, index: number): T | undefined {
     return this.binarySearch(this.outStack, blockHeight, blockHash, index, false);
   }
 
@@ -237,7 +237,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
   public clear(): void {
     this.inStack = [];
     this.outStack = [];
-    this._lastHeight = -1n;
+    this._lastHeight = -1;
     this._lastBatchIndex = -1;
     this._lastBlockHash = '';
   }
@@ -295,7 +295,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
         return false;
       }
     } else {
-      if (batch.blockHeight !== this._lastHeight + 1n) {
+      if (batch.blockHeight !== this._lastHeight + 1) {
         return false;
       }
       if (batch.n !== 0) {
@@ -337,7 +337,7 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
    */
   private binarySearch(
     stack: T[],
-    blockHeight: bigint,
+    blockHeight: number,
     blockHash: string,
     index: number,
     isInStack: boolean

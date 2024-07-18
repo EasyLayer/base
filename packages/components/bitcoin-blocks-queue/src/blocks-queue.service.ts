@@ -26,7 +26,7 @@ export class BlocksQueueService {
     this.blocksCollectorService.init(this._blockQueue);
 
     this._blockQueue.maxQueueLength = this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_MAX_LENGTH;
-    this._blockQueue.maxBlockHeight = BigInt(this.options.maxBlockHeight);
+    this._blockQueue.maxBlockHeight = this.options.maxBlockHeight;
   }
 
   get queue(): BlocksQueue<Block> {
@@ -37,12 +37,12 @@ export class BlocksQueueService {
     return this.blocksCollectorService;
   }
 
-  async start(indexedHeight: string | bigint | number) {
+  async start(indexedHeight: string | number) {
     try {
       this.log.debug('start()', { indexedHeight }, this.constructor.name);
 
       await Promise.allSettled([
-        this.blocksQueueLoader.startBlocksLoading(BigInt(indexedHeight), this._blockQueue),
+        this.blocksQueueLoader.startBlocksLoading(Number(indexedHeight), this._blockQueue),
         this.blocksQueueIterator.startQueueIterating(this._blockQueue),
       ]);
     } catch (error) {
@@ -50,7 +50,7 @@ export class BlocksQueueService {
     }
   }
 
-  public async reorganizeBlocks(newStartHeight: bigint | string | number): Promise<void> {
+  public async reorganizeBlocks(newStartHeight: string | number): Promise<void> {
     this.log.debug('reorganizeBlocks()', { newStartHeight }, this.constructor.name);
 
     //  NOTE: We clear the entire queue
@@ -59,7 +59,7 @@ export class BlocksQueueService {
     this._blockQueue.clear();
 
     // Set a new initial height for loading blocks
-    this._blockQueue.lastHeight = BigInt(newStartHeight);
+    this._blockQueue.lastHeight = Number(newStartHeight);
 
     this.blocksQueueIterator.resolveNextBlock();
 

@@ -26,7 +26,7 @@ export class TransactionsQueueService {
     this.batchesCollectorService.init(this._batchQueue);
 
     this._batchQueue.maxQueueLength = this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_MAX_LENGTH;
-    this._batchQueue.maxBlockHeight = BigInt(this.options.maxBlockHeight);
+    this._batchQueue.maxBlockHeight = this.options.maxBlockHeight;
   }
 
   get queue(): TransactionsBatchQueue<TransactionsBatch> {
@@ -37,12 +37,12 @@ export class TransactionsQueueService {
     return this.batchesCollectorService;
   }
 
-  async start(indexedHeight: string | bigint | number) {
+  async start(indexedHeight: string | number) {
     try {
       this.log.debug('start()', { indexedHeight }, this.constructor.name);
 
       await Promise.allSettled([
-        this.batchesQueueLoader.startTransactionsLoading(BigInt(indexedHeight), this._batchQueue),
+        this.batchesQueueLoader.startTransactionsLoading(Number(indexedHeight), this._batchQueue),
         this.batchesQueueIterator.startQueueIterating(this._batchQueue),
       ]);
     } catch (error) {
@@ -50,7 +50,7 @@ export class TransactionsQueueService {
     }
   }
 
-  public async reorganizeBatches(newStartHeight: bigint | string | number): Promise<void> {
+  public async reorganizeBatches(newStartHeight: string | number): Promise<void> {
     this.log.debug('reorganizeBatches()', { newStartHeight }, this.constructor.name);
 
     // NOTE: We clear the entire queue
@@ -59,7 +59,7 @@ export class TransactionsQueueService {
     this._batchQueue.clear();
 
     // Set a new initial height for loading blocks
-    this._batchQueue.lastHeight = BigInt(newStartHeight);
+    this._batchQueue.lastHeight = Number(newStartHeight);
 
     this.batchesQueueIterator.resolveNextBatch();
 
@@ -88,7 +88,7 @@ export class TransactionsQueueService {
     if (batch) {
       if (
         batch.blockHash === blockHash &&
-        batch.blockHeight === BigInt(blockHeight) &&
+        batch.blockHeight === Number(blockHeight) &&
         batch.prevBlockHash === prevBlockHash &&
         batch.n === n
       ) {

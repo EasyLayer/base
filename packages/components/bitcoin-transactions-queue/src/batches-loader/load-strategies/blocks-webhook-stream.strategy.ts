@@ -22,14 +22,14 @@ export class BlocksWebhookStreamStrategy implements BlocksLoadingStrategy {
     await this.destroy();
   }
 
-  async load(currentNetworkHeight: bigint): Promise<void> {
+  async load(currentNetworkHeight: number): Promise<void> {
     if (this._isLoading) {
       return;
     }
 
     try {
       const stream = await this.webhookStreamService.createStream({
-        startHeight: this.queue.lastHeight + 1n,
+        startHeight: this.queue.lastHeight + 1,
         endHeight: currentNetworkHeight,
       });
 

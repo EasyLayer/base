@@ -27,7 +27,7 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      // NOTE: blocks - need to be reorganised,
+      // NOTE: blocks - need to be reorganised (from IndexerModel),
       // height - is height of reorganisation(the last height where the blocks matched)
       const { blocks, height, requestId } = payload;
 
@@ -36,8 +36,11 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
 
       this.log.debug('Init Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
-      const blocksModels: Block[] = [];
-      const batchesModels: TransactionsBatch[] = [];
+      const blockHashes = blocks.filter((item) => item.hash).map((item) => item.hash);
+      const batchesIds = blocks.flatMap((block) => block.batches);
+
+      const blocksModels: Block[] = await this.blockModelFactory.initExistingModels(blockHashes);
+      const batchesModels: TransactionsBatch[] = await this.batchModelFactory.initExistingModels(batchesIds);
 
       // IMPORTANT: Since we know the aggregate IDs of blocks and batches
       // that need to be removed,
@@ -47,31 +50,32 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
         const { batches, hash } = block;
 
         for (const batch of batches) {
-          const batchModel: TransactionsBatch = this.batchModelFactory.createNewModel();
-          await batchModel.suspend({ aggregateId: batch, requestId });
-          batchesModels.push(batchModel);
+          const batchModel = batchesModels.find((b) => b.aggregateId === batch);
+          if (batchModel) {
+            await batchModel.suspend({ aggregateId: batch, requestId });
+          }
         }
 
-        const blockModel: Block = this.blockModelFactory.createNewModel();
-        await blockModel.suspend({ aggregateId: hash, requestId });
-        blocksModels.push(blockModel);
+        const blockModel = blocksModels.find((b) => b.aggregateId === hash);
+        if (blockModel) {
+          await blockModel.suspend({ aggregateId: hash, requestId });
+        }
       }
 
-      await indexerModel.finishReorganisation({ height: BigInt(height), requestId });
+      await indexerModel.finishReorganisation({ height, requestId });
 
       // Save into eventstore
       await this.eventStore.save([...blocksModels, ...batchesModels, indexerModel]);
 
-      await indexerModel.commit();
-
-      // TODO: think about what we need to publish here, necessarily
-      //   for (const batch of batchesModels) {
-      //     await batch.commit();
-      //   }
-
       for (const block of blocksModels) {
         await block.commit();
       }
+
+      for (const batch of batchesModels) {
+        await batch.commit();
+      }
+
+      await indexerModel.commit();
 
       this.log.debug(
         `Blockchain successfull reorganised`,

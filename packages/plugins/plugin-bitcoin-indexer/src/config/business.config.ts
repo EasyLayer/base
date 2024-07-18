@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { IsBigInt } from '../decorators';
+import { IsNumber } from 'class-validator';
 
 @Injectable()
 export class BusinessConfig {
-  @Transform(({ value }) => (value ? BigInt(value) : BigInt(Number.MAX_SAFE_INTEGER)))
-  @IsBigInt()
-  BITCOIN_INDEXER_MAX_BLOCK_HEIGHT: bigint = BigInt(Number.MAX_SAFE_INTEGER);
+  @Transform(({ value }) => (value !== undefined ? Number(value) : Number.MAX_SAFE_INTEGER))
+  @IsNumber()
+  BITCOIN_INDEXER_MAX_BLOCK_HEIGHT: number = Number.MAX_SAFE_INTEGER;
 
-  @Transform(({ value }) => (value ? BigInt(value) : 0n))
-  @IsBigInt()
-  BITCOIN_INDEXER_START_BLOCK_HEIGHT: bigint = 0n;
+  @Transform(({ value }) => (value !== undefined ? Number(value) : 0))
+  @IsNumber()
+  BITCOIN_INDEXER_START_BLOCK_HEIGHT: number = 0;
 }

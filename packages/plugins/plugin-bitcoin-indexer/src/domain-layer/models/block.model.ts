@@ -10,23 +10,23 @@ enum BlockStatuses {
 }
 
 interface BitcoinBlock {
-  hash: string;
-  confirmations: number;
-  strippedsize: number;
-  size: number;
-  weight: number;
   height: number;
-  version: number;
-  versionHex: string;
-  merkleroot: string;
-  time: number;
-  mediantime: number;
-  nonce: number;
-  bits: string;
-  difficulty: number;
-  chainwork: string;
+  hash: string;
+  // confirmations: number;
+  // strippedsize: number;
+  // size: number;
+  // weight: number;
+  // version: number;
+  // versionHex: string;
+  // merkleroot: string;
+  // time: number;
+  // mediantime: number;
+  // nonce: number;
+  // bits: string;
+  // difficulty: number;
+  // chainwork: string;
   previousblockhash?: string; // Optional, might not be available for the genesis block
-  nextblockhash?: string; // Optional, might not be available if this is the latest block
+  // nextblockhash?: string; // Optional, might not be available if this is the latest block
 }
 
 type BlockType = BitcoinBlock; // full block object without tx key
@@ -94,15 +94,17 @@ export class Block extends AggregateRoot {
       new BitcoinIndexerBlockSuspendedEvent({
         aggregateId,
         requestId,
+        block: this.block,
         status: BlockStatuses.SUSPENDED,
       })
     );
   }
 
   private onBitcoinIndexerBlockIndexedEvent({ payload }: BitcoinIndexerBlockIndexedEvent) {
-    const { aggregateId, block, status, batches } = payload;
+    const { aggregateId, block, status, batches, txCount } = payload;
     this.aggregateId = aggregateId;
     this.block = block;
+    this.txCount = txCount;
     this.batches = new Map(Object.entries(batches));
     if (status) {
       this.status = status as BlockStatuses;
@@ -112,5 +114,11 @@ export class Block extends AggregateRoot {
   private onBitcoinIndexerBlockSuspendedEvent({ payload }: BitcoinIndexerBlockSuspendedEvent) {
     const { status } = payload;
     this.status = status as BlockStatuses;
+
+    if (this.batches) {
+      this.batches.forEach((value, key, map) => {
+        map.set(key, 'suspended');
+      });
+    }
   }
 }

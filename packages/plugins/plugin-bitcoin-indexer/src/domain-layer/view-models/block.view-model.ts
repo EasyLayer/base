@@ -10,14 +10,14 @@ export class BlockViewModel {
   @Column({ type: 'bigint' })
   public height!: string;
 
-  @Column({ type: 'varchar' })
-  public prevHash!: string;
+  @Column({ type: 'varchar', nullable: true })
+  public previousblockhash!: string;
 
   @Column({ type: 'varchar', nullable: true })
   public status!: string;
 
   @ManyToOne(() => BlockViewModel, (block) => block.nextBlocks)
-  @JoinColumn({ name: 'prevHash', referencedColumnName: 'hash' })
+  @JoinColumn({ name: 'previousblockhash', referencedColumnName: 'hash' })
   public prevBlock?: BlockViewModel;
 
   @OneToMany(() => BlockViewModel, (block) => block.prevBlock)
@@ -26,7 +26,7 @@ export class BlockViewModel {
   @OneToMany(() => TransactionViewModel, (transaction) => transaction.block, {
     cascade: ['remove'],
   })
-  public transactions!: TransactionViewModel[];
+  public tx!: TransactionViewModel[];
 
   constructor(params?: any) {
     if (!params) return;
@@ -34,7 +34,7 @@ export class BlockViewModel {
     this.hash = params.hash;
     this.status = params.status;
     this.height = params.height;
-    this.prevHash = params.prevHash;
-    this.transactions = Array.isArray(params.transations) ? params.transaction : [];
+    this.previousblockhash = params.previousblockhash;
+    this.tx = Array.isArray(params.tx) ? params.tx : [];
   }
 }

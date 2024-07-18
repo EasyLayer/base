@@ -1,7 +1,7 @@
-import { backOff } from 'exponential-backoff';
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
+import { exponentialIntervalAsync } from '@easylayer/exponential-interval-async';
 import { TransactionsBatchQueue } from '../transactions-batch-queue';
 import { BatchesQueueCollectorService } from '../batches-collector';
 import { TransactionsBatch } from '../interfaces';
@@ -18,7 +18,7 @@ export class BatchesQueueLoaderService implements OnModuleDestroy {
   private _queue!: TransactionsBatchQueue<TransactionsBatch>;
   private _isLoading: boolean = false;
   private _loadingStrategy: BlocksLoadingStrategy | null = null;
-  private _currentNetworkHeight: bigint = -1n;
+  private _currentNetworkHeight: number = -1;
   private _isTransportMode: boolean;
 
   constructor(
@@ -41,7 +41,7 @@ export class BatchesQueueLoaderService implements OnModuleDestroy {
   }
 
   public async startTransactionsLoading(
-    indexedHeight: bigint | number | string,
+    indexedHeight: number | string,
     queue: TransactionsBatchQueue<TransactionsBatch>
   ): Promise<void> {
     this.log.debug('startTransactionsLoading()', { indexedHeight }, this.constructor.name);
@@ -59,9 +59,9 @@ export class BatchesQueueLoaderService implements OnModuleDestroy {
 
     // INPORTANT: Here we indicate the height that was actually the last processed
     // (NOT the next one)
-    this._queue.lastHeight = BigInt(indexedHeight);
+    this._queue.lastHeight = Number(indexedHeight);
 
-    await backOff(
+    await exponentialIntervalAsync(
       async () => {
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
           this.log.info('Reached max block height', { height: this._queue.lastHeight }, this.constructor.name);
@@ -86,10 +86,9 @@ export class BatchesQueueLoaderService implements OnModuleDestroy {
         }
       },
       {
-        startingDelay: 1000,
-        maxDelay: 10 * 60 * 1000, // TODO: add to env. Bitcoin block time
-        numOfAttempts: Infinity,
-        timeMultiple: 10,
+        interval: 1000,
+        maxInterval: 10 * 60 * 1000, // TODO: add to env. Bitcoin block time
+        multiplier: 2,
       }
     );
   }

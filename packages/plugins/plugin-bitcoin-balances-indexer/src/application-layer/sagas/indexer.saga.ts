@@ -10,13 +10,13 @@ import {
   BitcoinBalancesIndexerChainBacthAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { BitcoinIndexerTransactionsBatchIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { IndexerCommandFactoryService } from '../services';
+import { BalancesIndexerCommandFactoryService } from '../services';
 
 @Injectable()
 export class IndexerSaga {
   constructor(
     @Inject('TransactionsQueueService') private readonly transactionsQueueService: TransactionsQueueService,
-    private readonly indexerCommandFactory: IndexerCommandFactoryService
+    private readonly indexerCommandFactory: BalancesIndexerCommandFactoryService
   ) {}
 
   @Saga()

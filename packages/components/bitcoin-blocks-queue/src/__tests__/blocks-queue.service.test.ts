@@ -47,7 +47,7 @@ describe('BlocksQueueService', () => {
 
     mockBlocksQueueConfig = {
       BITCOIN_BLOCKS_QUEUE_MAX_LENGTH: 5,
-      BITCOIN_BLOCKS_QUEUE_MAX_BLOCK_HEIGHT: 10n,
+      BITCOIN_BLOCKS_QUEUE_MAX_BLOCK_HEIGHT: 10,
       isAllowStreamLoad: () => false,
     } as any;
 
@@ -65,7 +65,7 @@ describe('BlocksQueueService', () => {
       set length(value: number) {
         queueLength = value;
       },
-      lastHeight: BigInt(0),
+      lastHeight: 0,
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -96,7 +96,7 @@ describe('BlocksQueueService', () => {
         {
           provide: BlocksQueueService,
           useFactory: (logger, iterator, loader, config, collector) =>
-            new BlocksQueueService(logger, iterator, loader, config, collector, { maxBlockHeight: BigInt(10) }),
+            new BlocksQueueService(logger, iterator, loader, config, collector, { maxBlockHeight: 10 }),
           inject: [
             AppLogger,
             BlocksQueueIteratorService,
@@ -121,14 +121,14 @@ describe('BlocksQueueService', () => {
       await service.reorganizeBlocks(2);
 
       expect(service['queue'].clear).toHaveBeenCalled();
-      expect(service['queue'].lastHeight).toBe(BigInt(2));
+      expect(service['queue'].lastHeight).toBe(2);
       expect(service['blocksQueueIterator'].resolveNextBlock).toHaveBeenCalled();
     });
   });
 
   describe('confirmIndexBlock', () => {
     it('should confirm and dequeue the block if the hash matches', async () => {
-      const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
+      const blockMock: Block = { height: 1, hash: 'hash 1', tx: [] };
 
       Object.defineProperty(service['queue'], 'firstBlock', {
         get: jest.fn(() => blockMock),
@@ -143,7 +143,7 @@ describe('BlocksQueueService', () => {
     });
 
     it('should not dequeue the block if the hash does not match', async () => {
-      const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
+      const blockMock: Block = { height: 1, hash: 'hash 1', tx: [] };
 
       Object.defineProperty(service['queue'], 'firstBlock', {
         get: jest.fn(() => blockMock),

@@ -15,7 +15,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     private readonly indexerModelFactory: BalancesIndexerModelFactoryService
   ) {}
 
-  @Transactional({ connectionName: 'indexer-balances-write' })
+  @Transactional({ connectionName: 'balances-indexer-write' })
   async execute({ payload }: InitIndexerCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);

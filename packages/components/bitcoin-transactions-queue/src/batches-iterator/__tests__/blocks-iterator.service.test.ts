@@ -9,14 +9,14 @@ jest.mock('uuid', () => ({
 }));
 
 class TestTransactionsBatch implements TransactionsBatch {
-  blockHeight: bigint;
+  blockHeight: number;
   blockHash: string;
   prevBlockHash: string | null;
   n: number;
   isFinalBatch: boolean;
   tx: any[];
 
-  constructor(height: bigint, hash: string, prevHash: string | null, n: number, isFinalBatch: boolean = false) {
+  constructor(height: number, hash: string, prevHash: string | null, n: number, isFinalBatch: boolean = false) {
     this.blockHeight = height;
     this.blockHash = hash;
     this.prevBlockHash = prevHash;
@@ -77,7 +77,7 @@ describe('BatchesQueueIteratorService', () => {
 
   describe('peekFirstBatch', () => {
     it('should resolve the promise and return the first batch', async () => {
-      const batchMock = new TestTransactionsBatch(0n, 'hash1', null, 0);
+      const batchMock = new TestTransactionsBatch(0, 'hash1', null, 0);
       mockQueue.enqueue(batchMock);
       service['initBatchProcessedPromise']();
       service['resolveNextBatch']();
@@ -94,7 +94,7 @@ describe('BatchesQueueIteratorService', () => {
     });
 
     it('should create a promise that can be resolved externally', async () => {
-      const batchMock = new TestTransactionsBatch(0n, 'hash1', null, 0);
+      const batchMock = new TestTransactionsBatch(0, 'hash1', null, 0);
       mockQueue.enqueue(batchMock);
       service['initBatchProcessedPromise']();
       let resolved = false;
@@ -110,7 +110,7 @@ describe('BatchesQueueIteratorService', () => {
   describe('batchesIterator', () => {
     it('should wait for batchProcessedPromise before yielding the next batch', async () => {
       jest.useFakeTimers({ advanceTimers: true });
-      const batchMock = new TestTransactionsBatch(0n, 'hash1', null, 0, true);
+      const batchMock = new TestTransactionsBatch(0, 'hash1', null, 0, true);
       mockQueue.enqueue(batchMock);
 
       const batchProcessedPromise = new Promise<void>((resolve) => setTimeout(resolve, 50));

@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Injectable, Inject } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Saga, ICommand, executeWithRetry } from '@easylayer/cqrs';
@@ -46,7 +47,9 @@ export class IndexerSaga {
           this.indexerCommandFactoryService.processReorganisation({
             blocks: payload.blocks,
             height: payload.height,
-            reuestId: payload.requestId,
+            // IMPORTANT: Generate a new requestId here
+            // since the reorganisation event is triggered automatically recursively.
+            requestId: uuidv4(),
           }),
       })
     );

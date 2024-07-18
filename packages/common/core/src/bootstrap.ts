@@ -32,8 +32,13 @@ export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => 
   const externalPlugins = [];
   // TODO: move to external method
   for (const plugin of plugins) {
-    const registeredPlugin = await plugin.register();
-    externalPlugins.push(registeredPlugin);
+    try {
+      const registeredPlugin = await plugin.register();
+      externalPlugins.push(registeredPlugin);
+    } catch (error) {
+      logger.error(`Error importing plugins: ${error}`);
+      process.exit(1);
+    }
   }
   // const internalPlugins = await importPlugins(basePath);
 

@@ -1,13 +1,13 @@
 export interface TransctionsList {
   blockHash: string;
-  blockHeight: bigint;
+  blockHeight: number;
   transactions: Transaction[];
 }
 
 export interface TransactionsPage {
   page: number;
   blockHash: string;
-  blockHeight: bigint;
+  blockHeight: number;
   transactions: Transaction[];
   lastPage: boolean;
 }
@@ -15,7 +15,7 @@ export interface TransactionsPage {
 export interface TransactionsBatch {
   index: number;
   blockHash: string;
-  blockHeight: bigint;
+  blockHeight: number;
   transactions: Transaction[];
   isFinalBatch: boolean;
 }
@@ -27,7 +27,7 @@ export interface Transaction {
 }
 // TODO: move to provider
 export interface Block {
-  height: bigint;
+  height: number;
   hash: string;
   tx?: Transaction[];
 }

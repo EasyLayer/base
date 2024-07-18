@@ -1,16 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
+import { exponentialIntervalAsync } from '@easylayer/exponential-interval-async';
 import { BlocksQueueLoaderService } from '../blocks-loader.service';
 import { BlocksQueue } from '../../blocks-queue';
 import { Block } from '../../interfaces';
 import { BlocksQueueConfig } from '../../config/blocks-queue.config';
 import { StrategyNames } from '../load-strategies';
-import { backOff } from 'exponential-backoff';
 
-jest.mock('exponential-backoff', () => ({
-  backOff: jest.fn(),
-}));
+jest.mock('@easylayer/exponential-interval-async');
 
 describe('BlocksQueueLoaderService', () => {
   let service: BlocksQueueLoaderService;
@@ -39,8 +37,7 @@ describe('BlocksQueueLoaderService', () => {
 
     mockBlocksQueueConfig = {
       BITCOIN_BLOCKS_QUEUE_MAX_LENGTH: 5,
-      BITCOIN_BLOCKS_QUEUE_MAX_BLOCK_HEIGHT: 10n,
-      isAllowStreamLoad: jest.fn().mockReturnValue(true),
+      BITCOIN_BLOCKS_QUEUE_MAX_BLOCK_HEIGHT: 10,
     } as any;
 
     mockQueue = {
@@ -53,10 +50,10 @@ describe('BlocksQueueLoaderService', () => {
         return 0;
       },
       set length(value: number) {},
-      lastHeight: BigInt(0),
+      lastHeight: 0,
     } as any;
 
-    options = { isTransportMode: false, maxBlockHeight: BigInt(10) };
+    options = { isTransportMode: false, maxBlockHeight: 10 };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -103,7 +100,7 @@ describe('BlocksQueueLoaderService', () => {
       await service.startBlocksLoading(0, mockQueue);
       await service.startBlocksLoading(0, mockQueue);
 
-      expect(backOff).toHaveBeenCalledTimes(1);
+      expect(exponentialIntervalAsync).toHaveBeenCalledTimes(1);
     });
 
     it('should set queue and start loading', async () => {
@@ -113,14 +110,14 @@ describe('BlocksQueueLoaderService', () => {
       await service.startBlocksLoading(0, mockQueue);
       expect(service['isLoading']).toBe(true);
       expect(service['_queue']).toBe(mockQueue);
-      expect(service['_queue'].lastHeight).toBe(BigInt(0));
-      expect(backOff).toHaveBeenCalled();
+      expect(service['_queue'].lastHeight).toBe(0);
+      expect(exponentialIntervalAsync).toHaveBeenCalled();
     });
   });
 
   describe('handleBlockFromStream', () => {
     it('should add block to queue', async () => {
-      const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
+      const blockMock: Block = { height: 1, hash: 'hash 1', tx: [] };
       await service.handleBlockFromStream(blockMock);
       expect(mockQueue.enqueue).toHaveBeenCalledWith(blockMock);
     });
@@ -133,7 +130,7 @@ describe('BlocksQueueLoaderService', () => {
         load: jest.fn().mockResolvedValue(undefined),
       };
 
-      const blockMock: Block = { height: BigInt(1), hash: 'hash 1', tx: [] };
+      const blockMock: Block = { height: 1, hash: 'hash 1', tx: [] };
       mockQueue.enqueue.mockReturnValue(false); // Simulate enqueue failure
 
       await service.handleBlockFromStream(blockMock);

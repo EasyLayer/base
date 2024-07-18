@@ -63,7 +63,7 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     }
   }
 
-  public async getBlockHeight(): Promise<bigint> {
+  public async getBlockHeight(): Promise<number> {
     try {
       const data = {
         jsonrpc: '2.0',
@@ -72,7 +72,7 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
 
       const response = await this._httpClient.post('/', data);
       const blockHeight = response.data.result;
-      return BigInt(blockHeight);
+      return Number(blockHeight);
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {

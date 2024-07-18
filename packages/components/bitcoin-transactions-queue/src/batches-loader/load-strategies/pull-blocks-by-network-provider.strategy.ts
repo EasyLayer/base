@@ -31,14 +31,14 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
     return this._isLoading;
   }
 
-  async load(currentNetworkHeight: bigint): Promise<void> {
+  async load(currentNetworkHeight: number): Promise<void> {
     if (this._isLoading) {
       return;
     }
 
     this._isLoading = true;
 
-    while (this.queue.length < this.queue.maxQueueLength || this.queue.lastHeight < currentNetworkHeight) {
+    while (this.queue.length < this.queue.maxQueueLength && this.queue.lastHeight < currentNetworkHeight) {
       try {
         // IMPORTANT: This is a temp array
         // it needs to calculate blocks from parallel threds before enqueue
@@ -46,9 +46,9 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
         const promises = [];
 
         for (let i = 0; i < this._workerPool.options.maxThreads; i++) {
-          const nextHeight: bigint = this.queue.lastHeight + 1n + BigInt(i);
-          if (nextHeight < currentNetworkHeight + 1n) {
-            promises.push(this.loadBlockWithRetry(this.queue.lastHeight + 1n + BigInt(i)));
+          const nextHeight: number = this.queue.lastHeight + 1 + i;
+          if (nextHeight < currentNetworkHeight + 1) {
+            promises.push(this.loadBlockWithRetry(nextHeight));
           }
         }
 
@@ -100,7 +100,9 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
     });
 
     for (const block of blocks) {
-      this.batchesQueueCollector.addBlock(block);
+      if (!this.batchesQueueCollector.addBlock(block)) {
+        continue;
+      }
     }
   }
 
@@ -109,7 +111,7 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
    * @param height The height of the block to load.
    * @returns A promise that resolves to the loaded block.
    */
-  private async loadBlock(height: bigint): Promise<Block> {
+  private async loadBlock(height: number): Promise<Block> {
     const providersConnectionOptions = this.networkProvider.connectionManager.connectionOptionsForAllProviders();
     return this._workerPool.run({ height, providersConnectionOptions });
   }
@@ -120,7 +122,7 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
    * @param maxRetries Maximum number of retries.
    * @returns A promise that resolves to the loaded block after successful loading or exhausts all retries.
    */
-  private async loadBlockWithRetry(height: bigint, maxRetries: number = 3): Promise<Block> {
+  private async loadBlockWithRetry(height: number, maxRetries: number = 3): Promise<Block> {
     let counter = 0;
     let delay = 100;
 

@@ -16,7 +16,7 @@ export class PullNetworkTransportStrategy implements BlocksLoadingStrategy {
     return this._isLoading;
   }
 
-  async load(currentNetworkHeight: bigint): Promise<void> {
+  async load(currentNetworkHeight: number): Promise<void> {
     if (this._isLoading) {
       return;
     }
@@ -25,7 +25,6 @@ export class PullNetworkTransportStrategy implements BlocksLoadingStrategy {
 
     while (this.queue.length < this.queue.maxQueueLength || this.queue.lastHeight < currentNetworkHeight) {
       try {
-        // TODO: сюда нужно вписать как раз квери которая достанет массив блоков с транзакциями.
         const blocks = await this.networkTransportService.executeQuery('', {});
         this.enqueueBlocks(blocks);
       } catch (error) {

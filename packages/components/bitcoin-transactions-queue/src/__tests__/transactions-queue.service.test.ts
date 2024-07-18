@@ -52,7 +52,7 @@ describe('TransactionsQueueService', () => {
       set length(value: number) {
         queueLength = value;
       },
-      lastHeight: BigInt(0),
+      lastHeight: 0,
     } as any;
 
     mockBatchesQueueLoader = {
@@ -70,7 +70,7 @@ describe('TransactionsQueueService', () => {
         {
           provide: TransactionsQueueService,
           useFactory: (logger, iterator, loader, config, collector) =>
-            new TransactionsQueueService(logger, iterator, loader, config, collector, { maxBlockHeight: BigInt(10) }),
+            new TransactionsQueueService(logger, iterator, loader, config, collector, { maxBlockHeight: 10 }),
           inject: [
             AppLogger,
             BatchesQueueIteratorService,
@@ -92,7 +92,7 @@ describe('TransactionsQueueService', () => {
       jest.spyOn(service['batchesQueueIterator'], 'resolveNextBatch');
       await service.reorganizeBatches(2);
       expect(service['queue'].clear).toHaveBeenCalled();
-      expect(service['queue'].lastHeight).toBe(BigInt(2));
+      expect(service['queue'].lastHeight).toBe(2);
       expect(service['batchesQueueIterator'].resolveNextBatch).toHaveBeenCalled();
     });
   });
@@ -100,7 +100,7 @@ describe('TransactionsQueueService', () => {
   describe('confirmIndexBatch', () => {
     it('should confirm and dequeue the batch if the hash matches', async () => {
       const batchMock: TransactionsBatch = {
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         blockHash: 'hash 1',
         prevBlockHash: 'prevhash',
         n: 0,
@@ -118,7 +118,7 @@ describe('TransactionsQueueService', () => {
 
     it('should not dequeue the batch if the hash does not match', async () => {
       const batchMock: TransactionsBatch = {
-        blockHeight: BigInt(1),
+        blockHeight: 1,
         blockHash: 'hash 1',
         prevBlockHash: 'prevhash',
         n: 0,

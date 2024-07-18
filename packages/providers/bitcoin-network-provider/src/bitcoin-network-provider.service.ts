@@ -10,17 +10,17 @@ export class BitcoinNetworkProviderService {
     return this._connectionManager;
   }
 
-  public async getCurrentBlockHeight(): Promise<bigint> {
+  public async getCurrentBlockHeight(): Promise<number> {
     const provider = await this._connectionManager.getActiveProvider();
     return await provider.getBlockHeight();
   }
 
-  public async getOneBlockHashByHeight(height: string | bigint): Promise<any> {
+  public async getOneBlockHashByHeight(height: string | bigint | number): Promise<any> {
     const provider = await this._connectionManager.getActiveProvider();
     return await provider.getOneBlockHashByHeight(BigInt(height));
   }
 
-  public async getOneBlockByHeight(height: string | bigint, verbosity?: number): Promise<any> {
+  public async getOneBlockByHeight(height: string | bigint | number, verbosity?: number): Promise<any> {
     const provider = await this._connectionManager.getActiveProvider();
     return await provider.getOneBlockByHeight(BigInt(height), verbosity);
   }

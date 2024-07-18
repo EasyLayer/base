@@ -15,18 +15,18 @@ export class BlocksReadService {
     hash,
     status,
     height,
-    prevHash,
+    previousblockhash,
   }: {
     hash: string;
     status: string;
-    height: string;
-    prevHash: string;
+    height: string | number;
+    previousblockhash: string;
   }): Promise<BlockViewModel> {
     const block = new BlockViewModel({
       hash,
       status,
-      height,
-      prevHash,
+      height: String(height),
+      previousblockhash,
     });
     // IMPORTANT: we do not use the save method here because there is a bug with it
     // Since he uses his own transactions (get and then insert) then
@@ -42,6 +42,10 @@ export class BlocksReadService {
   async update(criteria: any, dto: any): Promise<any> {
     const block = new BlockViewModel(dto);
     return await this.readDb.update(criteria, block);
+  }
+
+  async updateWithBuilder(criteria: any, dto: any): Promise<any> {
+    return await this.readDb.createQueryBuilder().update(BlockViewModel).set(dto).where(criteria).execute();
   }
 
   async findOne({ where, relations = [] }: { where: object; relations?: string[] }): Promise<BlockViewModel | null> {

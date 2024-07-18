@@ -6,11 +6,11 @@ import { Block } from '../../interfaces';
 import { TransactionsBatchesCollector } from '../collectors-templates';
 
 class TestBlock implements Block {
-  height: bigint;
+  height: number;
   hash: string;
   tx: any[];
 
-  constructor(height: bigint, hash?: string) {
+  constructor(height: number, hash?: string) {
     this.height = height;
     this.hash = hash || '';
     this.tx = [];
@@ -32,7 +32,7 @@ describe('BlocksQueueCollectorService', () => {
 
     mockQueue = {
       enqueue: jest.fn(),
-      lastHeight: 0n,
+      lastHeight: 0,
     } as any;
 
     mockTransactionsCollector = {
@@ -73,7 +73,7 @@ describe('BlocksQueueCollectorService', () => {
 
   describe('addBlock', () => {
     it('should add a block if height is correct and no block is currently being processed', () => {
-      const blockMock = new TestBlock(1n);
+      const blockMock = new TestBlock(1);
       service.addBlock(blockMock, 10);
 
       expect(service['_block']).toBe(blockMock);
@@ -85,8 +85,8 @@ describe('BlocksQueueCollectorService', () => {
     });
 
     it('should reset if the block height is less than the last height in the queue', () => {
-      const blockMock = new TestBlock(0n);
-      mockQueue.lastHeight = 1n;
+      const blockMock = new TestBlock(0);
+      mockQueue.lastHeight = 1;
 
       service.addBlock(blockMock, 10);
 
@@ -95,8 +95,8 @@ describe('BlocksQueueCollectorService', () => {
     });
 
     it('should not add a block if height is not +1 from the last height in the queue', () => {
-      const blockMock = new TestBlock(2n);
-      mockQueue.lastHeight = 4n;
+      const blockMock = new TestBlock(2);
+      mockQueue.lastHeight = 4;
 
       service.addBlock(blockMock, 10);
 
@@ -105,11 +105,11 @@ describe('BlocksQueueCollectorService', () => {
     });
 
     it('should reset if a block is already in progress and its height is less than the last height in the queue', () => {
-      const blockMock1 = new TestBlock(0n);
+      const blockMock1 = new TestBlock(0);
       service.addBlock(blockMock1, 10);
 
-      const blockMock2 = new TestBlock(1n);
-      mockQueue.lastHeight = 3n;
+      const blockMock2 = new TestBlock(1);
+      mockQueue.lastHeight = 3;
       service.addBlock(blockMock2, 10);
 
       expect(service['_block']).toBeNull();
@@ -117,7 +117,7 @@ describe('BlocksQueueCollectorService', () => {
     });
 
     it('should collect block immediately if all transactions are present', async () => {
-      const blockMock = new TestBlock(1n);
+      const blockMock = new TestBlock(1);
       blockMock.tx = [{}, {}];
       service.addBlock(blockMock, 2);
 
@@ -128,30 +128,30 @@ describe('BlocksQueueCollectorService', () => {
 
   describe('addTransactions', () => {
     it('should add transactions to the collector', () => {
-      const blockMock = new TestBlock(1n, 'hash1');
+      const blockMock = new TestBlock(1, 'hash1');
       service.addBlock(blockMock, 10);
-      const transactionsData = { tx: [{}], blockHash: 'hash1', blockHeight: 1n };
+      const transactionsData = { tx: [{}], blockHash: 'hash1', blockHeight: 1 };
       service.addTransactions(transactionsData);
 
-      expect(mockTransactionsCollector.add).toHaveBeenCalledWith({ hash: 'hash1', height: 1n }, transactionsData);
+      expect(mockTransactionsCollector.add).toHaveBeenCalledWith({ hash: 'hash1', height: 1 }, transactionsData);
     });
 
     it('should collect block if all transactions are received', async () => {
-      const blockMock = new TestBlock(1n);
+      const blockMock = new TestBlock(1);
       service.addBlock(blockMock, 1);
-      const transactionsData = { tx: [{}], blockHash: 'hash1', blockHeight: 1n };
+      const transactionsData = { tx: [{}], blockHash: 'hash1', blockHeight: 1 };
       mockTransactionsCollector.isComplete = jest.fn().mockReturnValue(true);
 
       service.addTransactions(transactionsData);
 
-      await service['collect']();
+      service['collect']();
       expect(mockQueue.enqueue).toHaveBeenCalledWith(blockMock);
     });
   });
 
   describe('collect', () => {
     it('should reset if the block height is not +1 from the last height in the queue', () => {
-      const blockMock = new TestBlock(2n);
+      const blockMock = new TestBlock(2);
       service['_block'] = blockMock;
       service['collect']();
 
@@ -160,8 +160,8 @@ describe('BlocksQueueCollectorService', () => {
     });
 
     it('should not reset if the block cannot be enqueued', () => {
-      const blockMock = new TestBlock(1n);
-      mockQueue.lastHeight = 0n;
+      const blockMock = new TestBlock(1);
+      mockQueue.lastHeight = 0;
       service['_block'] = blockMock;
       mockQueue.enqueue = jest.fn().mockReturnValue(false);
       mockTransactionsCollector.collectAllTransactions = jest.fn().mockReturnValue([{}]);

@@ -1,17 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/bitcoin-network-provider';
+import { exponentialIntervalAsync } from '@easylayer/exponential-interval-async';
 import { BatchesQueueLoaderService } from '../../batches-loader';
 import { TransactionsBatchQueue } from '../../transactions-batch-queue';
 import { TransactionsBatch } from '../../interfaces';
 import { TransactionsQueueConfig } from '../../config/transactions-queue.config';
 import { StrategyNames } from '../load-strategies';
 import { BatchesQueueCollectorService } from '../../batches-collector';
-import { backOff } from 'exponential-backoff';
 
-jest.mock('exponential-backoff', () => ({
-  backOff: jest.fn(),
-}));
+jest.mock('@easylayer/exponential-interval-async');
 
 describe('BatchesQueueLoaderService', () => {
   let service: BatchesQueueLoaderService;
@@ -38,7 +36,7 @@ describe('BatchesQueueLoaderService', () => {
     } as any;
     mockTransactionsQueueConfig = {
       BITCOIN_TRANSACTIONS_QUEUE_MAX_LENGTH: 5,
-      BITCOIN_TRANSACTIONS_QUEUE_MAX_BLOCK_HEIGHT: 10n,
+      BITCOIN_TRANSACTIONS_QUEUE_MAX_BLOCK_HEIGHT: 10,
       isAllowStreamLoad: jest.fn().mockReturnValue(true),
     } as any;
     mockQueue = {
@@ -57,7 +55,7 @@ describe('BatchesQueueLoaderService', () => {
       addBlock: jest.fn(),
       addBatch: jest.fn(),
     } as any;
-    options = { isTransportMode: false, maxBlockHeight: BigInt(10) };
+    options = { isTransportMode: false, maxBlockHeight: 10 };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -106,7 +104,7 @@ describe('BatchesQueueLoaderService', () => {
       jest.spyOn(service as any, 'destroyStrategy').mockImplementation(() => Promise.resolve());
       await service.startTransactionsLoading(0, mockQueue);
       await service.startTransactionsLoading(0, mockQueue);
-      expect(backOff).toHaveBeenCalledTimes(1);
+      expect(exponentialIntervalAsync).toHaveBeenCalledTimes(1);
     });
 
     it('should set queue and start loading', async () => {
@@ -115,8 +113,8 @@ describe('BatchesQueueLoaderService', () => {
       await service.startTransactionsLoading(0, mockQueue);
       expect(service['isLoading']).toBe(true);
       expect(service['_queue']).toBe(mockQueue);
-      expect(service['_queue'].lastHeight).toBe(BigInt(0));
-      expect(backOff).toHaveBeenCalled();
+      expect(service['_queue'].lastHeight).toBe(0);
+      expect(exponentialIntervalAsync).toHaveBeenCalled();
     });
   });
 
@@ -142,7 +140,7 @@ describe('BatchesQueueLoaderService', () => {
       service['createStrategy'] = jest.fn().mockReturnValue({
         name: StrategyNames.PULL_BLOCKS_BY_NETWORK_PROVIDER,
       });
-      mockNetworkProviderService.getCurrentBlockHeight.mockResolvedValue(BigInt(10));
+      mockNetworkProviderService.getCurrentBlockHeight.mockResolvedValue(10);
       await service['setupStrategy']();
       expect(service['createStrategy']).toHaveBeenCalledWith();
     });
@@ -152,7 +150,7 @@ describe('BatchesQueueLoaderService', () => {
       service['createStrategy'] = jest.fn().mockReturnValue({
         name: StrategyNames.BLOCKS_WEBHOOK_STREAM,
       });
-      mockNetworkProviderService.getCurrentBlockHeight.mockResolvedValue(BigInt(10));
+      mockNetworkProviderService.getCurrentBlockHeight.mockResolvedValue(10);
       await service['setupStrategy']();
       expect(service['createStrategy']).toHaveBeenCalledWith();
     });
