@@ -16,11 +16,12 @@ export class BitcoinBalancesIndexerTransactionOutputUnspentEventHandler
     try {
       this.log.debug('handle()', payload, this.constructor.name);
 
-      const { aggregateId, voutIndex } = payload;
+      // const { aggregateId, voutIndex } = payload;
 
-      return await this.service.update({ txid: aggregateId, voutIndex }, { isSpent: false });
+      // return await this.service.update({ txid: aggregateId, voutIndex }, { isSpent: false });
     } catch (error) {
       this.log.error('handle()', error, this.constructor.name);
+      throw error;
     }
   }
 }

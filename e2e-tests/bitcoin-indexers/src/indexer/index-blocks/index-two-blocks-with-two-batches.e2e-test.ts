@@ -6,7 +6,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoreModule } from '@easylayer/core';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
-import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import {
   BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerInitializedEvent,
@@ -81,9 +80,6 @@ describe('/Index Two Block With Two Transactions Batches', () => {
     const maxBatchSize = Math.ceil(totalSize / numBatches);
 
     process.env.BITCOIN_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE = maxBatchSize.toString();
-
-    // Initialize transactional context before any database interaction
-    initializeTransactionalContext();
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/index-blocks/.env') });

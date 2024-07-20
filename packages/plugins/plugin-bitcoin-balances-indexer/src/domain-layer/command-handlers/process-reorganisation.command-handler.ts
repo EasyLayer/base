@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { Transactional } from '@easylayer/eventstore';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { ProcessReorganisationCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger } from '@easylayer/logger';
@@ -48,7 +48,7 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
         const { tx } = batch;
 
         for (const t of tx) {
-          const { txid, vin, vout } = t;
+          const { txid, /*vin,*/ vout } = t;
 
           // Deleting outputs that were previously indexed
           const removedUTXO: Transaction = this.transactionModelFactory.createNewModel();
@@ -56,12 +56,12 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
           transactionModels.push(removedUTXO);
 
           // We unspent all inputs from transactions that were previously spent
-          for (const input of vin) {
-            const unspentedUTXO: Transaction = this.transactionModelFactory.createNewModel();
-            const voutIndex = input.vout ? input.vout : -1; // -1 mean coinbase tx
-            await unspentedUTXO.unspent({ aggregateId: input.txid, voutIndex, requestId });
-            transactionModels.push(unspentedUTXO);
-          }
+          // for (const input of vin) {
+          //   const unspentedUTXO: Transaction = this.transactionModelFactory.createNewModel();
+          //   const voutIndex = input.vout ? input.vout : -1; // -1 mean coinbase tx
+          //   await unspentedUTXO.unspent({ aggregateId: input.txid, voutIndex, requestId });
+          //   transactionModels.push(unspentedUTXO);
+          // }
         }
       }
 

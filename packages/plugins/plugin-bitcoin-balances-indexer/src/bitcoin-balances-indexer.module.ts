@@ -9,7 +9,7 @@ import { BitcoinNetworkProviderModule } from '@easylayer/bitcoin-network-provide
 import { BalancesIndexerController } from './balances-indexer.controller';
 import { BalancesIndexerService } from './balances-indexer.service';
 import { IndexerSaga } from './application-layer/sagas';
-import { OutputViewModel } from './domain-layer/view-models';
+import { OutputViewModel, InputViewModel } from './domain-layer/view-models';
 import {
   BalancesIndexerCommandFactoryService,
   ReadStateExceptionHandlerService,
@@ -19,6 +19,7 @@ import {
   BalancesIndexerModelFactoryService,
   TransactionModelFactoryService,
   OutputsReadService,
+  InputsReadService,
 } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 import { EventsHandlers } from './domain-layer/events-handlers';
@@ -63,11 +64,11 @@ export class BitcoinBalancesIndexerModule {
           synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
           enableWAL: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
-          entities: [OutputViewModel],
+          entities: [OutputViewModel, InputViewModel],
         }),
         TransactionsQueueModule.forRootAsync({
           batchesCommandExecutor: BacthesCommandFactoryService,
-          isTransportMode: false,
+          isTransportMode: appConfig.BITCOIN_BALANCES_INDEXER_IS_TRANSPORT_MODE,
           maxBlockHeight: businessConfig.BITCOIN_BALANCES_INDEXER_MAX_BLOCK_HEIGHT,
         }),
         // IMPORTANT: BitcoinNetworkProviderModule must be global inside one plugin
@@ -93,6 +94,7 @@ export class BitcoinBalancesIndexerModule {
           useValue: readdatabaseConfig,
         },
         OutputsReadService,
+        InputsReadService,
         ArithmeticService,
         BalancesIndexerService,
         BalancesIndexerModelFactoryService,

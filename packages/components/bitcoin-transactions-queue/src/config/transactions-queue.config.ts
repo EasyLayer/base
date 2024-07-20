@@ -22,4 +22,16 @@ export class TransactionsQueueConfig {
   )
   @IsString()
   BITCOIN_TRANSACTIONS_QUEUE_LOADER_STRATEGY_NAME: StrategyNames = StrategyNames.PULL_BLOCKS_BY_NETWORK_PROVIDER;
+
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 1000))
+  @IsNumber()
+  BITCOIN_TRANSACTIONS_QUEUE_LOADER_INTERVAL_MS: number = 1000;
+
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 10 * 60 * 1000))
+  @IsNumber()
+  BITCOIN_TRANSACTIONS_QUEUE_LOADER_MAX_INTERVAL_MS: number = 10 * 60 * 1000; // Bitcoin block time
+
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 10))
+  @IsNumber()
+  BITCOIN_TRANSACTIONS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER: number = 10;
 }

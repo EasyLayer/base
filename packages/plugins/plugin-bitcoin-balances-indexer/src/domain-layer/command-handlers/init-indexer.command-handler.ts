@@ -1,6 +1,6 @@
 // import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { Transactional } from '@easylayer/eventstore';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger } from '@easylayer/logger';

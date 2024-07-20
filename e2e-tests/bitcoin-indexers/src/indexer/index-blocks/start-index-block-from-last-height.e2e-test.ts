@@ -6,7 +6,6 @@ import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoreModule } from '@easylayer/core';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
-import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import {
   BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerInitializedEvent,
@@ -63,9 +62,6 @@ describe('/Start Index Block From Last Height', () => {
 
     // Clear the database
     await cleanDataFolder();
-
-    // Initialize transactional context before any database interaction
-    initializeTransactionalContext();
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/index-blocks/.env') });

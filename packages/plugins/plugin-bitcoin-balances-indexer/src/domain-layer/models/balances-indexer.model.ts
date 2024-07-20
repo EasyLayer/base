@@ -36,8 +36,8 @@ type Chain = {
 type AddBatchParams = {
   blockHash: string;
   blockHeight: number;
-  preBlockHash: string | null;
-  index: number;
+  prevBlockHash: string | null;
+  n: number;
   isFinalBatch: boolean;
   tx: string[];
 };
@@ -117,7 +117,7 @@ export class Blockchain {
    * @complexity O(1)
    */
   public addBatch(batch: AddBatchParams): boolean {
-    const { blockHash, blockHeight, preBlockHash, index, isFinalBatch, tx } = batch;
+    const { blockHash, blockHeight, prevBlockHash, n, isFinalBatch, tx } = batch;
 
     if (!this.validateNextBatch(batch)) {
       return false;
@@ -125,13 +125,13 @@ export class Blockchain {
 
     const newBatch: Batch = { tx, isFinalBatch };
     if (this.tail && this.tail.block.hash === blockHash) {
-      this.tail.block.batches.set(index, newBatch);
+      this.tail.block.batches.set(n, newBatch);
     } else {
       const newBlock: Block = {
         hash: blockHash,
         height: blockHeight,
-        prevHash: preBlockHash || '',
-        batches: new Map([[index, newBatch]]),
+        prevHash: prevBlockHash || '',
+        batches: new Map([[n, newBatch]]),
       };
 
       const newChain: Chain = {
@@ -183,14 +183,14 @@ export class Blockchain {
   public validateNextBatch(newBatch: AddBatchParams): boolean {
     if (!this.tail) {
       // If there are no blocks, the new batch should have index 0
-      return newBatch.index === 0;
+      return newBatch.n === 0;
     }
 
     const lastBlock = this.tail.block;
 
     // If this is a new block, check if the hash of the previous block matches
     if (lastBlock.hash !== newBatch.blockHash) {
-      if (lastBlock.hash !== newBatch.preBlockHash) {
+      if (lastBlock.hash !== newBatch.prevBlockHash) {
         return false;
       }
       // Check the height of the new block
@@ -200,7 +200,7 @@ export class Blockchain {
     } else {
       // Checking the batch index sequence in the same block
       const lastBatchIndex = this.lastBatchIndex;
-      if (newBatch.index !== lastBatchIndex + 1) {
+      if (newBatch.n !== lastBatchIndex + 1) {
         return false;
       }
     }

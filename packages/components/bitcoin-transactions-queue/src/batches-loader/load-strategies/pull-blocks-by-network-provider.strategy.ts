@@ -47,7 +47,7 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
 
         for (let i = 0; i < this._workerPool.options.maxThreads; i++) {
           const nextHeight: number = this.queue.lastHeight + 1 + i;
-          if (nextHeight < currentNetworkHeight + 1) {
+          if (nextHeight <= currentNetworkHeight) {
             promises.push(this.loadBlockWithRetry(nextHeight));
           }
         }
@@ -72,6 +72,7 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
         // Clear temp array after successful enqueue
         blocks = [];
       } catch (error) {
+        console.log(error);
         await this.stop();
         // TODO: think about this case
       }

@@ -4,7 +4,7 @@ import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { DynamicModule } from '@nestjs/common';
 import { NestLogger } from '@easylayer/logger';
-import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
+// import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
 import { setupSwaggerServer } from './utils';
@@ -18,7 +18,7 @@ export interface BootstrapOptions {
   plugins?: RegisterablePlugin[];
 }
 
-initializeTransactionalContext();
+// initializeTransactionalContext();
 
 export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => {
   const logger = new NestLogger();

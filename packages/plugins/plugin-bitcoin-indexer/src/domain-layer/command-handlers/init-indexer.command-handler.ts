@@ -1,5 +1,5 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { Transactional } from '@easylayer/eventstore';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { AppLogger } from '@easylayer/logger';

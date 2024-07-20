@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore/transactional-hooks';
+import { Transactional } from '@easylayer/eventstore';
 import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
 import { AppLogger } from '@easylayer/logger';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
@@ -109,7 +109,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         aggregateId: hash,
         block: blockWithoutTx,
         batches: batchesMap,
-        txCount: tx.lenght,
+        txCount: tx.length,
         requestId,
       });
 
@@ -133,7 +133,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // NOTE: This event is not currently being processed
       await indexerModel.commit();
 
-      this.log.debug('Block index started', { block: blockWithoutTx }, this.constructor.name);
+      this.log.info('Block indexed successfull', { blockHash: hash, txCount: tx.length }, this.constructor.name);
+      this.log.debug('Block indexed successfull', { block: blockWithoutTx }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;

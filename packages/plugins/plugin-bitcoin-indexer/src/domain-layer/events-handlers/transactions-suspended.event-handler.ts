@@ -28,6 +28,7 @@ export class BitcoinIndexerTransactionsBatchSuspendedEventhandler
       await this.transactionsService.updateManyByTxIds(txids, status);
     } catch (error) {
       this.log.error('handle()', error, this.constructor.name);
+      throw error;
     }
   }
 }

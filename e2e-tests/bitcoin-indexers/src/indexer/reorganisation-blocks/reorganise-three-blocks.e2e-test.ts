@@ -7,7 +7,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { CoreModule } from '@easylayer/core';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
-import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import {
   BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerInitializedEvent,
@@ -69,9 +68,6 @@ describe('/Reorganise(Suspend) Three Blocks When the Wrong Chain Was Specified',
 
     // Clear the database
     await cleanDataFolder();
-
-    // Initialize transactional context before any database interaction
-    initializeTransactionalContext();
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/reorganisation-blocks/.env') });

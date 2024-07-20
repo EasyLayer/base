@@ -45,7 +45,7 @@ export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
 
         for (let i = 0; i < this._workerPool.options.maxThreads; i++) {
           const nextHeight: number = this.queue.lastHeight + 1 + i;
-          if (nextHeight < currentNetworkHeight + 1) {
+          if (nextHeight <= currentNetworkHeight) {
             promises.push(this.loadBlockWithRetry(nextHeight));
           }
         }

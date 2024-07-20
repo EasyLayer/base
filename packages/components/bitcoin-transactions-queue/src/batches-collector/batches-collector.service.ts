@@ -51,7 +51,7 @@ export class BatchesQueueCollectorService {
   }
 
   private splitBlockIntoBatches(block: any): TransactionsBatch[] {
-    const { tx, hash, height, prevblockhash } = block;
+    const { tx, hash, height, previousblockhash } = block;
     const batches: TransactionsBatch[] = [];
 
     if (tx.length > this.config.BITCOIN_TRANSACTIONS_QUEUE_MAX_TRANSACTIONS_PER_BATCH) {
@@ -62,7 +62,7 @@ export class BatchesQueueCollectorService {
         batches.push({
           blockHash: hash,
           blockHeight: height,
-          prevBlockHash: prevblockhash,
+          prevBlockHash: previousblockhash,
           n: index,
           isFinalBatch,
           tx: transactionSlice,
@@ -73,7 +73,7 @@ export class BatchesQueueCollectorService {
       batches.push({
         blockHash: hash,
         blockHeight: height,
-        prevBlockHash: prevblockhash,
+        prevBlockHash: previousblockhash,
         n: 0,
         isFinalBatch: true,
         tx,
@@ -85,12 +85,12 @@ export class BatchesQueueCollectorService {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private validateBatch(batch: TransactionsBatch): boolean {
-    // Add custom batch validation logic here
+    // TODO
     return true;
   }
 
   private validateBlock(block: any): boolean {
-    // Add custom batch validation logic here
+    // TODO
     if (Number(block?.height) !== this._queue.lastHeight + 1) {
       return false;
     }

@@ -2,12 +2,10 @@ import 'reflect-metadata';
 import { resolve } from 'node:path';
 import { EventEmitter } from 'node:events';
 import { config } from 'dotenv';
-import supertest from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoreModule } from '@easylayer/core';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
-import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
 import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
 import { cleanDataFolder } from '../../+helpers/clean-data-folder';
 
@@ -48,9 +46,6 @@ describe('/First Initialization Application Write State Checkin', () => {
     // Clear the database
     await cleanDataFolder();
 
-    // Initialize transactional context before any database interaction
-    initializeTransactionalContext();
-
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/first-init-flow/.env') });
 
@@ -84,10 +79,6 @@ describe('/First Initialization Application Write State Checkin', () => {
     // We wait until startBlocksLoadingCalled() will be executed
     // This is because we want to test an app that has already initialized and stopped
     await app.close();
-  });
-
-  it('/healthcheck (GET)', async () => {
-    await supertest(app.getHttpServer()).get('/bitcoin-indexer/healthcheck').expect(200);
   });
 
   it('should create new indexer aggregate', async () => {

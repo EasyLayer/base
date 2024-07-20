@@ -4,10 +4,6 @@
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "exports": {
-    ".": "./dist/index.js",
-    "./transactional-hooks": "./dist/transactional-hooks/index.js"
-  },
   "files": [
     "dist"
   ],

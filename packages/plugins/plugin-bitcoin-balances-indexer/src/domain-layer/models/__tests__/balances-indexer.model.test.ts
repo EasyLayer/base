@@ -18,8 +18,8 @@ describe('Blockchain', () => {
       const batch = {
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       };
@@ -34,16 +34,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       const batch = {
         blockHash: 'ewq',
         blockHeight: 1,
-        preBlockHash: 'invalidHash',
-        index: 0,
+        prevBlockHash: 'invalidHash',
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       };
@@ -52,20 +52,20 @@ describe('Blockchain', () => {
       expect(blockchain.size).toBe(1);
     });
 
-    it('should not add a batch with non-sequential index', () => {
+    it('should not add a batch with non-sequential n', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       const batch = {
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 2,
+        prevBlockHash: null,
+        n: 2,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       };
@@ -78,16 +78,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 1,
+        prevBlockHash: null,
+        n: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
@@ -101,16 +101,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: true,
         tx: ['qwe1', 'ewq2'],
       });
       const result = blockchain.addBatch({
         blockHash: 'ewq',
         blockHeight: 2,
-        preBlockHash: 'qwe',
-        index: 0,
+        prevBlockHash: 'qwe',
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       });
@@ -126,8 +126,8 @@ describe('Blockchain', () => {
       const batch = {
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       };
@@ -139,16 +139,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       const batch = {
         blockHash: 'ewq',
         blockHeight: 2,
-        preBlockHash: 'invalidHash',
-        index: 0,
+        prevBlockHash: 'invalidHash',
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       };
@@ -156,20 +156,20 @@ describe('Blockchain', () => {
       expect(isValid).toBe(false);
     });
 
-    it('should not validate a batch with non-sequential index', () => {
+    it('should not validate a batch with non-sequential n', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       const batch = {
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 2,
+        prevBlockHash: null,
+        n: 2,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       };
@@ -181,16 +181,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       const batch = {
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 1,
+        prevBlockHash: null,
+        n: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       };
@@ -204,16 +204,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 1,
+        prevBlockHash: null,
+        n: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
@@ -225,16 +225,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 1,
+        prevBlockHash: null,
+        n: 1,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       });
@@ -248,16 +248,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: true,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'ewq',
         blockHeight: 2,
-        preBlockHash: 'qwe',
-        index: 0,
+        prevBlockHash: 'qwe',
+        n: 0,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
@@ -273,24 +273,24 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: true,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'ewq',
         blockHeight: 2,
-        preBlockHash: 'qwe',
-        index: 0,
+        prevBlockHash: 'qwe',
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       });
       blockchain.addBatch({
         blockHash: 'ewq',
         blockHeight: 2,
-        preBlockHash: 'qwe',
-        index: 1,
+        prevBlockHash: 'qwe',
+        n: 1,
         isFinalBatch: true,
         tx: ['qwe5', 'ewq6'],
       });
@@ -306,16 +306,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 1,
+        prevBlockHash: null,
+        n: 1,
         isFinalBatch: true,
         tx: ['qwe3', 'ewq4'],
       });
@@ -329,8 +329,8 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe1', 'ewq2'],
       });
@@ -344,16 +344,16 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: true,
         tx: ['qwe1', 'ewq2'],
       });
       blockchain.addBatch({
         blockHash: 'ewq',
         blockHeight: 1,
-        preBlockHash: 'qwe',
-        index: 0,
+        prevBlockHash: 'qwe',
+        n: 0,
         isFinalBatch: false,
         tx: ['qwe3', 'ewq4'],
       });
@@ -370,8 +370,8 @@ describe('Blockchain', () => {
       blockchain.addBatch({
         blockHash: 'qwe',
         blockHeight: 1,
-        preBlockHash: null,
-        index: 0,
+        prevBlockHash: null,
+        n: 0,
         isFinalBatch: true,
         tx: ['qwe1', 'ewq2'],
       });

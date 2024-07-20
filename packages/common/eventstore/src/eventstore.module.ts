@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule, getDataSourceToken, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { addTransactionalDataSource } from 'typeorm-transactional';
+import { addTransactionalDataSource, initializeTransactionalContext } from 'typeorm-transactional';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { EventDataModel } from './event-data.model';
 import { EventStoreRepository } from './eventstore.repository';
@@ -18,6 +18,9 @@ export class EventStoreModule {
 
   static forRoot(config: EventStoreConfig): DynamicModule {
     const { name, ...restOptions } = config;
+
+    // Initialize transactional context before setting up the database connections
+    initializeTransactionalContext();
 
     // TODO: remove from here
     const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'data', `${name}.db`) : name;

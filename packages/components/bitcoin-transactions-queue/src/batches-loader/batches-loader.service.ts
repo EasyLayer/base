@@ -86,9 +86,9 @@ export class BatchesQueueLoaderService implements OnModuleDestroy {
         }
       },
       {
-        interval: 1000,
-        maxInterval: 10 * 60 * 1000, // TODO: add to env. Bitcoin block time
-        multiplier: 2,
+        interval: this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_LOADER_INTERVAL_MS,
+        maxInterval: this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_LOADER_MAX_INTERVAL_MS,
+        multiplier: this.txQueueConfig.BITCOIN_TRANSACTIONS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
       }
     );
   }

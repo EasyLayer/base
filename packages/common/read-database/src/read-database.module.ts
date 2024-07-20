@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions, getDataSourceToken } from '@nestjs/typeorm';
-import { addTransactionalDataSource } from 'typeorm-transactional';
+import { addTransactionalDataSource, initializeTransactionalContext } from 'typeorm-transactional';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { ReadDatabaseService } from './read-database.service';
 
@@ -16,6 +16,9 @@ type ReadDatabaseModuleConfig = TypeOrmModuleOptions & {
 export class ReadDatabaseModule {
   static forRoot(config: ReadDatabaseModuleConfig): DynamicModule {
     const { name, entities = [], ...restOptions } = config;
+
+    // Initialize transactional context before setting up the database connections
+    initializeTransactionalContext();
 
     // TODO: remove from here
     const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'data', `${name}.db`) : name;
@@ -44,7 +47,7 @@ export class ReadDatabaseModule {
             // IMPORTANT: name use in @Transactional() decorator
             addTransactionalDataSource({
               name,
-              dataSource: new DataSource(options),
+              dataSource,
             });
 
             return dataSource;

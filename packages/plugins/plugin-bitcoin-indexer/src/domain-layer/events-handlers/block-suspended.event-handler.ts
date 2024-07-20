@@ -20,6 +20,7 @@ export class BitcoinIndexerBlockSuspendedEventHandler implements IEventHandler<B
       await this.blocksService.updateWithBuilder({ hash: aggregateId }, { status });
     } catch (error) {
       this.log.error('handle()', error, this.constructor.name);
+      throw error;
     }
   }
 }

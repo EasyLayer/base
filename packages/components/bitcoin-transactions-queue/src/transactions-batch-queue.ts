@@ -277,31 +277,38 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
           b.n === batch.n
       )
     ) {
+      console.log('1\n');
       return false;
     }
 
     // Validate batch sequence
     if (batch.blockHeight < this._lastHeight) {
+      console.log('2\n');
       return false;
     }
 
     if (batch.blockHeight === this._lastHeight) {
       // Same block
       if (batch.blockHash !== this._lastBlockHash) {
+        console.log('3\n');
         return false;
       }
       // Allow same height with increasing n
       if (batch.n <= this._lastBatchIndex) {
+        console.log('4\n');
         return false;
       }
     } else {
       if (batch.blockHeight !== this._lastHeight + 1) {
+        console.log('5\n');
         return false;
       }
       if (batch.n !== 0) {
+        console.log('6\n');
         return false;
       }
       if (batch.isFinalBatch && this._lastBatchIndex !== -1 && !this.isFinalBatchOfLastBlock()) {
+        console.log('7\n');
         return false;
       }
     }
@@ -322,7 +329,8 @@ export class TransactionsBatchQueue<T extends TransactionsBatch> {
       const lastBatch = this.outStack[0];
       return lastBatch.isFinalBatch;
     }
-    return false;
+
+    return true;
   }
 
   /**
