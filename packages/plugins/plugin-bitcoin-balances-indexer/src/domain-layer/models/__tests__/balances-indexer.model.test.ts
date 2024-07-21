@@ -13,369 +13,162 @@ describe('Blockchain', () => {
     });
   });
 
-  describe('addBatch', () => {
-    it('should add a batch to a new block successfully', () => {
-      const batch = {
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      };
-      const result = blockchain.addBatch(batch);
+  describe('addBlock', () => {
+    it('should add a block successfully', () => {
+      const result = blockchain.addBlock(0, 'hash0', 'prevHash0', []);
       expect(result).toBe(true);
       expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBlockHeight).toBe(1);
-      expect(blockchain.lastBlockHash).toBe('qwe');
+      expect(blockchain.lastBlockHeight).toBe(0);
+      expect(blockchain.lastBlockHash).toBe('hash0');
     });
 
-    it('should not add a batch with invalid previous hash', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const batch = {
-        blockHash: 'ewq',
-        blockHeight: 1,
-        prevBlockHash: 'invalidHash',
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      };
-      const result = blockchain.addBatch(batch);
+    it('should not add a block with invalid height', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const result = blockchain.addBlock(2, 'hash2', 'hash0', []); // invalid height, should be 1
       expect(result).toBe(false);
       expect(blockchain.size).toBe(1);
     });
 
-    it('should not add a batch with non-sequential n', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const batch = {
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 2,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      };
-      const result = blockchain.addBatch(batch);
+    it('should not add a block with invalid previous hash', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const result = blockchain.addBlock(1, 'hash1', 'invalidPrevHash', []); // invalid previous hash
       expect(result).toBe(false);
       expect(blockchain.size).toBe(1);
     });
 
-    it('should add multiple batches to the same block', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 1,
-        isFinalBatch: true,
-        tx: ['qwe3', 'ewq4'],
-      });
-      expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBlockHeight).toBe(1);
-      expect(blockchain.lastBlockHash).toBe('qwe');
-      expect(blockchain.isLastBatchFinal).toBe(true);
-    });
-
-    it('should add batches to different blocks sequentially', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: true,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const result = blockchain.addBatch({
-        blockHash: 'ewq',
-        blockHeight: 2,
-        prevBlockHash: 'qwe',
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      });
-      expect(result).toBe(true);
-      expect(blockchain.size).toBe(2);
+    it('should add multiple blocks successfully', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      blockchain.addBlock(1, 'hash1', 'hash0', []);
+      blockchain.addBlock(2, 'hash2', 'hash1', []);
+      expect(blockchain.size).toBe(3);
       expect(blockchain.lastBlockHeight).toBe(2);
-      expect(blockchain.lastBlockHash).toBe('ewq');
+      expect(blockchain.lastBlockHash).toBe('hash2');
+    });
+
+    it('should remove the first block when max size is exceeded', () => {
+      for (let i = 0; i < 101; i++) {
+        blockchain.addBlock(i, `hash${i}`, i === 0 ? 'prevHash0' : `hash${i - 1}`, []);
+      }
+      expect(blockchain.size).toBe(100);
+      expect(blockchain.lastBlockHeight).toBe(100);
+      expect(blockchain.findBlockByHeight(0)).toBe(null);
     });
   });
 
-  describe('validateNextBatch', () => {
-    it('should validate the first batch correctly', () => {
-      const batch = {
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      };
-      const isValid = blockchain.validateNextBatch(batch);
+  describe('validateNextBlock', () => {
+    it('should validate the first block correctly', () => {
+      const isValid = blockchain.validateNextBlock(0, 'prevHash0');
       expect(isValid).toBe(true);
     });
 
-    it('should not validate a batch with invalid previous hash', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const batch = {
-        blockHash: 'ewq',
-        blockHeight: 2,
-        prevBlockHash: 'invalidHash',
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      };
-      const isValid = blockchain.validateNextBatch(batch);
+    it('should not validate a block with invalid height', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const isValid = blockchain.validateNextBlock(2, 'hash0'); // invalid height, should be 1
       expect(isValid).toBe(false);
     });
 
-    it('should not validate a batch with non-sequential n', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const batch = {
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 2,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      };
-      const isValid = blockchain.validateNextBatch(batch);
+    it('should not validate a block with invalid previous hash', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const isValid = blockchain.validateNextBlock(1, 'invalidPrevHash'); // invalid previous hash
       expect(isValid).toBe(false);
     });
 
-    it('should validate a correct batch', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const batch = {
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 1,
-        isFinalBatch: true,
-        tx: ['qwe3', 'ewq4'],
-      };
-      const isValid = blockchain.validateNextBatch(batch);
+    it('should validate a correct block', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const isValid = blockchain.validateNextBlock(1, 'hash0');
       expect(isValid).toBe(true);
     });
   });
 
-  describe('validateLastBatch', () => {
-    it('should validate the last batch correctly', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 1,
-        isFinalBatch: true,
-        tx: ['qwe3', 'ewq4'],
-      });
-      const isValid = blockchain.validateLastBatch(1, 1);
+  describe('validateLastBlock', () => {
+    it('should validate the last block correctly', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const isValid = blockchain.validateLastBlock(0, 'hash0', 'prevHash0');
       expect(isValid).toBe(true);
     });
 
-    it('should not validate a non-final last batch', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 1,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      });
-      const isValid = blockchain.validateLastBatch(1, 1);
+    it('should not validate an invalid last block', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const isValid = blockchain.validateLastBlock(1, 'hash1', 'hash0'); // invalid block data
       expect(isValid).toBe(false);
+    });
+  });
+
+  describe('peekLast', () => {
+    it('should return null if the chain is empty', () => {
+      const lastBlock = blockchain.peekLast();
+      expect(lastBlock).toBeNull();
+    });
+
+    it('should peek the last block correctly', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const lastBlock = blockchain.peekLast();
+      expect(lastBlock).toEqual({
+        height: 0,
+        hash: 'hash0',
+        prevHash: 'prevHash0',
+        batches: [],
+      });
     });
   });
 
   describe('truncateToBlock', () => {
     it('should truncate the blockchain correctly', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: true,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'ewq',
-        blockHeight: 2,
-        prevBlockHash: 'qwe',
-        n: 0,
-        isFinalBatch: true,
-        tx: ['qwe3', 'ewq4'],
-      });
-      const removedBlocks = blockchain.truncateToBlock(1);
-      expect(removedBlocks.length).toBe(1);
-      expect(blockchain.size).toBe(1);
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      blockchain.addBlock(1, 'hash1', 'hash0', []);
+      blockchain.addBlock(2, 'hash2', 'hash1', []);
+      const truncated = blockchain.truncateToBlock(2);
+      expect(truncated).toBe(true);
+      expect(blockchain.size).toBe(2);
       expect(blockchain.lastBlockHeight).toBe(1);
     });
-  });
 
-  describe('truncateToBatch', () => {
-    it('should truncate the blockchain to a specific batch', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: true,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'ewq',
-        blockHeight: 2,
-        prevBlockHash: 'qwe',
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      });
-      blockchain.addBatch({
-        blockHash: 'ewq',
-        blockHeight: 2,
-        prevBlockHash: 'qwe',
-        n: 1,
-        isFinalBatch: true,
-        tx: ['qwe5', 'ewq6'],
-      });
-      const removedBatches = blockchain.truncateToBatch(2, 0);
-      expect(removedBatches.length).toBe(1);
-      expect(blockchain.size).toBe(2);
-      expect(blockchain.lastBatchIndex).toBe(0);
-    });
-  });
-
-  describe('removeOneBatchByBlock', () => {
-    it('should remove a batch from a block', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 1,
-        isFinalBatch: true,
-        tx: ['qwe3', 'ewq4'],
-      });
-      const result = blockchain.removeOneBatchByBlock(1, 1);
-      expect(result).toBe(true);
+    it('should return false if the block was not found', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const truncated = blockchain.truncateToBlock(5);
+      expect(truncated).toBe(false);
       expect(blockchain.size).toBe(1);
-      expect(blockchain.lastBatchIndex).toBe(0);
+    });
+  });
+
+  describe('removeOldestChain', () => {
+    it('should remove the first block correctly', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      blockchain.addBlock(1, 'hash1', 'hash0', []);
+      const removedBlock = blockchain['removeOldestChain']();
+      expect(removedBlock).toEqual({
+        height: 0,
+        hash: 'hash0',
+        prevHash: 'prevHash0',
+        batches: [],
+      });
+      expect(blockchain.size).toBe(1);
+      expect(blockchain.firstBlockHash).toBe('hash1');
     });
 
-    it('should return false if batch not found', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const result = blockchain.removeOneBatchByBlock(1, 1);
-      expect(result).toBe(false);
+    it('should return null if the chain is empty', () => {
+      const removedBlock = blockchain['removeOldestChain']();
+      expect(removedBlock).toBeNull();
+      expect(blockchain.size).toBe(0);
     });
   });
 
   describe('findBlockByHeight', () => {
     it('should find a block by its height', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: true,
-        tx: ['qwe1', 'ewq2'],
-      });
-      blockchain.addBatch({
-        blockHash: 'ewq',
-        blockHeight: 1,
-        prevBlockHash: 'qwe',
-        n: 0,
-        isFinalBatch: false,
-        tx: ['qwe3', 'ewq4'],
-      });
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      blockchain.addBlock(1, 'hash1', 'hash0', []);
       const block = blockchain.findBlockByHeight(1);
       expect(block).toEqual({
-        hash: 'qwe',
         height: 1,
-        prevHash: '',
-        batches: new Map([[0, { tx: ['qwe1', 'ewq2'], isFinalBatch: true }]]),
+        hash: 'hash1',
+        prevHash: 'hash0',
+        batches: [],
       });
     });
 
-    it('should return null if block not found', () => {
-      blockchain.addBatch({
-        blockHash: 'qwe',
-        blockHeight: 1,
-        prevBlockHash: null,
-        n: 0,
-        isFinalBatch: true,
-        tx: ['qwe1', 'ewq2'],
-      });
-      const block = blockchain.findBlockByHeight(2);
+    it('should return null if the block is not found', () => {
+      blockchain.addBlock(0, 'hash0', 'prevHash0', []);
+      const block = blockchain.findBlockByHeight(1);
       expect(block).toBeNull();
     });
   });

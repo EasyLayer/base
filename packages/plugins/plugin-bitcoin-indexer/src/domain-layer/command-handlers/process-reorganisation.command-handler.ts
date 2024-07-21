@@ -85,7 +85,7 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
         this.constructor.name
       );
     } catch (error) {
-      this.log.error('execute()', error, this.constructor.name);
+      this.log.error('execute()', { error }, this.constructor.name);
       throw error;
     }
   }

@@ -23,7 +23,7 @@ export class BitcoinIndexerTransactionsBatchIndexedEventHandler
 
       return await this.transactionsService.createMany({ blockHash, batch, status });
     } catch (error) {
-      this.log.error('handle()', error, this.constructor.name);
+      this.log.error('handle()', { error }, this.constructor.name);
       throw error;
     }
   }

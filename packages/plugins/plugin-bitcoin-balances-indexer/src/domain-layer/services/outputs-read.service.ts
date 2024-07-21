@@ -12,33 +12,7 @@ export class OutputsReadService {
     // IMPORTANT: 'balances-indexer-read' name have to be the same as name in module connection
     @InjectRepository(OutputViewModel, 'balances-indexer-read')
     private readDb: Repository<OutputViewModel>
-  ) {
-    // this.setupCoinbaseOutput();
-  }
-
-  // TODO: This is a test method for seeding default output for coinbase inputs
-  // private async setupCoinbaseOutput() {
-  //   const existingCoinbaseOutput = await this.readDb.findOne({
-  //     where: { txid: COINBASE_OUTPUT_TXID, n: COINBASE_OUTPUT_N }
-  //   });
-
-  //   if (!existingCoinbaseOutput) {
-  //     const coinbaseOutput = {
-  //       txid: COINBASE_OUTPUT_TXID,
-  //       address: 'coinbase',
-  //       value: '0',
-  //       n: COINBASE_OUTPUT_N,
-  //       block_height: -1,
-  //       is_suspended: false
-  //     };
-
-  //     await this.readDb.createQueryBuilder()
-  //       .insert()
-  //       .into(OutputViewModel)
-  //       .values(coinbaseOutput)
-  //       .execute();
-  //   }
-  // }
+  ) {}
 
   async createMany({ outputs, blockHeight }: { outputs: any; blockHeight: string }): Promise<OutputViewModel[]> {
     const { raw } = await this.readDb
@@ -57,6 +31,20 @@ export class OutputsReadService {
       .execute();
 
     return raw;
+  }
+
+  async updateWithBuilder(criteria: any, dto: any): Promise<any> {
+    const queryBuilder = this.readDb.createQueryBuilder().update(OutputViewModel).set(dto);
+
+    Object.entries(criteria).forEach(([column, value]) => {
+      if (Array.isArray(value)) {
+        queryBuilder.andWhere(`${column} IN (:...${column})`, { [column]: value });
+      } else {
+        queryBuilder.andWhere(`${column} = :${column}`, { [column]: value });
+      }
+    });
+
+    return await queryBuilder.execute();
   }
 
   // async getAllOutputs() {

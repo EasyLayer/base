@@ -29,7 +29,7 @@ export class IndexerService implements OnModuleInit {
         startHeight: this.businessConfig.BITCOIN_INDEXER_START_BLOCK_HEIGHT,
       });
     } catch (error) {
-      this.log.error('initialization()', error, this.constructor.name);
+      this.log.error('initialization()', { error }, this.constructor.name);
       throw error;
     }
   }

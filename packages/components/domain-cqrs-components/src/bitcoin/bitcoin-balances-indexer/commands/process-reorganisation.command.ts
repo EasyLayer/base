@@ -1,6 +1,6 @@
 export interface IProcessReorganisationCommand {
   status: string;
-  block: any;
+  blocks: any[];
   height: string | number;
   requestId: string;
 }

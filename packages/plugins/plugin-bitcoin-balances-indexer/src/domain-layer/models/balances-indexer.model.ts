@@ -2,10 +2,9 @@ import { AggregateRoot } from '@easylayer/cqrs';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import {
   BitcoinBalancesIndexerInitializedEvent,
-  BitcoinBalancesIndexerChainBacthAddedEvent,
+  BitcoinBalancesIndexerBlockAddedEvent,
   BitcoinBalancesIndexerReorganisationStartedEvent,
   BitcoinBalancesIndexerReorganisationFinishedEvent,
-  BitcoinBalancesIndexerChainByBlockTruncatedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 
 enum IndexerStatuses {
@@ -13,143 +12,116 @@ enum IndexerStatuses {
   REORGANISATION = 'reorganisation',
 }
 
-type Batch = {
-  tx: any[];
-  isFinalBatch: boolean;
-};
-
-type Index = number;
-
-type Block = {
-  hash: string;
+type LightBlock = {
   height: number;
+  hash: string;
   prevHash: string;
-  batches: Map<Index, Batch>;
+  batches: string[];
 };
 
 type Chain = {
-  block: Block;
-  prev: Chain | null;
+  block: LightBlock;
   next: Chain | null;
-};
-
-type AddBatchParams = {
-  blockHash: string;
-  blockHeight: number;
-  prevBlockHash: string | null;
-  n: number;
-  isFinalBatch: boolean;
-  tx: string[];
+  prev: Chain | null;
 };
 
 /**
  * Blockchain class representing a doubly linked list of blocks.
- * Each block contains a height, hash, and a previous hash. The blockchain has a fixed maximum size,
+ * Each block contains a height, hash, previous hash and batches. The blockchain has a fixed maximum size,
  * and automatically removes the oldest blocks when new blocks are added beyond this size.
  */
 export class Blockchain {
   private head: Chain | null = null;
   private tail: Chain | null = null;
   private _size: number = 0;
+  // NOTE: _maxSize - Maximum number of blocks allowed in the blockchain at any given time.
   private readonly _maxSize: number = 100;
 
+  // Gets the hash of the first block in the chain.
+  // Complexity: O(1)
+  get firstBlockHash(): string {
+    return this.head ? this.head.block.hash : '';
+  }
+
   /**
-   * Returns the size of the blockchain.
-   * @complexity O(1)
+   * Gets the previous hash of the last block in the chain.
+   * @returns {string} The previous hash of the last block, or an empty string if the chain is empty.
+   * Complexity: O(1)
+   */
+  get lastPrevBlockHash(): string {
+    if (this.tail) {
+      return this.tail.block.prevHash;
+    } else {
+      return '';
+    }
+  }
+
+  /**
+   * Gets the hash of the last block in the chain.
+   * @returns {string} The hash of the last block, or an empty string if the chain is empty.
+   * Complexity: O(1)
+   */
+  get lastBlockHash(): string {
+    if (this.tail) {
+      return this.tail.block.hash;
+    } else {
+      return '';
+    }
+  }
+
+  /**
+   * Gets the height of the last block in the chain.
+   * @returns {number} The height of the last block, or -1 if the chain is empty.
+   * Complexity: O(1)
+   */
+  get lastBlockHeight(): number {
+    if (this.tail) {
+      return this.tail.block.height;
+    } else {
+      // IMPORTANT: the blockchain starts from block 0,
+      // so if there are no blocks at all, we use -1
+      return -1;
+    }
+  }
+
+  /**
+   * Gets the size of the blockchain.
+   * @returns {number} The number of blocks in the chain.
+   * Complexity: O(1)
    */
   get size(): number {
     return this._size;
   }
 
   /**
-   * Returns the height of the last block in the blockchain.
-   * @complexity O(1)
+   * Adds a block to the end of the chain.
+   * @param {string | number} height - The height of the new block.
+   * @param {string} hash - The hash of the new block.
+   * @param {string} prevHash - The hash of the previous block.
+   * @returns {boolean} True if the block was added successfully, false otherwise.
+   * Complexity: O(1)
    */
-  get lastBlockHeight(): number {
-    return this.tail ? this.tail.block.height : -1;
-  }
-
-  /**
-   * Returns the hash of the last block in the blockchain.
-   * @complexity O(1)
-   */
-  get lastBlockHash(): string {
-    return this.tail ? this.tail.block.hash : '';
-  }
-
-  /**
-   * Returns the last batch index in the last block of the blockchain.
-   * @complexity O(1)
-   */
-  get lastBatchIndex(): number {
-    if (this.tail && this.tail.block.batches.size > 0) {
-      return Math.max(...Array.from(this.tail.block.batches.keys()));
-    }
-    return -1;
-  }
-
-  /**
-   * Checks if the last batch in the last block is final.
-   * @complexity O(1)
-   */
-  get isLastBatchFinal(): boolean {
-    const lastIndex = this.lastBatchIndex;
-    if (this.tail && lastIndex !== -1) {
-      const lastBatch = this.tail.block.batches.get(lastIndex);
-      return lastBatch ? lastBatch.isFinalBatch : false;
-    }
-    return false;
-  }
-
-  /**
-   * Retrieves the last block in the blockchain.
-   * @returns The last block if available, otherwise null.
-   * @complexity O(1)
-   */
-  public get lastBlock(): Block | null {
-    return this.tail ? this.tail.block : null;
-  }
-
-  /**
-   * Adds a batch to the blockchain.
-   * @param batch The batch to add.
-   * @returns true if the batch is added successfully, false otherwise.
-   * @complexity O(1)
-   */
-  public addBatch(batch: AddBatchParams): boolean {
-    const { blockHash, blockHeight, prevBlockHash, n, isFinalBatch, tx } = batch;
-
-    if (!this.validateNextBatch(batch)) {
+  public addBlock(height: string | number, hash: string, prevHash: string, batches: string[]): boolean {
+    // Before adding a block, we validate it
+    if (!this.validateNextBlock(height, prevHash)) {
       return false;
     }
 
-    const newBatch: Batch = { tx, isFinalBatch };
-    if (this.tail && this.tail.block.hash === blockHash) {
-      this.tail.block.batches.set(n, newBatch);
-    } else {
-      const newBlock: Block = {
-        hash: blockHash,
-        height: blockHeight,
-        prevHash: prevBlockHash || '',
-        batches: new Map([[n, newBatch]]),
-      };
+    const newBlock: LightBlock = { height: Number(height), hash, prevHash, batches };
+    const newNode: Chain = { block: newBlock, next: null, prev: this.tail };
 
-      const newChain: Chain = {
-        block: newBlock,
-        next: null,
-        prev: this.tail,
-      };
+    if (this.tail) {
+      this.tail.next = newNode;
+    }
+    this.tail = newNode;
 
-      if (this.tail) {
-        this.tail.next = newChain;
-      } else {
-        this.head = newChain;
-      }
-
-      this.tail = newChain;
-      this._size++;
+    if (!this.head) {
+      this.head = newNode;
     }
 
+    this._size++;
+
+    // Remove the oldest block if the chain size exceeds the maximum allowed size
     if (this._size > this._maxSize) {
       this.removeOldestChain();
     }
@@ -158,168 +130,51 @@ export class Blockchain {
   }
 
   /**
-   * Removes the oldest chain from the blockchain.
-   * @complexity O(1)
+   * Gets the last block without deleting it.
+   * @returns {LightBlock | null} The last block in the chain, or null if the chain is empty.
+   * Complexity: O(1)
    */
-  private removeOldestChain(): void {
-    if (this.head) {
-      this.head = this.head.next;
-      if (this.head) {
-        this.head.prev = null;
-      } else {
-        this.tail = null;
-      }
-      this._size--;
-    }
+  public peekLast(): LightBlock | null {
+    return this.tail ? this.tail.block : null;
   }
 
   /**
-   * Validates the next batch to be added to the blockchain.
-   * Checks the sequential integrity of blocks and batch indices.
-   * @param newBatch The batch to validate within the block.
-   * @returns true if the block and batch are valid and can be added, false otherwise.
-   * @complexity O(1)
+   * Validates the next block to be added to the chain.
+   * @param {string | number} height - The height of the new block.
+   * @param {string} prevHash - The hash of the previous block.
+   * @returns {boolean} True if the block is valid, false otherwise.
+   * Complexity: O(1)
    */
-  public validateNextBatch(newBatch: AddBatchParams): boolean {
+  public validateNextBlock(height: string | number, prevHash: string): boolean {
     if (!this.tail) {
-      // If there are no blocks, the new batch should have index 0
-      return newBatch.n === 0;
+      // If there's no blocks in the chain, we assume this is the first block.
+      return true;
     }
 
-    const lastBlock = this.tail.block;
+    // Check if the given height is exactly one more than the last block's height.
+    if (this.tail.block.height + 1 !== height) {
+      return false;
+    }
 
-    // If this is a new block, check if the hash of the previous block matches
-    if (lastBlock.hash !== newBatch.blockHash) {
-      if (lastBlock.hash !== newBatch.prevBlockHash) {
-        return false;
-      }
-      // Check the height of the new block
-      if (lastBlock.height + 1 !== newBatch.blockHeight) {
-        return false;
-      }
-    } else {
-      // Checking the batch index sequence in the same block
-      const lastBatchIndex = this.lastBatchIndex;
-      if (newBatch.n !== lastBatchIndex + 1) {
-        return false;
-      }
+    // Check if the given previous hash matches the last block's hash.
+    if (this.tail.block.hash !== prevHash) {
+      return false;
     }
 
     return true;
   }
 
   /**
-   * Finds a block by its height.
-   * @param height The height of the block to find.
-   * @returns The block if found, null otherwise.
-   * @complexity O(n), where n is the number of blocks in the chain.
-   */
-  public findBlockByHeight(height: number): Block | null {
-    let current = this.head;
-    while (current) {
-      if (current.block.height === height) {
-        return current.block;
-      }
-      current = current.next;
-    }
-    return null;
-  }
-
-  /**
-   * Removes a specific batch from a block identified by block height and batch index.
-   * @param blockHeight The height of the block from which to remove the batch.
-   * @param batchIndex The index of the batch to remove.
-   * @returns true if the batch was removed successfully, false otherwise.
-   * @complexity O(n + m), where n is the number of blocks and m is the number of batches in the block.
-   */
-  public removeOneBatchByBlock(blockHeight: number, batchIndex: number): boolean {
-    let current = this.head;
-    while (current) {
-      if (current.block.height === blockHeight) {
-        if (current.block.batches.has(batchIndex)) {
-          current.block.batches.delete(batchIndex);
-          return true;
-        }
-        break;
-      }
-      current = current.next;
-    }
-    return false;
-  }
-
-  /**
-   * Truncates the blockchain to a specific block height.
-   * @param height The height to truncate to (inclusive).
-   * @returns An array of blocks that were removed.
-   * @complexity O(n), where n is the number of blocks to be removed.
-   */
-  public truncateToBlock(height: number): Block[] {
-    const removedBlocks: Block[] = [];
-    while (this.tail && this.tail.block.height > height) {
-      removedBlocks.push(this.tail.block);
-      this.tail = this.tail.prev;
-      if (this.tail) {
-        this.tail.next = null;
-      } else {
-        this.head = null;
-      }
-      this._size--;
-    }
-    return removedBlocks;
-  }
-
-  /**
-   * Truncates the blockchain to a specific batch within a block.
-   * @param blockHeight The height of the block to truncate at.
-   * @param batchIndex The index of the batch to truncate after (exclusive).
-   * @returns An array of batches that were removed from the specified block.
-   * @complexity O(n + m), where n is the number of blocks and m is the number of batches removed.
-   */
-  public truncateToBatch(blockHeight: number, batchIndex: number): Batch[] {
-    const removedBatches: Batch[] = [];
-    const block = this.findBlockByHeight(blockHeight);
-    if (block) {
-      for (let i = batchIndex + 1; i <= this.lastBatchIndex; i++) {
-        const batch = block.batches.get(i);
-        if (batch) {
-          removedBatches.push(batch);
-          block.batches.delete(i);
-        }
-      }
-    }
-    return removedBatches;
-  }
-
-  /**
-   * Validates if the specified block and batch are the last ones in the blockchain.
-   * @param blockHeight The height of the block to validate.
-   * @param batchIndex The index of the batch within the block to validate.
-   * @returns true if the specified block and batch are the last ones in the blockchain, false otherwise.
-   * @complexity O(1)
-   */
-  public validateLastBatch(blockHeight: number, batchIndex: number): boolean {
-    if (this.tail && this.tail.block.height === blockHeight) {
-      const lastIndex = this.lastBatchIndex;
-      if (lastIndex === batchIndex) {
-        const lastBatch = this.tail.block.batches.get(lastIndex);
-        if (lastBatch) {
-          return lastBatch.isFinalBatch;
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
    * Validates the entire blockchain.
-   * @returns true if the blockchain is valid, false otherwise.
-   * @complexity O(n), where n is the number of blocks in the chain.
+   * @returns {boolean} True if the blockchain is valid, false otherwise.
+   * Complexity: O(n), where n - is the number of blocks in the chain
    */
   public validateChain(): boolean {
     let current = this.head;
 
     if (!current) {
-      return true; // Пустая цепочка считается валидной
+      // An empty chain is considered valid
+      return true;
     }
 
     while (current && current.next) {
@@ -334,7 +189,120 @@ export class Blockchain {
       current = current.next;
     }
 
+    // Если цикл завершился и current указывает на последний блок (this.tail)
     return current === this.tail;
+  }
+
+  /**
+   * Validates that the provided block data matches the last block in the chain.
+   * @param {number} height - The expected height of the last block.
+   * @param {string} hash - The expected hash of the last block.
+   * @param {string} prevHash - The expected previous hash of the last block.
+   * @returns {boolean} True if the provided data matches the last block, false otherwise.
+   * NOTE: This method is needed for the case when we confirm the indexing of a block
+   * in another command to make sure that the block we are passing exactly matches the chain
+   * Complexity: O(1)
+   */
+  public validateLastBlock(height: number, hash: string, prevHash: string): boolean {
+    if (!this.tail) {
+      // If there's no blocks in the chain, we assume this is the first block.
+      return true;
+    }
+
+    // Check that the height of the last block matches the passed height.
+    if (this.tail.block.height !== height) {
+      return false;
+    }
+
+    // Check that the hash of the last block matches the passed hash
+    if (this.tail.block.hash !== hash) {
+      return false; // Hash mismatch
+    }
+
+    // Check that the previous hash of the last block matches the previous hash passed in.
+    if (this.tail.block.prevHash !== prevHash) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Finds a block by its height.
+   * @param {number} height - The height of the block to find.
+   * @returns {LightBlock | null} The block, or null if not found.
+   * Complexity: O(n), where n - is the number of blocks in the chain
+   */
+  public findBlockByHeight(height: number): LightBlock | null {
+    let currentNode = this.tail;
+    while (currentNode) {
+      if (currentNode.block.height === height) {
+        return currentNode.block;
+      }
+      currentNode = currentNode.prev;
+    }
+    return null;
+  }
+
+  /**
+   * Truncates the blockchain just before a specified block height.
+   * @param {number} height - The height before which the chain should be truncated.
+   * @returns {boolean} Returns true if truncation was successful, false if the block was not found.
+   * Complexity: O(n), where n - is the number of blocks in the chain
+   */
+  public truncateToBlock(height: number): boolean {
+    let currentNode = this.tail;
+    let found = false;
+
+    // Iterate backwards from the last block
+    // until we find the block immediately before the given height
+    while (currentNode && currentNode.prev) {
+      if (currentNode.prev.block.height === height - 1) {
+        // Update the tail to the block before the specified height
+        this.tail = currentNode.prev;
+
+        // Delete all blocks after the found block
+        this.tail.next = null;
+
+        // Update the size
+        this._size = this.tail.block.height + 1;
+
+        found = true;
+        break;
+      }
+      currentNode = currentNode.prev;
+    }
+
+    // Delete all blocks if the specified height is 1 (cut off the entire chain)
+    if (height === 0 && this.head) {
+      this.head = null;
+      this.tail = null;
+      this._size = 0;
+      found = true;
+    }
+
+    return found;
+  }
+
+  /**
+   * Removes the first block in the chain.
+   * @returns {LightBlock | null} The removed block, or null if the chain is empty.
+   * Complexity: O(1)
+   */
+  private removeOldestChain(): LightBlock | null {
+    if (!this.head) return null;
+
+    const block = this.head.block;
+    this.head = this.head.next;
+
+    if (this.head) {
+      this.head.prev = null;
+    } else {
+      this.tail = null;
+    }
+
+    this._size--;
+    return block;
   }
 }
 
@@ -353,7 +321,7 @@ export class BalancesIndexer extends AggregateRoot {
     const lastBlockHeight = this.chain.lastBlockHeight;
     // NOTE: lastBlockHeight - is the last already indexed block and
     // if it's start of blockchain where genesis block height is '0'
-    // so we indicate the last indexed block adjusted by -1n.
+    // so we indicate the last indexed block adjusted by -1.
     // startHeight - is the height from which the user wants to index, it cannot be less than 0.
     const height = lastBlockHeight + 1 > Number(startHeight) ? lastBlockHeight : Number(startHeight) - 1;
 
@@ -362,31 +330,28 @@ export class BalancesIndexer extends AggregateRoot {
         aggregateId: this.aggregateId,
         requestId,
         status,
-        indexedHeight: String(height),
+        indexedHeight: height.toString(),
       })
     );
   }
 
-  public async addTransactionsBatch({ batch, requestId }: { batch: any; requestId: string }) {
+  public async addBlock({ block, requestId }: { block: any; requestId: string }) {
     if (this.status !== IndexerStatuses.AWAITING) {
-      throw new Error('addBlock() Previous Block did not complete indexing');
+      throw new Error("addBlock() Reorganisation hasn't finished yet");
     }
 
-    const { blockHeight, blockHash, prevBlockHash, ...restBatch } = batch;
+    const { height, previousblockhash } = block;
 
-    if (!this.chain.validateNextBatch(batch)) {
+    if (!this.chain.validateNextBlock(height, previousblockhash)) {
       throw new Error('Need reorganisation');
     }
 
     await this.apply(
-      new BitcoinBalancesIndexerChainBacthAddedEvent({
+      new BitcoinBalancesIndexerBlockAddedEvent({
         aggregateId: this.aggregateId,
         requestId,
         status: IndexerStatuses.AWAITING,
-        batch: restBatch,
-        blockHeight: String(blockHeight),
-        blockHash,
-        prevBlockHash,
+        block,
       })
     );
   }
@@ -395,10 +360,12 @@ export class BalancesIndexer extends AggregateRoot {
     height,
     requestId,
     service,
+    blocks,
   }: {
     height: string | number;
     requestId: string;
-    service: BitcoinNetworkProviderService; // TODO: here can be any service
+    service: BitcoinNetworkProviderService;
+    blocks: any[];
   }): Promise<void> {
     if (this.status !== IndexerStatuses.AWAITING) {
       throw new Error('reorganisation () Previous Block did not complete indexing');
@@ -407,8 +374,8 @@ export class BalancesIndexer extends AggregateRoot {
     // Get previously blocks by height - 1
     const prevHeight = Number(height) - 1;
 
-    // IMPORTANT: Here we get the block from the provider
-    // (the service can be either networkTransport or networkProvider)
+    // IMPORTANT: Main indexer always works only with the provider,
+    // so we can directly get the block from the provider’s service here.
     const oldBlock = await service.getOneBlockByHeight(prevHeight);
     const localBlock = this.chain.findBlockByHeight(prevHeight);
 
@@ -421,23 +388,23 @@ export class BalancesIndexer extends AggregateRoot {
 
     if (oldBlock.hash === localBlock.hash && oldBlock.previousblockhash === localBlock.prevHash) {
       // Match found
-
-      // IMPORTANT: Here we are sending the first block (in the chain this is the last block)
-      // from the structure and the height to which we need to reorganize
       return await this.apply(
         new BitcoinBalancesIndexerReorganisationStartedEvent({
           aggregateId: this.aggregateId,
           requestId,
           status: IndexerStatuses.REORGANISATION,
-          // NOTE: height - height of reorganization (last correct block)
-          height: String(localBlock.height),
-          block: this.chain.lastBlock,
+          // NOTE: height - is height of reorganisation(the last height where the blocks matched)
+          height: localBlock.height.toString(),
+          blocks,
         })
       );
     }
 
+    // Saving blocks for publication in an event
+    const newBlocks = [...blocks, localBlock];
+
     // Recursive check the previous block
-    return this.startReorganisation({ height: prevHeight, requestId, service });
+    return this.startReorganisation({ height: prevHeight, requestId, service, blocks: newBlocks });
   }
 
   public async finishReorganisation({
@@ -452,7 +419,7 @@ export class BalancesIndexer extends AggregateRoot {
     }
 
     if (Number(height) > this.chain.lastBlockHeight) {
-      throw new Error('Wrong blockheight');
+      throw new Error('Wrong block height');
     }
 
     await this.apply(
@@ -461,44 +428,7 @@ export class BalancesIndexer extends AggregateRoot {
         requestId,
         status: IndexerStatuses.AWAITING,
         // NOTE: height - height of reorganization (last correct block)
-        height: String(height),
-      })
-    );
-  }
-
-  public async truncateByBlock({
-    height,
-    block,
-    requestId,
-  }: {
-    height: string | number;
-    block: any;
-    requestId: string;
-  }) {
-    if (this.status !== IndexerStatuses.REORGANISATION) {
-      throw new Error('reorganisation () Previous Block did not complete indexing');
-    }
-
-    const blockNeedToBeTruncate = this.chain.lastBlock;
-
-    if (!blockNeedToBeTruncate) {
-      throw new Error('Blockchain is empty');
-    }
-
-    if (Number(block.height) !== blockNeedToBeTruncate.height) {
-      throw new Error('Wrong block height');
-    }
-
-    // NOTE: We have to get the new last block (height - 1)
-    // and send it in the event
-    const prevBlock = this.chain.findBlockByHeight(blockNeedToBeTruncate.height - 1);
-
-    await this.apply(
-      new BitcoinBalancesIndexerChainByBlockTruncatedEvent({
-        aggregateId: this.aggregateId,
-        requestId,
-        height: String(height),
-        block: prevBlock,
+        height: height.toString(),
       })
     );
   }
@@ -509,9 +439,11 @@ export class BalancesIndexer extends AggregateRoot {
     this.status = status as IndexerStatuses;
   }
 
-  private onBitcoinBalancesIndexerChainBacthAddedEvent({ payload }: BitcoinBalancesIndexerChainBacthAddedEvent) {
-    const { batch, status, blockHeight, blockHash, prevBlockHash } = payload;
-    this.chain.addBatch({ ...batch, blockHash, blockHeight: Number(blockHeight), prevBlockHash });
+  private onBitcoinBalancesIndexerBlockAddedEvent({ payload }: BitcoinBalancesIndexerBlockAddedEvent) {
+    const { block, status } = payload;
+
+    const { height, hash, previousblockhash, batches } = block;
+    this.chain.addBlock(height, hash, previousblockhash, batches);
     this.status = status as IndexerStatuses;
   }
 
@@ -525,16 +457,8 @@ export class BalancesIndexer extends AggregateRoot {
   private onBitcoinBalancesIndexerReorganisationFinishedEvent({
     payload,
   }: BitcoinBalancesIndexerReorganisationFinishedEvent) {
-    const { status } = payload;
+    const { height, status } = payload;
     this.status = status as IndexerStatuses;
-    // NOTE: we are only updating the status,
-    // because we should have already trimmed all the necessary blocks from chain
-  }
-
-  private onBitcoinBalancesIndexerChainByBlockTruncatedEvent({
-    payload,
-  }: BitcoinBalancesIndexerChainByBlockTruncatedEvent) {
-    const { height } = payload;
     this.chain.truncateToBlock(Number(height));
   }
 }

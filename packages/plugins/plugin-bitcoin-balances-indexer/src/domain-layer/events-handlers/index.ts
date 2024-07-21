@@ -1,11 +1,7 @@
-import { BitcoinBalancesIndexerTransactionIndexedEventHandler } from './transaction-indexed.event-handler';
-import { BitcoinBalancesIndexerTransactionOutputSpentEventHandler } from './transaction-output-spent.event-handler';
-import { BitcoinBalancesIndexerTransactionOutputUnspentEventHandler } from './transaction-output-unspent.event-handler';
-import { BitcoinBalancesIndexerTransactionDeletedEventHandler } from './transaction-deleted.event-handler';
+import { BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler } from './transactions-batch-indexed.event-handler';
+import { BitcoinBalancesIndexerTransactionsBatchSuspendedEventHandler } from './transactions-batch-suspended.event-handler';
 
 export const EventsHandlers = [
-  BitcoinBalancesIndexerTransactionIndexedEventHandler,
-  BitcoinBalancesIndexerTransactionOutputSpentEventHandler,
-  BitcoinBalancesIndexerTransactionOutputUnspentEventHandler,
-  BitcoinBalancesIndexerTransactionDeletedEventHandler,
+  BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler,
+  BitcoinBalancesIndexerTransactionsBatchSuspendedEventHandler,
 ];

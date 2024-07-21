@@ -4,7 +4,7 @@ interface BitcoinBalancesIndexerReorganisationStartedEventPayload {
   aggregateId: string;
   requestId: string;
   status: string;
-  block: any;
+  blocks: any[];
   height: string;
 }
 

@@ -4,7 +4,7 @@ import { LoggerModule } from '@easylayer/logger';
 import { ArithmeticService } from '@easylayer/arithmetic';
 import { EventStoreModule } from '@easylayer/eventstore';
 import { ReadDatabaseModule } from '@easylayer/read-database';
-import { TransactionsQueueModule } from '@easylayer/bitcoin-transactions-queue';
+import { BlocksQueueModule } from '@easylayer/bitcoin-blocks-queue';
 import { BitcoinNetworkProviderModule } from '@easylayer/bitcoin-network-provider';
 import { BalancesIndexerController } from './balances-indexer.controller';
 import { BalancesIndexerService } from './balances-indexer.service';
@@ -13,11 +13,11 @@ import { OutputViewModel, InputViewModel } from './domain-layer/view-models';
 import {
   BalancesIndexerCommandFactoryService,
   ReadStateExceptionHandlerService,
-  BacthesCommandFactoryService,
+  BlocksCommandFactoryService,
 } from './application-layer/services';
 import {
   BalancesIndexerModelFactoryService,
-  TransactionModelFactoryService,
+  TransactionsBatchModelFactoryService,
   OutputsReadService,
   InputsReadService,
 } from './domain-layer/services';
@@ -66,8 +66,8 @@ export class BitcoinBalancesIndexerModule {
           enableWAL: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
           entities: [OutputViewModel, InputViewModel],
         }),
-        TransactionsQueueModule.forRootAsync({
-          batchesCommandExecutor: BacthesCommandFactoryService,
+        BlocksQueueModule.forRootAsync({
+          blocksCommandExecutor: BlocksCommandFactoryService,
           isTransportMode: appConfig.BITCOIN_BALANCES_INDEXER_IS_TRANSPORT_MODE,
           maxBlockHeight: businessConfig.BITCOIN_BALANCES_INDEXER_MAX_BLOCK_HEIGHT,
         }),
@@ -98,11 +98,11 @@ export class BitcoinBalancesIndexerModule {
         ArithmeticService,
         BalancesIndexerService,
         BalancesIndexerModelFactoryService,
-        BacthesCommandFactoryService,
+        BlocksCommandFactoryService,
         IndexerSaga,
         BalancesIndexerCommandFactoryService,
         ReadStateExceptionHandlerService,
-        TransactionModelFactoryService,
+        TransactionsBatchModelFactoryService,
         ...CommandHandlers,
         ...EventsHandlers,
       ],

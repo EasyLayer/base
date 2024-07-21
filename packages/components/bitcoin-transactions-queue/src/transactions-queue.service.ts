@@ -46,7 +46,7 @@ export class TransactionsQueueService {
         this.batchesQueueIterator.startQueueIterating(this._batchQueue),
       ]);
     } catch (error) {
-      this.log.error('Erorr', error, this.constructor.name);
+      this.log.error('Erorr', { error }, this.constructor.name);
     }
   }
 

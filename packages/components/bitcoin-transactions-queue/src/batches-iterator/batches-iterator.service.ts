@@ -49,7 +49,7 @@ export class BatchesQueueIteratorService {
       try {
         await this.batchesCommandExecutor.indexBatch({ batch, requestId: uuidv4() });
       } catch (error) {
-        this.log.error('Failed to process batch:', error, this.constructor.name);
+        this.log.error('Failed to process batch:', { error }, this.constructor.name);
 
         // IMPORTANT: We call this to resolve queue promise
         // that we can try same batch one more time

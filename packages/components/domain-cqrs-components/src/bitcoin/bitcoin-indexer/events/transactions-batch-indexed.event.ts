@@ -5,9 +5,8 @@ interface BitcoinIndexerTransactionsBatchIndexedEventPayload {
   requestId: string;
   status: string;
   batch: any;
-  blockHash: string;
   blockHeight: string;
-  prevBlockHash: string;
+  blockHash: string;
 }
 
 export class BitcoinIndexerTransactionsBatchIndexedEvent

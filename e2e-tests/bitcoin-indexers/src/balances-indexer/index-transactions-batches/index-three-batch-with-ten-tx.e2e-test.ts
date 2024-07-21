@@ -9,8 +9,8 @@ import { CoreModule } from '@easylayer/core';
 import BitcoinBalancesIndexer from '@easylayer/plugin-bitcoin-balances-indexer';
 import {
   BitcoinBalancesIndexerInitializedEvent,
-  BitcoinBalancesIndexerTransactionIndexedEvent,
-  BitcoinBalancesIndexerChainBacthAddedEvent,
+  BitcoinBalancesIndexerTransactionsBatchIndexedEvent,
+  BitcoinBalancesIndexerBlockAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { CustomEventBus, ofType, CqrsModule } from '@easylayer/cqrs';
 import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
@@ -29,7 +29,7 @@ jest.mock('piscina', () => {
       }),
       destroy: jest.fn().mockResolvedValue(undefined),
       options: {
-        maxThreads: process.env.BITCOIN_TRANSACTIONS_QUEUE_WORKERS_NUM,
+        maxThreads: process.env.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
       },
     };
   });
@@ -63,8 +63,28 @@ describe('/Index Tree Batches With Ten Transactions', () => {
     // Clear the database
     await cleanDataFolder();
 
+    // Calculate the size of transactions
+    // IMPORTANT: We want to know how much transactions weigh
+    // so that we can split them into batches from memory, for testing
+    const totalSize = mockBlocks.reduce((total, block) => {
+      return (
+        total +
+        block.tx.reduce((blockTotal, tx) => {
+          return blockTotal + JSON.stringify(tx).length;
+        }, 0)
+      );
+    }, 0);
+
+    // How many batches do we want to get
+    const numBatches = 3;
+    // TODO: This division of batches may give different results twice
+    // why there may be errors, you need to redo it for a specific number of transactions
+    const maxBatchSize = Math.ceil(totalSize / numBatches);
+
+    process.env.BITCOIN_BALANCES_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE = maxBatchSize.toString();
+
     // Load environment variables
-    config({ path: resolve(process.cwd(), 'src/balances-indexer/index-batches/.env') });
+    config({ path: resolve(process.cwd(), 'src/balances-indexer/index-transactions-batches/.env') });
 
     const indexer = await BitcoinBalancesIndexer.register();
 
@@ -109,7 +129,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
       });
     };
 
-    const saveBatchPromise = createEventPromise(BitcoinBalancesIndexerTransactionIndexedEvent, 11); // 11 transactions
+    const saveBatchPromise = createEventPromise(BitcoinBalancesIndexerTransactionsBatchIndexedEvent, 4); // 3 batches
 
     await Promise.all([saveBatchPromise]);
 
@@ -131,40 +151,55 @@ describe('/Index Tree Batches With Ten Transactions', () => {
     }, {});
 
     expect(eventTypes[BitcoinBalancesIndexerInitializedEvent.name]).toBe(1);
-    expect(eventTypes[BitcoinBalancesIndexerTransactionIndexedEvent.name]).toBe(11);
-    expect(eventTypes[BitcoinBalancesIndexerChainBacthAddedEvent.name]).toBe(3); // 3 batches
+    expect(eventTypes[BitcoinBalancesIndexerTransactionsBatchIndexedEvent.name]).toBe(4); // Assuming 4 transactions batches
+    expect(eventTypes[BitcoinBalancesIndexerBlockAddedEvent.name]).toBe(3); // 3 blocks added
 
+    // Check that there are four events for 'balances-indexer' and their versions
     const indexerEvents = events.filter((event) => event.aggregateId === 'balances-indexer');
     expect(indexerEvents.length).toBe(4);
+    expect(indexerEvents[0].version).toBe(1);
+    expect(indexerEvents[1].version).toBe(2);
 
-    // Check the events for each transaction in mockBlocks
-    mockBlocks.forEach((block) => {
-      block.tx.forEach((tx) => {
-        const event = events.find((event) => event.aggregateId === tx.txid);
-        expect(event).toBeDefined();
+    // Check the status in the indexer to be 'awaiting'
+    const payload0 = JSON.parse(indexerEvents[0].payload);
+    expect(payload0.status).toBe('awaiting');
 
-        const payload = JSON.parse(event.payload);
+    // Check if the transactions batch event has transactions and their data
+    const batchEvents = events.filter(
+      (event) => event.type === BitcoinBalancesIndexerTransactionsBatchIndexedEvent.name,
+    );
+    expect(batchEvents.length).toBe(4);
+
+    // Check the events for each batch
+    batchEvents.forEach((batchEvent) => {
+      const batchPayload = JSON.parse(batchEvent.payload);
+      const txIds = Object.keys(batchPayload.batch.tx);
+      const transactions = Object.values(batchPayload.batch.tx);
+
+      transactions.forEach((transaction: any, index: number) => {
+        const mockBlock = mockBlocks.find((block) => block.tx.some((tx) => tx.txid === txIds[index]))!;
+        const mockTransaction = mockBlock.tx.find((tx) => tx.txid === txIds[index])!;
 
         // Check inputs
-        tx.vin.forEach((vin: any, vinIndex) => {
-          if (vin.coinbase) {
-            expect(payload.inputs[vinIndex].txid).toBe(null);
-            expect(payload.inputs[vinIndex].vout).toBe(null);
+        transaction.inputs.forEach((input: any, inputIndex: any) => {
+          const mockInput: any = mockTransaction.vin[inputIndex];
+          if (mockInput.coinbase) {
+            expect(input.txid).toBe(null);
+            expect(input.vout).toBe(null);
+            expect(input.coinbase).toBe(mockInput.coinbase);
           } else {
-            expect(payload.inputs[vinIndex].txid).toBe(vin.txid);
-            expect(payload.inputs[vinIndex].vout).toBe(vin.vout);
+            expect(input.txid).toBe(mockInput.txid);
+            expect(input.vout).toBe(mockInput.vout);
+            expect(input.coinbase).toBe(null);
           }
         });
 
         // Check outputs
-        tx.vout.forEach((vout, voutIndex) => {
-          expect(payload.outputs[voutIndex].addresses).toEqual(vout.scriptPubKey.addresses);
-          expect(payload.outputs[voutIndex].value).toBe(vout.value);
+        Object.entries(transaction.outputs).forEach(([outputIndex, output]: any) => {
+          const mockOutput = mockTransaction.vout[Number(outputIndex)];
+          expect(output.addresses).toEqual(mockOutput.scriptPubKey.addresses);
+          expect(output.value).toBe(mockOutput.value);
         });
-
-        // Check block data
-        expect(payload.blockHeight).toBe(block.height.toString());
-        expect(payload.blockHash).toBe(block.hash);
       });
     });
   });
@@ -217,7 +252,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
 
             expect(coinbaseOutput).toBeDefined();
             expect(coinbaseOutput.address).toBeNull();
-            expect(coinbaseOutput.value).toBe(0);
+            expect(coinbaseOutput.value).toBeFalsy();
             expect(coinbaseOutput.block_height).toBe(block.height);
             expect(coinbaseOutput.coinbase).toBeDefined();
             expect(!!coinbaseOutput.is_suspended).toBe(false);

@@ -4,14 +4,14 @@ import { EventStoreRepository } from '@easylayer/eventstore';
 import { ProcessReorganisationCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger } from '@easylayer/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
-import { Transaction } from '../models/transaction.model';
-import { TransactionModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
+import { TransactionsBatch } from '../models/transactions-batch.model';
+import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
 
 @CommandHandler(ProcessReorganisationCommand)
 export class ProcessReorganisationCommandHandler implements ICommandHandler<ProcessReorganisationCommand> {
   constructor(
     private readonly log: AppLogger,
-    private readonly transactionModelFactory: TransactionModelFactoryService,
+    private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly balancesIndexerModelFactory: BalancesIndexerModelFactoryService,
     private readonly eventStore: EventStoreRepository
   ) {}
@@ -21,66 +21,51 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      // NOTE: block - from Blockchain structure
-      // height - reorganisation height
-      const { block, height, requestId } = payload;
-      const { batches, height: blockHeight, hash: blockHash } = block;
+      // NOTE: blocks - need to be reorganised (from BalancesIndexerModel),
+      // height - is height of reorganisation(the last height where the blocks matched)
+      const { blocks, height, requestId } = payload;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
 
       this.log.debug('Init Balances Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
-      /* Check Finish Reorganisation */
-      if (block.height === height) {
-        // Reorganisation has already finished
-        await indexerModel.finishReorganisation({ height, requestId });
-        await this.eventStore.save(indexerModel);
-        await indexerModel.commit();
-        return;
+      const batchesIds = blocks.flatMap((block: any) => block.batches);
+
+      const batchesModels: TransactionsBatch[] = await this.batchModelFactory.initExistingModels(batchesIds);
+
+      // IMPORTANT: We must roll back batches in a certain order, namely from the end
+      const sortedBatches = this.sortByIndex(batchesModels);
+
+      for (const batch of sortedBatches) {
+        await batch.suspend({ requestId });
       }
 
-      const transactionModels: Transaction[] = [];
+      await indexerModel.finishReorganisation({ height, requestId });
 
-      // NOTE: Now we are rolling back all the batches of a block at once;
-      // if this becomes a performance bottleneck, we will need to roll back one batch at a time.
-      for (const batch of batches) {
-        const { tx } = batch;
+      // Save into eventstore
+      await this.eventStore.save([...batchesModels, indexerModel]);
 
-        for (const t of tx) {
-          const { txid, /*vin,*/ vout } = t;
-
-          // Deleting outputs that were previously indexed
-          const removedUTXO: Transaction = this.transactionModelFactory.createNewModel();
-          await removedUTXO.delete({ aggregateId: txid, vout, requestId, blockHeight, blockHash });
-          transactionModels.push(removedUTXO);
-
-          // We unspent all inputs from transactions that were previously spent
-          // for (const input of vin) {
-          //   const unspentedUTXO: Transaction = this.transactionModelFactory.createNewModel();
-          //   const voutIndex = input.vout ? input.vout : -1; // -1 mean coinbase tx
-          //   await unspentedUTXO.unspent({ aggregateId: input.txid, voutIndex, requestId });
-          //   transactionModels.push(unspentedUTXO);
-          // }
-        }
-      }
-
-      await indexerModel.truncateByBlock({
-        height, // reorganisation height
-        block, // block need to be truncate
-        requestId,
-      });
-
-      await this.eventStore.save([...transactionModels, indexerModel]);
-
-      for (const t of transactionModels) {
-        await t.commit();
+      for (const batch of batchesModels) {
+        await batch.commit();
       }
 
       await indexerModel.commit();
+
+      this.log.debug(
+        `Blockchain successfull reorganised`,
+        {
+          lastBlockHeight: indexerModel.chain.lastBlockHeight,
+        },
+        this.constructor.name
+      );
     } catch (error) {
-      this.log.error('execute()', error, this.constructor.name);
+      this.log.error('execute()', { error }, this.constructor.name);
       throw error;
     }
+  }
+
+  private sortByIndex(batches: TransactionsBatch[]): TransactionsBatch[] {
+    return batches.sort((a, b) => b.batch.n - a.batch.n);
   }
 }

@@ -28,6 +28,20 @@ export class InputsReadService {
     return raw;
   }
 
+  async updateWithBuilder(criteria: any, dto: any): Promise<any> {
+    const queryBuilder = this.readDb.createQueryBuilder().update(InputViewModel).set(dto);
+
+    Object.entries(criteria).forEach(([column, value]) => {
+      if (Array.isArray(value)) {
+        queryBuilder.andWhere(`${column} IN (:...${column})`, { [column]: value });
+      } else {
+        queryBuilder.andWhere(`${column} = :${column}`, { [column]: value });
+      }
+    });
+
+    return await queryBuilder.execute();
+  }
+
   async getSpentOutputs(address: string) {
     const spentOutputs = await this.readDb
       .createQueryBuilder()

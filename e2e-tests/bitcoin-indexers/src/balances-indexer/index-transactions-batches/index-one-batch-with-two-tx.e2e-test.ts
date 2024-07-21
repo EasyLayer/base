@@ -9,8 +9,8 @@ import { CoreModule } from '@easylayer/core';
 import BitcoinBalancesIndexer from '@easylayer/plugin-bitcoin-balances-indexer';
 import {
   BitcoinBalancesIndexerInitializedEvent,
-  BitcoinBalancesIndexerTransactionIndexedEvent,
-  BitcoinBalancesIndexerChainBacthAddedEvent,
+  BitcoinBalancesIndexerTransactionsBatchIndexedEvent,
+  BitcoinBalancesIndexerBlockAddedEvent,
 } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { CustomEventBus, ofType, CqrsModule } from '@easylayer/cqrs';
 import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
@@ -29,7 +29,7 @@ jest.mock('piscina', () => {
       }),
       destroy: jest.fn().mockResolvedValue(undefined),
       options: {
-        maxThreads: process.env.BITCOIN_TRANSACTIONS_QUEUE_WORKERS_NUM,
+        maxThreads: process.env.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
       },
     };
   });
@@ -64,7 +64,7 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
     await cleanDataFolder();
 
     // Load environment variables
-    config({ path: resolve(process.cwd(), 'src/balances-indexer/index-batches/.env') });
+    config({ path: resolve(process.cwd(), 'src/balances-indexer/index-transactions-batches/.env') });
 
     const indexer = await BitcoinBalancesIndexer.register();
 
@@ -100,7 +100,7 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
       });
     };
 
-    const saveBatchPromise = createEventPromise(BitcoinBalancesIndexerTransactionIndexedEvent);
+    const saveBatchPromise = createEventPromise(BitcoinBalancesIndexerTransactionsBatchIndexedEvent);
 
     await Promise.all([saveBatchPromise]);
 
@@ -122,8 +122,8 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
     }, {});
 
     expect(eventTypes[BitcoinBalancesIndexerInitializedEvent.name]).toBe(1);
-    expect(eventTypes[BitcoinBalancesIndexerTransactionIndexedEvent.name]).toBe(1);
-    expect(eventTypes[BitcoinBalancesIndexerChainBacthAddedEvent.name]).toBe(1);
+    expect(eventTypes[BitcoinBalancesIndexerTransactionsBatchIndexedEvent.name]).toBe(1);
+    expect(eventTypes[BitcoinBalancesIndexerBlockAddedEvent.name]).toBe(1);
 
     // Check that there are two events for 'balances-indexer' and their versions
     const indexerEvents = events.filter((event) => event.aggregateId === 'balances-indexer');
@@ -135,26 +135,26 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
     const payload0 = JSON.parse(indexerEvents[0].payload);
     expect(payload0.status).toBe('awaiting');
 
-    // Check tx data correctness for the event with aggregateId equal to txid
-    const txEvent = events.find((event) => event.aggregateId === mockBlocks[0].tx[0].txid);
-    expect(txEvent).toBeDefined();
-    const txPayload = JSON.parse(txEvent.payload);
+    // Check if the transactions batch event has transactions and their data
+    const batchEvent = events.find((event) => event.type === BitcoinBalancesIndexerTransactionsBatchIndexedEvent.name);
+    expect(batchEvent).toBeDefined();
+    const batchPayload = JSON.parse(batchEvent.payload);
+    expect(Object.keys(batchPayload.batch.tx).length).toBeGreaterThan(0);
+
+    // Make sure the first transaction exists and check its txid
+    const firstTxId = Object.keys(batchPayload.batch.tx)[0];
+    const firstTx = batchPayload.batch.tx[firstTxId];
 
     // Check input data
-    expect(txPayload.inputs[0].txid).toBe(null); // txid should be null for coinbase transaction
-    expect(txPayload.inputs[0].vout).toBe(null); // vout should be null for coinbase transaction
-    expect(txPayload.inputs[0].coinbase).toBe(mockBlocks[0].tx[0].vin[0].coinbase);
+    expect(firstTx.inputs[0].txid).toBe(null); // txid should be null for coinbase transaction
+    expect(firstTx.inputs[0].vout).toBe(null); // vout should be null for coinbase transaction
+    expect(firstTx.inputs[0].coinbase).toBe(mockBlocks[0].tx[0].vin[0].coinbase);
 
     // Check output data
-    expect(txPayload.outputs[0].addresses).toEqual(mockBlocks[0].tx[0].vout[0].scriptPubKey.addresses);
-    expect(txPayload.outputs[0].value).toBe(mockBlocks[0].tx[0].vout[0].value);
-
-    // Check block data
-    expect(txPayload.blockHeight).toBe(mockBlocks[0].height.toString());
-    expect(txPayload.blockHash).toBe(mockBlocks[0].hash);
-
-    // Additional checks for completeness
-    expect(txPayload.status).toBe('completed');
+    const firstOutput = firstTx.outputs['0'];
+    expect(firstOutput).toBeDefined();
+    expect(firstOutput.addresses).toEqual(mockBlocks[0].tx[0].vout[0].scriptPubKey.addresses);
+    expect(firstOutput.value).toBe(mockBlocks[0].tx[0].vout[0].value);
   });
 
   it('should save new output and input into read db', async () => {

@@ -34,8 +34,8 @@ describe('/First Initialization Application Write State Checkin', () => {
     jest.useFakeTimers();
     const eventEmitter = new EventEmitter();
 
-    // Mock the TransactionsQueueService with start() method
-    const mockTransactionsQueueService = {
+    // Mock the mockBLocksQueueService with start() method
+    const mockBLocksQueueService = {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       start: jest.fn().mockImplementation(async (height: string | number) => {
         // Emit an event to signal that start() was called
@@ -57,8 +57,8 @@ describe('/First Initialization Application Write State Checkin', () => {
     });
 
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [rootModule] })
-      .overrideProvider('TransactionsQueueService')
-      .useValue(mockTransactionsQueueService)
+      .overrideProvider('BlocksQueueService')
+      .useValue(mockBLocksQueueService)
       .compile();
 
     app = moduleFixture.createNestApplication();

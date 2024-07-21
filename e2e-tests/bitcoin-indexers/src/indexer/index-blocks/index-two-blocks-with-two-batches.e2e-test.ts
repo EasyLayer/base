@@ -77,6 +77,8 @@ describe('/Index Two Block With Two Transactions Batches', () => {
 
     // How many batches do we want to get
     const numBatches = 3;
+    // TODO: This division of batches may give different results twice
+    // why there may be errors, you need to redo it for a specific number of transactions
     const maxBatchSize = Math.ceil(totalSize / numBatches);
 
     process.env.BITCOIN_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE = maxBatchSize.toString();

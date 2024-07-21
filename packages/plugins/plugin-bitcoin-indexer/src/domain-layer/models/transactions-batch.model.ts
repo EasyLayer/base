@@ -65,7 +65,6 @@ export class TransactionsBatch extends AggregateRoot {
   public aggregateId!: string; // uuid
   public blockHeight!: number;
   public blockHash!: string;
-  public prevBlockHash!: string;
   public batch!: Batch;
   public status!: BatchStatuses;
 
@@ -75,7 +74,6 @@ export class TransactionsBatch extends AggregateRoot {
     tx,
     blockHeight,
     blockHash,
-    prevBlockHash,
     n,
     isFinalBatch,
   }: {
@@ -84,7 +82,6 @@ export class TransactionsBatch extends AggregateRoot {
     tx: Transaction[];
     blockHeight: string | number;
     blockHash: string;
-    prevBlockHash: string;
     n: number;
     isFinalBatch: boolean;
   }) {
@@ -100,10 +97,9 @@ export class TransactionsBatch extends AggregateRoot {
       new BitcoinIndexerTransactionsBatchIndexedEvent({
         aggregateId,
         requestId,
-        batch, // TODO: serialize
+        batch,
         blockHeight: blockHeight.toString(),
         blockHash,
-        prevBlockHash,
         status: BatchStatuses.INDEXED,
       })
     );
@@ -121,13 +117,11 @@ export class TransactionsBatch extends AggregateRoot {
   }
 
   private onBitcoinIndexerTransactionsBatchIndexedEvent({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
-    const { aggregateId, blockHeight, blockHash, status, batch, prevBlockHash } = payload;
+    const { aggregateId, blockHeight, status, batch } = payload;
     const { tx, n, isFinalBatch } = batch;
 
     this.aggregateId = aggregateId;
     this.blockHeight = Number(blockHeight);
-    this.blockHash = blockHash;
-    this.prevBlockHash = prevBlockHash;
     this.status = status as BatchStatuses;
 
     this.batch = {

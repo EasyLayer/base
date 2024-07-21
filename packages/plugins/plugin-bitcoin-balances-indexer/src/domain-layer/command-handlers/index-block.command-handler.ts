@@ -1,18 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore';
-import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { AppLogger } from '@easylayer/logger';
-import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { Block } from '../models/block.model';
-import { Indexer } from '../models/indexer.model';
+import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
+import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
+import { AppLogger } from '@easylayer/logger';
+import { BalancesIndexer } from '../models/balances-indexer.model';
 import { TransactionsBatch } from '../models/transactions-batch.model';
-import {
-  BlockModelFactoryService,
-  TransactionsBatchModelFactoryService,
-  IndexerModelFactoryService,
-} from '../services';
+import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
 import { AppConfig } from '../../config';
 
 @CommandHandler(IndexBlockCommand)
@@ -20,14 +15,13 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   constructor(
     private readonly log: AppLogger,
     private readonly appConfig: AppConfig,
-    private readonly blocksModelFactory: BlockModelFactoryService,
-    private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
+    private readonly balancesIndexerModelFactory: BalancesIndexerModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
     private readonly eventStore: EventStoreRepository
   ) {}
 
-  @Transactional({ connectionName: 'indexer-write' })
+  @Transactional({ connectionName: 'balances-indexer-write' })
   async execute({ payload }: IndexBlockCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);
@@ -35,12 +29,12 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // NOTE: block - is from BlocksQueue
       const { block, requestId } = payload;
       const { tx, ...blockWithoutTx } = block;
-      const { height, hash, previousblockhash } = blockWithoutTx;
+      const { height, previousblockhash } = blockWithoutTx;
 
       // TODO: Indexer should be in snapshot cache
-      const indexerModel: Indexer = await this.indexerModelFactory.initModel();
+      const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
 
-      this.log.debug('Init Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
+      this.log.debug('Init Balances Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
       /* Reorganisation */
       // IMPORTANT: We do this check here, and not inside the aggregate,
@@ -54,14 +48,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         });
         await this.eventStore.save(indexerModel);
         await indexerModel.commit();
-        this.log.debug(`Indexer reorganisation started`, {}, this.constructor.name);
+        this.log.debug(`Balances Indexer reorganisation started`, {}, this.constructor.name);
         return;
       }
-
-      /* Start indexing block */
-      // IMPORTANT: We do not check whether a block with such a hash exists in the state,
-      // but overwrite the state if so
-      const blockModel: Block = this.blocksModelFactory.createNewModel();
 
       const batches = [];
 
@@ -70,11 +59,11 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // Split transactions by batches
       const transactionSlices = this.splitTransactionsIntoSlices(
         tx,
-        this.appConfig.BITCOIN_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE
+        this.appConfig.BITCOIN_BALANCES_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE
       );
 
       for (let n = 0; n < transactionSlices.length; n++) {
-        const slice = transactionSlices[n];
+        const transactions = transactionSlices[n];
 
         // TODO: add type
         const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
@@ -85,9 +74,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         await transactionBatch.index({
           aggregateId: uuidv4(),
           requestId,
-          tx: slice,
+          transactions,
           blockHeight: height,
-          blockHash: hash,
           n,
           isFinalBatch,
         });
@@ -96,21 +84,6 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       }
 
       this.log.debug('Batches lenght', { length: batches.length }, this.constructor.name);
-
-      // NOTE: If in the future we process each batch in a separate command, we will need these statuses
-      // { <aggregateId>:<status> }
-      const batchesMap: Map<string, string> = new Map();
-      batches.forEach((batch) => {
-        batchesMap.set(batch.aggregateId, 'indexed');
-      });
-
-      await blockModel.index({
-        aggregateId: hash,
-        block: blockWithoutTx,
-        batches: batchesMap,
-        txCount: tx.length,
-        requestId,
-      });
 
       await indexerModel.addBlock({
         requestId,
@@ -121,9 +94,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         },
       });
 
-      await this.eventStore.save([...batches, indexerModel, blockModel]);
-
-      await blockModel.commit();
+      await this.eventStore.save([...batches, indexerModel]);
 
       for (const batch of batches) {
         await batch.commit();
@@ -132,8 +103,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // NOTE: This event is not currently being processed
       await indexerModel.commit();
 
-      this.log.info('Block indexed successfull', { blockHash: hash, txCount: tx.length }, this.constructor.name);
-      this.log.debug('Block indexed successfull', { block: blockWithoutTx }, this.constructor.name);
+      this.log.info('Balances successfull indexed', { batches: batches.length }, this.constructor.name);
+      this.log.debug('Balances successfull indexed', { batches: batches.length }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', { error }, this.constructor.name);
       throw error;

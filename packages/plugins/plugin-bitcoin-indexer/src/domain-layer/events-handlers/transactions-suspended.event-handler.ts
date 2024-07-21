@@ -27,7 +27,7 @@ export class BitcoinIndexerTransactionsBatchSuspendedEventhandler
       // Update the status of all transactions with one query
       await this.transactionsService.updateManyByTxIds(txids, status);
     } catch (error) {
-      this.log.error('handle()', error, this.constructor.name);
+      this.log.error('handle()', { error }, this.constructor.name);
       throw error;
     }
   }
