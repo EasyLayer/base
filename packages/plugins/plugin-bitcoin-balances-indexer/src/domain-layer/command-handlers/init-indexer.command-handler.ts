@@ -4,15 +4,18 @@ import { Transactional } from '@easylayer/eventstore';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger } from '@easylayer/logger';
+import { AppConfig } from '../../config';
 import { BalancesIndexer } from '../models/balances-indexer.model';
-import { BalancesIndexerModelFactoryService } from '../services';
+import { BalancesIndexerModelFactoryService, TransactionsBatchModelFactoryService } from '../services';
 
 @CommandHandler(InitIndexerCommand)
 export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCommand> {
   constructor(
     private readonly log: AppLogger,
+    private readonly appConfig: AppConfig,
     private readonly eventStore: EventStoreRepository,
-    private readonly indexerModelFactory: BalancesIndexerModelFactoryService
+    private readonly indexerModelFactory: BalancesIndexerModelFactoryService,
+    private readonly batchModelFactory: TransactionsBatchModelFactoryService
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
@@ -28,7 +31,30 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         startHeight,
       });
 
+      if (indexerModel.status === 'awaiting') {
+        // Get last blocks from IndexerModel
+        const blocks = indexerModel.chain.getLastNBlocks(
+          this.appConfig.BITCOIN_BALANCES_INDEXER_START_INIT_REPUBLISH_BLOCKS_COUNT
+        );
+
+        this.log.debug(
+          'Index Aggregate last blocks init staring...',
+          { blocksLength: blocks.length },
+          this.constructor.name
+        );
+
+        for (const block of blocks) {
+          console.log('DDDDDD\n\n\n\n');
+          const { batches } = block;
+          for (const batchId of batches) {
+            // Publish last batch event
+            await this.batchModelFactory.publishLastEvent(batchId);
+          }
+        }
+      }
+
       if (indexerModel.status === 'reorganisation') {
+        console.log('2DDDDDD\n\n\n\n');
         // Publish last indexer event to process reorganisation
         await this.indexerModelFactory.publishLastEvent();
       }
@@ -38,7 +64,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
 
       this.log.debug('Aggregates successfull init', {}, this.constructor.name);
     } catch (error) {
-      this.log.error('execute()', { error }, this.constructor.name);
+      this.log.error('execute()', error, this.constructor.name);
       throw error;
     }
   }

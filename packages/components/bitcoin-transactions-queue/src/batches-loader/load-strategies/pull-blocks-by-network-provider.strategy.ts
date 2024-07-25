@@ -72,9 +72,9 @@ export class PullBlocksByNetworkProviderStrategy implements BlocksLoadingStrateg
         // Clear temp array after successful enqueue
         blocks = [];
       } catch (error) {
-        console.log(error);
         await this.stop();
         // TODO: think about this case
+        throw error;
       }
     }
 

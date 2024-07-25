@@ -1,7 +1,7 @@
 import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@easylayer/read-database';
-import { BlockViewModel, TransactionViewModel } from '../view-models';
+import { TransactionViewModel } from '../view-models';
 
 @Injectable()
 export class TransactionsReadService {
@@ -11,44 +11,73 @@ export class TransactionsReadService {
     private readDb: Repository<TransactionViewModel>
   ) {}
 
-  // async create({ txid, ...dto }: { txid: string, hash: string }): Promise<TransactionViewModel> {
-  //   return await this.readDb.upsert({ ...dto, txid });
-  // }
-
   async createMany({
     blockHash,
-    batch,
-    status,
+    transactions,
   }: {
     blockHash: string;
-    status: string;
-    batch: any;
+    transactions: any[];
   }): Promise<TransactionViewModel[]> {
-    const transactions: TransactionViewModel[] = [];
-    const block = new BlockViewModel({ hash: blockHash });
+    const { raw } = await this.readDb
+      .createQueryBuilder()
+      .insert()
+      .into(TransactionViewModel)
+      .values(
+        transactions.map((item: any) => ({
+          ...item,
+          blockHash,
+          status: 'indexed',
+        }))
+      )
+      // IMPORTANT: At the current stage this ensures idempotency
+      .orIgnore()
+      // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+      // (without select after insert)
+      .updateEntity(false)
+      .execute();
 
-    batch.tx.forEach((item: any) => {
-      const tx = new TransactionViewModel({
-        txid: item.txid,
-        vin: item.vin,
-        vout: item.vout,
-        status,
-        block,
-      });
-      transactions.push(tx);
-    });
-
-    await this.readDb.upsert(transactions, ['txid']);
-    return transactions;
+    return raw;
   }
 
-  async update(criteria: any, dto: any): Promise<any> {
-    const tx = new TransactionViewModel(dto);
-    return await this.readDb.update(criteria, tx);
-  }
+  // async createMany({
+  //   blockHash,
+  //   transactions,
+  //   status,
+  // }: {
+  //   blockHash: string;
+  //   status: string;
+  //   transactions: any;
+  // }): Promise<TransactionViewModel[]> {
+  //   const transactions: TransactionViewModel[] = [];
+  //   const block = new BlockViewModel({ hash: blockHash });
+
+  // batch.tx.forEach((item: any) => {
+  //   const tx = new TransactionViewModel({
+  //     txid: item.txid,
+  //     vin: item.vin,
+  //     vout: item.vout,
+  //     status,
+  //     block,
+  //   });
+  //   transactions.push(tx);
+  // });
+
+  //   await this.readDb.upsert(transactions, ['txid']);
+  //   return transactions;
+  // }
 
   async updateWithBuilder(criteria: any, dto: any): Promise<any> {
-    return await this.readDb.createQueryBuilder().update(TransactionViewModel).set(dto).where(criteria).execute();
+    const queryBuilder = this.readDb.createQueryBuilder().update(TransactionViewModel).set(dto);
+
+    Object.entries(criteria).forEach(([column, value]) => {
+      if (Array.isArray(value)) {
+        queryBuilder.andWhere(`${column} IN (:...${column})`, { [column]: value });
+      } else {
+        queryBuilder.andWhere(`${column} = :${column}`, { [column]: value });
+      }
+    });
+
+    return await queryBuilder.execute();
   }
 
   async updateManyByTxIds(txids: string[], status: string): Promise<any> {

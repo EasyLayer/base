@@ -5,8 +5,8 @@ import { BlocksLoadingStrategy, StrategyNames } from './load-strategy.interface'
 import { Block } from '../../interfaces';
 import { BlocksQueue } from '../../blocks-queue';
 
-export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
-  readonly name: StrategyNames = StrategyNames.PULL_NETWORK_PROVIDER;
+export class PullNetworkProviderByWorkersStrategy implements BlocksLoadingStrategy {
+  readonly name: StrategyNames = StrategyNames.PULL_NETWORL_PROVIDER_BY_WORKERS;
   private _workerPool!: Piscina;
   private _isLoading: boolean = false;
 
@@ -50,28 +50,25 @@ export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
           }
         }
 
+        blocksBatch.forEach((item: any) => console.log(item?.height));
         const results = await Promise.allSettled(promises);
 
         results.forEach((result) => {
           if (result.status === 'fulfilled') {
             blocksBatch.push(result.value as Block); //TODO: add map for create Block
-          } else {
-            // NOTE: If we got here it means we've already used up all the attempts to reload the blocks,
-            // so we just exit this while loop without enqueue blocks.
-            // We'll try again.
-
-            // Clear temp array after successful enqueue
-            blocksBatch = [];
           }
         });
 
-        this.enqueueBlocksBatch(blocksBatch);
+        if (blocksBatch.length > 0) {
+          this.enqueueBlocksBatch(blocksBatch);
+        }
 
         // Clear temp array after successful enqueue
         blocksBatch = [];
       } catch (error) {
         await this.stop();
         // TODO: think about this case
+        throw error;
       }
     }
 
@@ -99,7 +96,7 @@ export class PullNetworkProviderStrategy implements BlocksLoadingStrategy {
 
     for (const block of blocksBatch) {
       if (!this.queue.enqueue(block)) {
-        continue;
+        break;
       }
     }
   }

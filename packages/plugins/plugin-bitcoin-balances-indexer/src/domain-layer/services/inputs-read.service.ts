@@ -23,6 +23,15 @@ export class InputsReadService {
           output_n: Number(item.outputN),
         }))
       )
+      // IMPORTANT: At the current stage this ensures idempotency
+      .orIgnore()
+      // .orUpdate(
+      //   ['output_txid', 'output_n'],
+      //   ['txid']
+      // )
+      // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+      // (without select after insert)
+      .updateEntity(false)
       .execute();
 
     return raw;

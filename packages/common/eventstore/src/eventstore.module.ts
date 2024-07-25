@@ -10,6 +10,7 @@ import { EventStoreService } from './eventstore.service';
 type EventStoreConfig = TypeOrmModuleOptions & {
   type: 'sqlite' | 'postgres' | 'mysql';
   name: string;
+  // useAggregateIdIndex?: boolean;
 };
 
 @Module({})
@@ -25,6 +26,15 @@ export class EventStoreModule {
     // TODO: remove from here
     const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'data', `${name}.db`) : name;
 
+    // // Dynamically add index to EventDataModel if useAggregateIdIndex is true
+    // const dynamicEntities: EntityTarget<any>[] = [EventDataModel];
+    // if (useAggregateIdIndex) {
+    //   // Modify EventDataModel to add the index
+    //   class EventDataModelWithIndex extends EventDataModel {}
+    //   Index()(EventDataModelWithIndex.prototype, 'aggregateId');
+    //   dynamicEntities[0] = EventDataModelWithIndex;
+    // }
+
     return {
       module: EventStoreModule,
       imports: [
@@ -36,6 +46,7 @@ export class EventStoreModule {
             ...restOptions,
             name,
             database,
+            // entities: dynamicEntities,
             entities: [EventDataModel],
           }),
           dataSourceFactory: async (options?: DataSourceOptions) => {

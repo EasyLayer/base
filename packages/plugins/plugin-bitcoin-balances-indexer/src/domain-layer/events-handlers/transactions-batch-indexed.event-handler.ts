@@ -1,8 +1,10 @@
 import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
-import { AppLogger } from '@easylayer/logger';
+import { AppLogger, RuntimeTracker } from '@easylayer/logger';
+import { Currency, Money } from '@easylayer/arithmetic';
 import { Transactional } from '@easylayer/read-database';
 import { BitcoinBalancesIndexerTransactionsBatchIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
 import { OutputsReadService, InputsReadService, COINBASE_OUTPUT_N, COINBASE_OUTPUT_VALUE } from '../services';
+import { BusinessConfig } from '../../config/business.config';
 
 @EventsHandler(BitcoinBalancesIndexerTransactionsBatchIndexedEvent)
 export class BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler
@@ -10,11 +12,13 @@ export class BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler
 {
   constructor(
     private readonly log: AppLogger,
+    private readonly businessConfig: BusinessConfig,
     private readonly outputsReadService: OutputsReadService,
     private readonly inputsReadService: InputsReadService
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-read' })
+  @RuntimeTracker({ label: 'read update', showMemory: true })
   async handle({ payload }: BitcoinBalancesIndexerTransactionsBatchIndexedEvent) {
     try {
       this.log.debug('handle()', payload, this.constructor.name);
@@ -25,14 +29,23 @@ export class BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler
       const processedOutputs: any[] = [];
       const processedInputs: any[] = [];
 
+      const currency: Currency = {
+        code: this.businessConfig.BITCOIN_BALANCES_INDEXER_CURRENCY_TICKER,
+        minorUnit: this.businessConfig.BITCOIN_BALANCES_INDEXER_CURRENCY_DIGITS,
+      };
+
       Object.entries(tx).forEach(([txid, item]: any) => {
         const { inputs, outputs } = item;
 
         Object.entries(outputs).forEach(([n, item]: any) => {
+          // console.log('1', item.value);
+          const moneyInstance = Money.fromDecimal(item.value, currency);
+          const value = moneyInstance.toCents();
+          // console.log('2', value);
           processedOutputs.push({
             txid,
-            address: item.addresses[0] || null, // TODO: decide what to do if there are multiple addresses
-            value: item.value,
+            address: item.address,
+            value,
             n,
           });
         });
@@ -68,7 +81,7 @@ export class BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler
 
       await this.inputsReadService.createMany({ inputs: processedInputs });
     } catch (error) {
-      this.log.error('handle()', { error }, this.constructor.name);
+      this.log.error('handle()', error, this.constructor.name);
       throw error;
     }
   }

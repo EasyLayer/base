@@ -54,7 +54,7 @@ export class BitcoinIndexerModule {
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
-          enableWAL: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL,
+          // enableWAL: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL,
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error.
           // busyTimeout: 1000

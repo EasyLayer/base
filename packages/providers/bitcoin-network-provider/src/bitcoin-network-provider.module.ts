@@ -6,7 +6,7 @@ import { BitcoinNetworkProviderService } from './bitcoin-network-provider.servic
 import { ConnectionManager } from './connection-manager';
 import { BitcoinCryptoUtilsService } from './crypto-utils.service';
 import { BitcoinWebhookStreamService } from './bitcoin-webhook-stream.service';
-import { createProvider, ProviderOptions, QuickNodeProvider } from './node-providers';
+import { createProvider, ProviderOptions, QuickNodeProvider, SelfNodeProvider } from './node-providers';
 import { ProvidersConfig } from './config';
 
 export interface BitcoinNetworkProviderModuleOptions {
@@ -20,14 +20,13 @@ export class BitcoinNetworkProviderModule {
     const { providers, isGlobal } = options;
 
     const providersConfig = await transformAndValidate(ProvidersConfig, process.env, {
-      transformer: { enableImplicitConversion: true },
       validator: { whitelist: true },
     });
 
     // Create QuickNode providers
     const quickNodeProviders: ProviderOptions[] = [];
-    if (providersConfig.BITCOIN_QUICK_NODE_BASE_URLS) {
-      for (const quickNodeProviderOption of providersConfig.BITCOIN_QUICK_NODE_BASE_URLS) {
+    if (providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_BASE_URLS) {
+      for (const quickNodeProviderOption of providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_BASE_URLS) {
         quickNodeProviders.push({
           useFactory: () =>
             new QuickNodeProvider({
@@ -40,22 +39,23 @@ export class BitcoinNetworkProviderModule {
 
     // Create SelfNode providers
     const selfNodeProviders: ProviderOptions[] = [];
-    // if (
-    //   providersConfig.BITCOIN_SELF_NODE_HOST
-    //   && providersConfig.BITCOIN_SELF_NODE_NETWORK
-    //   && providersConfig.BITCOIN_SELF_NODE_PASSWORD
-    //   && providersConfig.BITCOIN_SELF_NODE_PORT
-    //   && providersConfig.BITCOIN_SELF_NODE_USERNAME
-    // ) {
-    //   selfNodeProviders.push({
-    //     useFactory: () =>
-    //       new SelfNodeProvider({
-    //         uniqName: uuidv4(),
-    //         host: `http://${}`,
-    //         port: providersConfig.BITCOIN_SELF_NODE_PORT!,
-    //       }),
-    //   })
-    // }
+    if (
+      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_HOST &&
+      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PASSWORD &&
+      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PORT &&
+      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_USERNAME
+    ) {
+      selfNodeProviders.push({
+        useFactory: () =>
+          new SelfNodeProvider({
+            uniqName: uuidv4(),
+            host: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_HOST!,
+            port: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PORT!,
+            username: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_USERNAME!,
+            password: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PASSWORD!,
+          }),
+      });
+    }
 
     const providersToConnect: ProviderOptions[] = [...quickNodeProviders, ...selfNodeProviders, ...(providers || [])];
 

@@ -43,6 +43,7 @@ export class EventDataModel {
   public type!: string;
 
   @Column({ type: 'json' })
+  // @Column({ type: 'varchar' })
   public payload!: Record<string, any>;
 
   static deserialize({ aggregateId, type, requestId, payload }: EventDataModel): BasicEvent<IEvent> {
@@ -50,6 +51,7 @@ export class EventDataModel {
       payload: {
         aggregateId,
         requestId,
+        // ...(payload && hexToObject(payload)),
         ...payload,
       },
     };
@@ -80,6 +82,7 @@ export class EventDataModel {
       version,
       requestId,
       extra,
+      // payload: objectToHex(rest),
       payload: rest,
       type: Object.getPrototypeOf(event).constructor.name,
     });
@@ -98,3 +101,21 @@ export class EventDataModel {
     this.extra = parameters.extra;
   }
 }
+
+export const stringToHex = (str: string) => {
+  return Buffer.from(str, 'utf8').toString('hex');
+};
+
+export const objectToHex = (obj: any) => {
+  const jsonString = JSON.stringify(obj);
+  return stringToHex(jsonString);
+};
+
+export const hexToString = (hex: string) => {
+  return Buffer.from(hex, 'hex').toString('utf8');
+};
+
+export const hexToObject = (hex: string) => {
+  const jsonString = hexToString(hex);
+  return JSON.parse(jsonString);
+};

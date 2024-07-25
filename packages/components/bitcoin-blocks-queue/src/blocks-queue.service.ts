@@ -46,7 +46,7 @@ export class BlocksQueueService {
         this.blocksQueueIterator.startQueueIterating(this._blockQueue),
       ]);
     } catch (error) {
-      this.log.error('Erorr', { error }, this.constructor.name);
+      this.log.error('Erorr', error, this.constructor.name);
     }
   }
 

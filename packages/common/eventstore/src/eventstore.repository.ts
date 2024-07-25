@@ -123,8 +123,9 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
         return EventDataModel.serialize(event, aggregate.version);
       });
 
-      // We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+      // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
       // (without select after insert)
+      // https://github.com/typeorm/typeorm/issues/4651
       await this.eventStore.createQueryBuilder().insert().values(events).updateEntity(false).execute();
     } catch (error) {
       this.handleDatabaseError(error);

@@ -30,17 +30,17 @@ export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseN
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getOneBlockByHeight(height: string | bigint, verbosity?: number): Promise<any> {
+  async getOneBlockByHeight(height: number, verbosity?: number): Promise<any> {
     throw new Error('Method getOneBlockByHeight() is not supported by this provider');
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async getOneBlockHashByHeight(height: string | bigint): Promise<any> {
+  public async getOneBlockHashByHeight(height: number): Promise<any> {
     throw new Error('Method getOneBlockHashByHeight() is not supported by this provider');
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getManyBlocksByHeights(heights: string[] | bigint[]): Promise<any> {
+  async getManyBlocksByHeights(heights: number[], verbosity?: number): Promise<any> {
     throw new Error('Method getManyBlocksByHeight() is not supported by this provider');
   }
 
@@ -50,7 +50,7 @@ export abstract class BaseNodeProvider<T extends BaseNodeProviderOptions = BaseN
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getManyBlocksByHashes(hash: Hash[]): Promise<any> {
+  async getManyBlocksByHashes(hashes: Hash[], verbosity?: number): Promise<any> {
     throw new Error('Method getManyBlockByHash() is not supported by this provider');
   }
 

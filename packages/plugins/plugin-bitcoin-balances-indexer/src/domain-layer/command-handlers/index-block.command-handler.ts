@@ -2,9 +2,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore';
 import { EventStoreRepository } from '@easylayer/eventstore';
-import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
+import { BitcoinNetworkProviderService, BitcoinCryptoUtilsService } from '@easylayer/bitcoin-network-provider';
 import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
-import { AppLogger } from '@easylayer/logger';
+import { AppLogger /*RuntimeTracker*/ } from '@easylayer/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import { TransactionsBatch } from '../models/transactions-batch.model';
 import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
@@ -18,10 +18,12 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
     private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly balancesIndexerModelFactory: BalancesIndexerModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
+    private readonly cryptoUtilsService: BitcoinCryptoUtilsService,
     private readonly eventStore: EventStoreRepository
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
+  // @RuntimeTracker({ label: 'write update', showMemory: true })
   async execute({ payload }: IndexBlockCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);
@@ -29,7 +31,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // NOTE: block - is from BlocksQueue
       const { block, requestId } = payload;
       const { tx, ...blockWithoutTx } = block;
-      const { height, previousblockhash } = blockWithoutTx;
+      const { height, hash, previousblockhash } = blockWithoutTx;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
@@ -47,6 +49,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           blocks: [],
         });
         await this.eventStore.save(indexerModel);
+        this.balancesIndexerModelFactory.updateCache(indexerModel);
         await indexerModel.commit();
         this.log.debug(`Balances Indexer reorganisation started`, {}, this.constructor.name);
         return;
@@ -72,6 +75,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         const isFinalBatch = n === transactionSlices.length - 1;
 
         await transactionBatch.index({
+          service: this.cryptoUtilsService,
           aggregateId: uuidv4(),
           requestId,
           transactions,
@@ -96,6 +100,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       await this.eventStore.save([...batches, indexerModel]);
 
+      this.balancesIndexerModelFactory.updateCache(indexerModel);
+
       for (const batch of batches) {
         await batch.commit();
       }
@@ -103,10 +109,15 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // NOTE: This event is not currently being processed
       await indexerModel.commit();
 
-      this.log.info('Balances successfull indexed', { batches: batches.length }, this.constructor.name);
+      this.log.info(
+        'Balances successfull indexed',
+        { blockHeight: height, blockHash: hash, batches: batches.length },
+        this.constructor.name
+      );
       this.log.debug('Balances successfull indexed', { batches: batches.length }, this.constructor.name);
     } catch (error) {
-      this.log.error('execute()', { error }, this.constructor.name);
+      this.log.error('execute()', error, this.constructor.name);
+      this.balancesIndexerModelFactory.clearCache();
       throw error;
     }
   }

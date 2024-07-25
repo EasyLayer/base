@@ -40,9 +40,9 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
           'Content-Type': 'application/json',
         },
         // TODO: add to envs
-        // TODO: мы также должны эти значения сопоставлять с количеством воркеров...
+        // TODO: we must also compare these values ​​with the number of workers and batches
       }),
-      { maxRequests: 30, perMilliseconds: 1000 }
+      { maxRequests: 15, perMilliseconds: 1000 }
     );
 
     if (!this.healthcheck()) {
@@ -53,11 +53,16 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
   public async disconnect() {}
 
   public async healthcheck(): Promise<boolean> {
-    if (!this._httpClient) return false;
-
     try {
       return true;
-      // this._httpClient.client.;
+      // const response = await this._httpClient.post('/', {
+      //   jsonrpc: '2.0',
+      //   method: 'getblockchaininfo',
+      //   params: [],
+      //   id: 1,
+      // });
+
+      // return response.status === 200;
     } catch (error) {
       return false;
     }
@@ -88,12 +93,12 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     }
   }
 
-  public async getOneBlockHashByHeight(height: string | bigint): Promise<Hash> {
+  public async getOneBlockHashByHeight(height: number): Promise<Hash> {
     try {
       const data = {
         jsonrpc: '2.0',
         method: 'getblockhash',
-        params: [+height.toString()],
+        params: [height.toString()],
       };
 
       const response = await this._httpClient.post('/', data);
@@ -102,11 +107,13 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          throw new Error(`Error: ${error.response.data}`);
+          throw new Error(
+            `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`
+          );
         } else if (error.request) {
           throw new Error('No response received from server');
         } else {
-          throw new Error(error.message);
+          throw new Error(`Error during request setup: ${error.message}`);
         }
       }
 
@@ -128,11 +135,13 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          throw new Error(`Error: ${error.response.data}`);
+          throw new Error(
+            `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`
+          );
         } else if (error.request) {
           throw new Error('No response received from server');
         } else {
-          throw new Error(error.message);
+          throw new Error(`Error during request setup: ${error.message}`);
         }
       }
 
@@ -140,33 +149,10 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     }
   }
 
-  public async getManyBlocksByHashes(hashes: Hash[]): Promise<any> {
-    const blocks = [];
-
-    for (const hash of hashes) {
-      const block = await this.getOneBlockByHash(hash);
-      blocks.push(block);
-    }
-
-    return blocks;
-  }
-
-  public async getOneBlockByHeight(height: string | bigint, verbosity?: number): Promise<any> {
+  public async getOneBlockByHeight(height: number, verbosity?: number): Promise<any> {
     const blockHash = await this.getOneBlockHashByHeight(height);
     const block = await this.getOneBlockByHash(blockHash, verbosity);
     return block;
-  }
-
-  public async getManyBlocksByHeights(heights: string[] | bigint[]): Promise<any> {
-    const blocks = [];
-
-    for (const height of heights) {
-      const blockHash = await this.getOneBlockHashByHeight(height);
-      const block = await this.getOneBlockByHash(blockHash);
-      blocks.push(block);
-    }
-
-    return blocks;
   }
 
   async getOneTransactionByHash(hash: Hash): Promise<any> {
@@ -183,11 +169,13 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          throw new Error(`Error: ${error.response.data}`);
+          throw new Error(
+            `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`
+          );
         } else if (error.request) {
           throw new Error('No response received from server');
         } else {
-          throw new Error(error.message);
+          throw new Error(`Error during request setup: ${error.message}`);
         }
       }
 
@@ -219,16 +207,83 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response) {
-          throw new Error(`Error: ${error.response.data}`);
+          throw new Error(
+            `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`
+          );
         } else if (error.request) {
           throw new Error('No response received from server');
         } else {
-          throw new Error(error.message);
+          throw new Error(`Error during request setup: ${error.message}`);
         }
       }
 
       throw error;
     }
+  }
+
+  public async getManyBlocksByHashes(hashes: string[], verbosity: number = 1): Promise<any> {
+    try {
+      const requests = hashes.map((hash, index) => ({
+        jsonrpc: '2.0',
+        method: 'getblock',
+        params: [hash, verbosity],
+        id: index,
+      }));
+
+      const response = await this._httpClient.post('/', requests);
+
+      return response.data.map((item: any) => item.result);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(
+            `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`
+          );
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(`Error during request setup: ${error.message}`);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  public async getManyHashesByHeights(heights: number[]): Promise<any> {
+    try {
+      const requests = heights.map((height, index) => ({
+        jsonrpc: '2.0',
+        method: 'getblockhash',
+        params: [height],
+        id: index,
+      }));
+
+      const response = await this._httpClient.post('/', requests);
+
+      return response.data.map((item: any) => item.result);
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          throw new Error(
+            `Server responded with status ${error.response.status}: ${JSON.stringify(error.response.data)}`
+          );
+        } else if (error.request) {
+          throw new Error('No response received from server');
+        } else {
+          throw new Error(`Error during request setup: ${error.message}`);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  public async getManyBlocksByHeights(heights: number[], verbosity?: number): Promise<any> {
+    const blocksHashes = await this.getManyHashesByHeights(heights);
+    const blocks = await this.getManyBlocksByHashes(blocksHashes, verbosity);
+
+    return blocks;
   }
 
   // public async updateWebhookStream(streamId: string, streamConfig: any): Promise<any> {

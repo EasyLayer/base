@@ -16,10 +16,6 @@ export class IndexerService implements OnModuleInit {
     await this.initialization();
   }
 
-  // @RuntimeTracker({
-  //   errorThresholdMs: 3000,
-  //   warningThresholdMs: 2000,
-  // })
   private async initialization(): Promise<void> {
     this.log.info('Initialization all systems');
 
@@ -29,7 +25,7 @@ export class IndexerService implements OnModuleInit {
         startHeight: this.businessConfig.BITCOIN_INDEXER_START_BLOCK_HEIGHT,
       });
     } catch (error) {
-      this.log.error('initialization()', { error }, this.constructor.name);
+      this.log.error('initialization()', error, this.constructor.name);
       throw error;
     }
   }

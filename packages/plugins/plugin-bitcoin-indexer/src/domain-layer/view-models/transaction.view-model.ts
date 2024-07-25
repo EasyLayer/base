@@ -24,17 +24,10 @@ export class TransactionViewModel {
   @Column({ type: 'json' })
   public vout!: any;
 
+  @Column({ type: 'varchar' })
+  public blockHash!: string; // block.hash
+
   @ManyToOne(() => BlockViewModel, (block) => block.tx)
   @JoinColumn({ name: 'blockHash', referencedColumnName: 'hash' })
   public block!: BlockViewModel;
-
-  constructor(params?: any) {
-    if (!params) return;
-
-    this.txid = params.txid;
-    this.status = params.status;
-    this.vin = params.vin;
-    this.vout = params.vout;
-    this.block = params.block;
-  }
 }

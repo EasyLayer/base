@@ -67,6 +67,8 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
       // Save into eventstore
       await this.eventStore.save([...blocksModels, ...batchesModels, indexerModel]);
 
+      this.indexerModelFactory.updateCache(indexerModel);
+
       for (const block of blocksModels) {
         await block.commit();
       }
@@ -85,7 +87,8 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
         this.constructor.name
       );
     } catch (error) {
-      this.log.error('execute()', { error }, this.constructor.name);
+      this.log.error('execute()', error, this.constructor.name);
+      this.indexerModelFactory.clearCache();
       throw error;
     }
   }

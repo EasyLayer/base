@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
 import { Transactional } from '@easylayer/eventstore';
 import { IndexBlockCommand } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { AppLogger } from '@easylayer/logger';
+import { AppLogger, RuntimeTracker } from '@easylayer/logger';
 import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
 import { EventStoreRepository } from '@easylayer/eventstore';
 import { Block } from '../models/block.model';
@@ -28,6 +28,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
+  @RuntimeTracker({ label: 'write block', showMemory: true })
   async execute({ payload }: IndexBlockCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);
@@ -53,6 +54,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
           blocks: [],
         });
         await this.eventStore.save(indexerModel);
+        this.indexerModelFactory.updateCache(indexerModel);
         await indexerModel.commit();
         this.log.debug(`Indexer reorganisation started`, {}, this.constructor.name);
         return;
@@ -123,6 +125,8 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       await this.eventStore.save([...batches, indexerModel, blockModel]);
 
+      this.indexerModelFactory.updateCache(indexerModel);
+
       await blockModel.commit();
 
       for (const batch of batches) {
@@ -132,10 +136,15 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
       // NOTE: This event is not currently being processed
       await indexerModel.commit();
 
-      this.log.info('Block indexed successfull', { blockHash: hash, txCount: tx.length }, this.constructor.name);
+      this.log.info(
+        'Block indexed successfull',
+        { blockHeight: height, blockHash: hash, txCount: tx.length },
+        this.constructor.name
+      );
       this.log.debug('Block indexed successfull', { block: blockWithoutTx }, this.constructor.name);
     } catch (error) {
-      this.log.error('execute()', { error }, this.constructor.name);
+      this.log.error('execute()', error, this.constructor.name);
+      this.indexerModelFactory.clearCache();
       throw error;
     }
   }

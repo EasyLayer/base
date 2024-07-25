@@ -101,12 +101,10 @@ export class BlocksQueue<T extends Block> {
   // This queue have to works only with Block interface
   public enqueue(block: T): boolean {
     if (this.isQueueFull || this.isMaxHeightReached) {
-      console.log('this.isQueueFull || this.isMaxHeightReached', this.isQueueFull, this.isMaxHeightReached);
       return false;
     }
 
     if (Number(block.height) !== this._lastHeight + 1) {
-      console.log('Number(block.height) !== this._lastHeight + 1', Number(block.height) !== this._lastHeight + 1);
       return false;
     }
     this.inStack.push(block);

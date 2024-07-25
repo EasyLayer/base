@@ -13,9 +13,15 @@ export class BlocksQueueConfig {
   @IsNumber()
   BITCOIN_BLOCKS_QUEUE_MAX_LENGTH: number = 100;
 
-  @Transform(({ value }) => (value !== undefined ? (value as StrategyNames) : StrategyNames.PULL_NETWORK_PROVIDER))
+  @Transform(({ value }) =>
+    value !== undefined ? (value as StrategyNames) : StrategyNames.PULL_NETWORK_PROVIDER_BY_BATCHES
+  )
   @IsString()
-  BITCOIN_BLOCKS_QUEUE_LOADER_STRATEGY_NAME: StrategyNames = StrategyNames.PULL_NETWORK_PROVIDER;
+  BITCOIN_BLOCKS_QUEUE_LOADER_STRATEGY_NAME: StrategyNames = StrategyNames.PULL_NETWORK_PROVIDER_BY_BATCHES;
+
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 8))
+  @IsNumber()
+  BITCOIN_BLOCKS_QUEUE_LOADER_NETWORK_PROVIDER_BATCHES_LENGTH: number = 8;
 
   @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 1000))
   @IsNumber()

@@ -1,4 +1,5 @@
 import { AggregateRoot } from '@easylayer/cqrs';
+import { BitcoinCryptoUtilsService } from '@easylayer/bitcoin-network-provider';
 import {
   BitcoinBalancesIndexerTransactionsBatchIndexedEvent,
   BitcoinBalancesIndexerTransactionsBatchSuspendedEvent,
@@ -14,6 +15,7 @@ interface Vout {
   value: number;
   n: number;
   scriptPubKey: {
+    hex: string;
     type: string;
     addresses?: string[];
   };
@@ -26,7 +28,7 @@ interface Transaction {
 }
 
 interface Output {
-  addresses: string[];
+  address: string;
   value: number;
 }
 
@@ -68,6 +70,7 @@ export class TransactionsBatch extends AggregateRoot {
   public status!: BatchStatuses;
 
   public async index({
+    service,
     aggregateId,
     requestId,
     transactions,
@@ -75,6 +78,7 @@ export class TransactionsBatch extends AggregateRoot {
     n,
     isFinalBatch,
   }: {
+    service: BitcoinCryptoUtilsService;
     aggregateId: string;
     requestId: string;
     transactions: Transaction[];
@@ -82,25 +86,50 @@ export class TransactionsBatch extends AggregateRoot {
     n: number;
     isFinalBatch: boolean;
   }) {
-    // TODO: Тут нужно во первых проверить тип транзакции чтобы это была та транзакция по балансу
     const tx: TransactionsMap = new Map();
 
-    transactions.forEach((item: Transaction) => {
+    // transactions.forEach((item: Transaction) => {
+    //   const { vin, vout, txid } = item;
+    //   const outputs = new Map(
+    //     vout.map((item: any) => {
+    //       const hex = Buffer(item.scriptPubKey);
+    //       const type = item.scriptPubKey.type;
+    //       const address = service.getAddressFromScriptPubKey(hex, type, network????);
+    //       return [item.n, { addresses: item.scriptPubKey.addresses, value: item.value }]
+    //     })
+    //   );
+    //   const inputs = vin.map((item: any) => ({
+    //     txid: item.coinbase ? null : item.txid,
+    //     vout: item.coinbase ? null : item.vout,
+    //     coinbase: item.coinbase ? item.coinbase : null,
+    //   }));
+
+    //   tx.set(txid, {
+    //     outputs,
+    //     inputs,
+    //   });
+    // });
+
+    for (const item of transactions) {
       const { vin, vout, txid } = item;
-      const outputs = new Map(
-        vout.map((item: any) => [item.n, { addresses: item.scriptPubKey.addresses, value: item.value }])
-      );
-      const inputs = vin.map((item: any) => ({
-        txid: item.coinbase ? null : item.txid,
-        vout: item.coinbase ? null : item.vout,
-        coinbase: item.coinbase ? item.coinbase : null,
+
+      const outputs = new Map();
+      for (const v of vout) {
+        const address = await service.getAddressFromScriptPubKey(v.scriptPubKey);
+        outputs.set(v.n, { address, value: v.value });
+      }
+
+      const inputs = vin.map((inputItem: any) => ({
+        txid: inputItem.coinbase ? null : inputItem.txid,
+        vout: inputItem.coinbase ? null : inputItem.vout,
+        coinbase: inputItem.coinbase ? inputItem.coinbase : null,
       }));
 
       tx.set(txid, {
         outputs,
         inputs,
       });
-    });
+    }
 
     const serializedTx = Object.fromEntries(
       Array.from(tx.entries()).map(([key, value]) => [

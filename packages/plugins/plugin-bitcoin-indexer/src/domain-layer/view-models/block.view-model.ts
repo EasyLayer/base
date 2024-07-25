@@ -27,14 +27,4 @@ export class BlockViewModel {
     cascade: ['remove'],
   })
   public tx!: TransactionViewModel[];
-
-  constructor(params?: any) {
-    if (!params) return;
-
-    this.hash = params.hash;
-    this.status = params.status;
-    this.height = params.height;
-    this.previousblockhash = params.previousblockhash;
-    this.tx = Array.isArray(params.tx) ? params.tx : [];
-  }
 }

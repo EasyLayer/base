@@ -4,31 +4,28 @@ import { IsString, IsNumber, IsOptional, IsArray } from 'class-validator';
 
 @Injectable()
 export class ProvidersConfig {
-  @Transform(({ value }) => value ?? '0.0.0.0')
+  @Transform(({ value }) => (value ? value : '127.0.0.1'))
   @IsString()
   @IsOptional()
-  BITCOIN_SELF_NODE_HOST?: string;
+  BITCOIN_NETWORK_PROVIDER_SELF_NODE_HOST?: string;
 
-  @Transform(({ value }) => value ?? 'testnet')
-  @IsString()
-  @IsOptional()
-  BITCOIN_SELF_NODE_NETWORK?: string;
-
-  // @Transform(({ value }) => parseInt(value, 10) ?? 3000)
+  @Transform(({ value }) => (value ? parseInt(value, 10) : undefined))
   @IsNumber()
   @IsOptional()
-  BITCOIN_SELF_NODE_PORT?: number;
+  BITCOIN_NETWORK_PROVIDER_SELF_NODE_PORT?: number;
 
+  @Transform(({ value }) => (value ? value : undefined))
   @IsString()
   @IsOptional()
-  BITCOIN_SELF_NODE_PASSWORD?: string;
+  BITCOIN_NETWORK_PROVIDER_SELF_NODE_PASSWORD?: string;
 
+  @Transform(({ value }) => (value ? value : undefined))
   @IsString()
   @IsOptional()
-  BITCOIN_SELF_NODE_USERNAME?: string;
+  BITCOIN_NETWORK_PROVIDER_SELF_NODE_USERNAME?: string;
 
   @Transform(({ value }) => (value ? value.split('|') : []))
   @IsArray()
   @IsOptional()
-  BITCOIN_QUICK_NODE_BASE_URLS?: string[];
+  BITCOIN_NETWORK_PROVIDER_QUICK_NODE_BASE_URLS?: string[];
 }

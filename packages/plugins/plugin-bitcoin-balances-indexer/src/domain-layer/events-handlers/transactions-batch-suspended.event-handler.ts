@@ -26,7 +26,7 @@ export class BitcoinBalancesIndexerTransactionsBatchSuspendedEventHandler
       // NOTE: At the moment we do not delete reorganized outputs, but flag outputs as suspended
       await this.outputsReadService.updateWithBuilder({ txid: txids }, { is_suspended: true });
     } catch (error) {
-      this.log.error('handle()', { error }, this.constructor.name);
+      this.log.error('handle()', error, this.constructor.name);
       throw error;
     }
   }

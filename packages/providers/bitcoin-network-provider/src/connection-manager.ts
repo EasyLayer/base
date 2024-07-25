@@ -129,7 +129,7 @@ export class ConnectionManager implements OnModuleInit {
         } catch (error) {
           this.log.error(
             `Failed to disconnect from provider named ${this.activeProviderName}`,
-            { error },
+            error,
             this.constructor.name
           );
           // Here you can decide whether a failed shutdown is critical for your use case
@@ -148,7 +148,7 @@ export class ConnectionManager implements OnModuleInit {
       await provider.connect();
       return true;
     } catch (error) {
-      this.log.error(`Failed to connect with provider named ${provider.uniqName}`, { error }, this.constructor.name);
+      this.log.error(`Failed to connect with provider named ${provider.uniqName}`, error, this.constructor.name);
       return false;
     }
   }

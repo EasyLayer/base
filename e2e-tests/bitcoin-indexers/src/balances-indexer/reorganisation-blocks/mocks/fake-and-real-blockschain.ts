@@ -93,7 +93,10 @@ export const mockFakeChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },

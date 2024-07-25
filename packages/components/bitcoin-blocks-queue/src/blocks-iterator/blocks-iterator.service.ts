@@ -49,7 +49,7 @@ export class BlocksQueueIteratorService {
       try {
         await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
       } catch (error) {
-        this.log.error('Failed to process block:', { error }, this.constructor.name);
+        this.log.error('Failed to process block:', error, this.constructor.name);
 
         // IMPORTANT: We call this to resolve queue promise
         // that we can try same block one more time

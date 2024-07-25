@@ -77,6 +77,8 @@ export class Block extends AggregateRoot {
       }
     }
 
+    // TODO: remove 'hash' from block objest (we have aggregateId)
+
     await this.apply(
       new BitcoinIndexerBlockIndexedEvent({
         aggregateId,

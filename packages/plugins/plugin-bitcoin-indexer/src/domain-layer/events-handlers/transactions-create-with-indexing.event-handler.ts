@@ -1,7 +1,8 @@
 import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
-import { AppLogger } from '@easylayer/logger';
+import { AppLogger, RuntimeTracker } from '@easylayer/logger';
+import { Transactional } from '@easylayer/read-database';
 import { BitcoinIndexerTransactionsBatchIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { BlocksReadService, TransactionsReadService } from '../services';
+import { TransactionsReadService } from '../services';
 
 @EventsHandler(BitcoinIndexerTransactionsBatchIndexedEvent)
 export class BitcoinIndexerTransactionsBatchIndexedEventHandler
@@ -9,21 +10,30 @@ export class BitcoinIndexerTransactionsBatchIndexedEventHandler
 {
   constructor(
     private readonly log: AppLogger,
-    private readonly blocksService: BlocksReadService,
     private readonly transactionsService: TransactionsReadService
   ) {}
 
-  // IMPORTANT: at this stage if this method would throw an error
-  // - we won't catch it! (the app should restart after that)
+  @Transactional({ connectionName: 'indexer-read' })
+  @RuntimeTracker({ label: 'read update', showMemory: true })
   async handle({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
     try {
       this.log.debug('handle()', payload, this.constructor.name);
 
-      const { blockHash, status, batch } = payload;
+      const { blockHash, batch } = payload;
 
-      return await this.transactionsService.createMany({ blockHash, batch, status });
+      const processTransactions: any[] = [];
+
+      batch.tx.forEach((item: any) => {
+        processTransactions.push({
+          txid: item.txid,
+          vin: item.vin,
+          vout: item.vout,
+        });
+      });
+
+      return await this.transactionsService.createMany({ blockHash, transactions: processTransactions });
     } catch (error) {
-      this.log.error('handle()', { error }, this.constructor.name);
+      this.log.error('handle()', error, this.constructor.name);
       throw error;
     }
   }

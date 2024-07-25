@@ -37,6 +37,14 @@ export class Blockchain {
   // NOTE: _maxSize - Maximum number of blocks allowed in the blockchain at any given time.
   private readonly _maxSize: number = 100;
 
+  get lastBlockBatches(): string[] {
+    if (this.tail) {
+      return this.tail.block.batches;
+    } else {
+      return [];
+    }
+  }
+
   // Gets the hash of the first block in the chain.
   // Complexity: O(1)
   get firstBlockHash(): string {
@@ -303,6 +311,27 @@ export class Blockchain {
 
     this._size--;
     return block;
+  }
+
+  /**
+   * Gets the last N blocks from the blockchain in reverse order.
+   * @param {number} n - The number of blocks to retrieve.
+   * @returns {LightBlock[]} An array containing the last N blocks in the chain, in reverse order.
+   * Complexity: O(n), where n - is the number of blocks to retrieve
+   */
+  public getLastNBlocks(n: number): LightBlock[] {
+    const blocks: LightBlock[] = [];
+    let currentNode = this.tail;
+    let count = 0;
+
+    while (currentNode && count < n) {
+      blocks.push(currentNode.block);
+      currentNode = currentNode.prev;
+      count++;
+    }
+
+    // Reverse the array to get the correct order
+    return blocks.reverse();
   }
 }
 

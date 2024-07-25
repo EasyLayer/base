@@ -41,20 +41,20 @@ export const defaultFormatOptions: Required<FormatOptions> = {
 };
 
 export class Money {
-  static fromCents(cents: string, currency: Currency): Money {
-    return new Money(new BigNumber(cents).dividedBy(new BigNumber(`1e${currency.minorUnit}`)), currency);
-  }
-
-  static fromDecimal(amount: string, currency: Currency): Money {
-    return new Money(new BigNumber(amount), currency);
-  }
-
   amount: BigNumber;
   currency: Currency;
 
   constructor(amount: BigNumber, currency: Currency) {
     this.amount = amount;
     this.currency = currency;
+  }
+
+  static fromCents(cents: string, currency: Currency): Money {
+    return new Money(new BigNumber(cents).dividedBy(new BigNumber(`1e${currency.minorUnit}`)), currency);
+  }
+
+  static fromDecimal(amount: string, currency: Currency): Money {
+    return new Money(new BigNumber(amount), currency);
   }
 
   toString(): string {

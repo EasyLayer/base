@@ -16,7 +16,7 @@ export class OutputViewModel {
   @Column({
     type: 'bigint',
     default: '0',
-    transformer: { to: (value) => value.toString(), from: (value) => BigInt(value) },
+    // transformer: { to: (value) => value.toString(), from: (value) => BigInt(value) },
   })
   public value!: string;
 

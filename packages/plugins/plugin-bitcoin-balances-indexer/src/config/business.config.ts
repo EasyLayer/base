@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { IsNumber } from 'class-validator';
+import { IsNumber, IsString } from 'class-validator';
 
 @Injectable()
 export class BusinessConfig {
@@ -11,4 +11,12 @@ export class BusinessConfig {
   @Transform(({ value }) => (value !== undefined ? Number(value) : 0))
   @IsNumber()
   BITCOIN_BALANCES_INDEXER_START_BLOCK_HEIGHT: number = 0;
+
+  @Transform(({ value }) => (value !== undefined ? value : 'BTC'))
+  @IsString()
+  BITCOIN_BALANCES_INDEXER_CURRENCY_TICKER: string = 'BTC';
+
+  @Transform(({ value }) => (value !== undefined ? Number(value) : 8))
+  @IsNumber()
+  BITCOIN_BALANCES_INDEXER_CURRENCY_DIGITS: number = 8;
 }

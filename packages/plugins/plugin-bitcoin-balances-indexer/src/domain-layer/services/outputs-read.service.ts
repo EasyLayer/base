@@ -28,6 +28,15 @@ export class OutputsReadService {
           is_suspended: false,
         }))
       )
+      // IMPORTANT: At the current stage this ensures idempotency
+      .orIgnore()
+      // .orUpdate(
+      //   ['txid', 'n'],
+      //   ['value']
+      // )
+      // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+      // (without select after insert)
+      .updateEntity(false)
       .execute();
 
     return raw;

@@ -14,15 +14,29 @@ export class BitcoinWallet {
 }
 
 export interface UTXO {
-  txid: string;
-  vout: number;
+  n: number;
   scriptPubKey: string;
-  amount: number;
+  value: number;
 }
 
 @Injectable()
 export class BitcoinCryptoUtilsService {
   private ecc: any; // TODO: create type
+
+  // IMPORTANT: We are currently seeing problems with Jest and ecc.
+  // In order to test the module normally, we do NOT run the method in the constructor
+  // constructor() {
+  //   this.initEccLib();
+  // }
+
+  private async initEccLib() {
+    if (!this.ecc) {
+      this.ecc = await import('tiny-secp256k1').catch(() => {
+        throw new Error('Failed to load ecc module');
+      });
+      bitcoin.initEccLib(this.ecc);
+    }
+  }
 
   public generateMnemonic(): string {
     const mnemonic = bip39.generateMnemonic();
@@ -35,12 +49,10 @@ export class BitcoinCryptoUtilsService {
   }
 
   public async walletFromMnemonic(mnemonic: string, network: bitcoin.Network) {
+    await this.initEccLib();
     const seed = bip39.mnemonicToSeedSync(mnemonic);
-    console.log('Seed: ', seed);
 
-    const ecc = await this.loadSecp256k1();
-
-    const BIP32 = BIP32Factory(ecc);
+    const BIP32 = BIP32Factory(this.ecc);
 
     // The network parameter in the line BIP32.fromSeed(seed, bitcoin.networks.bitcoin)
     // in the context of Bitcoin and the bitcoinjs-lib library indicates that
@@ -52,7 +64,6 @@ export class BitcoinCryptoUtilsService {
     // we use "!" to tell TypeScript we're sure it's non-null
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const masterPrivateKey: string = root.privateKey!.toString('hex');
-    console.log('Master Private Key:', masterPrivateKey);
 
     // Select the appropriate path. For example, for BIP44:
     const path = "m/44'/0'/0'/0/0"; // This is an example for the first Bitcoin address
@@ -94,8 +105,8 @@ export class BitcoinCryptoUtilsService {
   }
 
   public async signTransaction(psbt: bitcoin.Psbt, privateKey: string) {
-    const ecc = await this.loadSecp256k1();
-    const ECPair = ECPairFactory(ecc);
+    await this.initEccLib();
+    const ECPair = ECPairFactory(this.ecc);
 
     const keyPair = ECPair.fromPrivateKey(Buffer.from(privateKey, 'hex'));
     psbt.signAllInputs(keyPair);
@@ -105,8 +116,8 @@ export class BitcoinCryptoUtilsService {
   }
 
   public async addressFromPrivateKey(privateKey: string): Promise<string> {
-    const ecc = await this.loadSecp256k1();
-    const ECPair = ECPairFactory(ecc);
+    await this.initEccLib();
+    const ECPair = ECPairFactory(this.ecc);
 
     // Creating ECPair from a private key
     const keyPair = ECPair.fromPrivateKey(Buffer.from(privateKey, 'hex'));
@@ -123,13 +134,61 @@ export class BitcoinCryptoUtilsService {
     return address;
   }
 
-  private async loadSecp256k1() {
-    if (!this.ecc) {
-      this.ecc = await import('tiny-secp256k1').catch((error) => {
-        console.error(error);
-        throw new Error('Failed to load ecc module');
-      });
+  public async getAddressFromScriptPubKey(scriptPubKey: any): Promise<string | null> {
+    await this.initEccLib();
+
+    const { hex, type } = scriptPubKey;
+
+    if (!hex) {
+      // TODO: throw an error
     }
-    return this.ecc;
+
+    // TODO: add to env
+    const network: bitcoin.Network = bitcoin.networks.testnet;
+
+    const scriptPubKeyBuffer = Buffer.from(hex, 'hex');
+
+    let address: string | null = null;
+
+    switch (type) {
+      case 'pubkeyhash':
+      case 'scripthash':
+      case 'witness_v0_keyhash':
+      case 'witness_v0_scripthash':
+        address = bitcoin.address.fromOutputScript(scriptPubKeyBuffer, network);
+        break;
+      case 'witness_v1_taproot':
+        const taprootAddress = bitcoin.payments.p2tr({
+          output: scriptPubKeyBuffer,
+          network,
+        });
+        address = taprootAddress.address ?? null;
+        break;
+      case 'pubkey':
+        const decompiledScript = bitcoin.script.decompile(scriptPubKeyBuffer);
+        if (decompiledScript && decompiledScript.length === 2 && decompiledScript[1] === bitcoin.opcodes.OP_CHECKSIG) {
+          address = (decompiledScript[0] as Buffer).toString('hex');
+        }
+        break;
+      // IMPORTANT: Currently, all outputs with types below will have address = null,
+      // but the output record will be written to the database
+      // so that it can be referenced by the input in the future.
+      case 'multisig':
+      case 'witness_unknown':
+      case 'nonstandard':
+        // address = 'nonstandard';
+        break;
+      // IMPORTANT: Outputs with type nulldata are coin burners,
+      // so these outputs can never be inputs.
+      // Logically, we can not insert them into the database at all,
+      // but at this stage let them be for now
+      case 'nulldata':
+        address = 'berned';
+        break;
+      default:
+        break;
+    }
+
+    return address;
   }
 }

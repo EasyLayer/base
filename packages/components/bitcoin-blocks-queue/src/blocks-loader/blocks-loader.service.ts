@@ -6,7 +6,8 @@ import { BlocksQueue } from '../blocks-queue';
 import { Block } from '../interfaces';
 import {
   WebhookStreamStrategy,
-  PullNetworkProviderStrategy,
+  PullNetworkProviderByBatchesStrategy,
+  PullNetworkProviderByWorkersStrategy,
   BlocksLoadingStrategy,
   StrategyNames,
 } from './load-strategies';
@@ -18,6 +19,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   private _isLoading: boolean = false;
   private _loadingStrategy: BlocksLoadingStrategy | null = null;
   private _currentNetworkHeight: number = -1;
+  private _isTransportMode: boolean;
 
   constructor(
     private readonly log: AppLogger,
@@ -26,7 +28,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     private readonly webhookStreamService: BitcoinWebhookStreamService,
     private readonly options: any
   ) {
-    // options.isTransportMode
+    this._isTransportMode = this.options.isTransportMode;
   }
 
   get isLoading(): boolean {
@@ -57,6 +59,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
     await exponentialIntervalAsync(
       async () => {
+        this.log.info('Loading blocks...', null, this.constructor.name);
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
           this.log.info('Reached max block height', { height: this._queue.lastHeight }, this.constructor.name);
           return;
@@ -100,7 +103,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     // then this provider method will be called many times at first
     // (until the intervals become longer).
     // This is expected behavior.
-    if (this.options && this.options.isTransportMode) {
+    if (this._isTransportMode) {
       // this._currentNetworkHeight = await this.networkProviderService.getCurrentBlockHeight();
     } else {
       this._currentNetworkHeight = await this.networkProviderService.getCurrentBlockHeight();
@@ -124,10 +127,14 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     switch (name) {
       case StrategyNames.WEBHOOK_STREAM:
         return new WebhookStreamStrategy(this.webhookStreamService, this._queue);
-      case StrategyNames.PULL_NETWORK_PROVIDER:
-        return new PullNetworkProviderStrategy(this.networkProviderService, this._queue, {
+      case StrategyNames.PULL_NETWORL_PROVIDER_BY_WORKERS:
+        return new PullNetworkProviderByWorkersStrategy(this.networkProviderService, this._queue, {
           minThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
           maxThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
+        });
+      case StrategyNames.PULL_NETWORK_PROVIDER_BY_BATCHES:
+        return new PullNetworkProviderByBatchesStrategy(this.networkProviderService, this._queue, {
+          batchLength: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_NETWORK_PROVIDER_BATCHES_LENGTH,
         });
       // case StrategyNames.PULL_BLOCKS_BY_NETWORK_TRANSPORT:
       //   return new PullNetworkProviderStrategy({}, this._queue, options);
