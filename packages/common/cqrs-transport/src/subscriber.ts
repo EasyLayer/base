@@ -8,6 +8,8 @@ import { Publisher } from './publisher';
 export class Subscriber implements IMessageSource, OnModuleDestroy {
   private bridge!: Subject<IEvent>;
   private subscription!: Subscription;
+  // IMPORTANT: concurrency: 1 ensures that tasks will be started sequentially,
+  // but does not guarantee sequential completion if the tasks are asynchronous internally.
   private queueSingleConcurrency = new PQueue({ concurrency: 1 });
 
   constructor(

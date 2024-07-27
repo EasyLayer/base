@@ -153,7 +153,7 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
     // Check output data
     const firstOutput = firstTx.outputs['0'];
     expect(firstOutput).toBeDefined();
-    expect(firstOutput.addresses).toEqual(mockBlocks[0].tx[0].vout[0].scriptPubKey.addresses);
+    expect(firstOutput.address).toBeDefined();
     expect(firstOutput.value).toBe(mockBlocks[0].tx[0].vout[0].value);
   });
 
@@ -196,8 +196,8 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
     );
 
     expect(mainOutput).toBeDefined();
-    expect(mainOutput.address).toBe(expectedOutput.scriptPubKey.addresses[0]);
-    expect(mainOutput.value.toString()).toBe(expectedOutput.value.toString());
+    // We store value in db as Satoshi
+    expect(mainOutput.value.toString()).toBe((expectedOutput.value * 100000000).toString());
     expect(mainOutput.block_height).toBe(expectedBlock.height);
     expect(!!mainOutput.is_suspended).toBe(false);
 

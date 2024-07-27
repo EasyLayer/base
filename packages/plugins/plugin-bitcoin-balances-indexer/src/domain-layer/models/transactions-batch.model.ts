@@ -88,34 +88,12 @@ export class TransactionsBatch extends AggregateRoot {
   }) {
     const tx: TransactionsMap = new Map();
 
-    // transactions.forEach((item: Transaction) => {
-    //   const { vin, vout, txid } = item;
-    //   const outputs = new Map(
-    //     vout.map((item: any) => {
-    //       const hex = Buffer(item.scriptPubKey);
-    //       const type = item.scriptPubKey.type;
-    //       const address = service.getAddressFromScriptPubKey(hex, type, network????);
-    //       return [item.n, { addresses: item.scriptPubKey.addresses, value: item.value }]
-    //     })
-    //   );
-    //   const inputs = vin.map((item: any) => ({
-    //     txid: item.coinbase ? null : item.txid,
-    //     vout: item.coinbase ? null : item.vout,
-    //     coinbase: item.coinbase ? item.coinbase : null,
-    //   }));
-
-    //   tx.set(txid, {
-    //     outputs,
-    //     inputs,
-    //   });
-    // });
-
     for (const item of transactions) {
       const { vin, vout, txid } = item;
 
       const outputs = new Map();
       for (const v of vout) {
-        const address = await service.getAddressFromScriptPubKey(v.scriptPubKey);
+        const address = service.getAddressFromScriptPubKey(v.scriptPubKey);
         outputs.set(v.n, { address, value: v.value });
       }
 

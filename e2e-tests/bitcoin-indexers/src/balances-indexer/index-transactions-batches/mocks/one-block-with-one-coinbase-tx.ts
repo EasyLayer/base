@@ -30,10 +30,9 @@ export const mockBlocks = [
             n: 0,
             scriptPubKey: {
               asm: 'OP_DUP OP_HASH160 1bc3305d889ed9519b8ab87cd43968b64f2d380d OP_EQUALVERIFY OP_CHECKSIG',
-              hex: '76a9141bc3305d889ed9519b8ab87cd43968b64f2d380d88ac',
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
               reqSigs: 1,
               type: 'pubkeyhash',
-              addresses: ['1BitcoinAddress'],
             },
           },
         ],

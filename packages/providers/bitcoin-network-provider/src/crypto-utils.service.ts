@@ -134,9 +134,7 @@ export class BitcoinCryptoUtilsService {
     return address;
   }
 
-  public async getAddressFromScriptPubKey(scriptPubKey: any): Promise<string | null> {
-    await this.initEccLib();
-
+  public getAddressFromScriptPubKey(scriptPubKey: any): string | null {
     const { hex, type } = scriptPubKey;
 
     if (!hex) {
@@ -155,14 +153,8 @@ export class BitcoinCryptoUtilsService {
       case 'scripthash':
       case 'witness_v0_keyhash':
       case 'witness_v0_scripthash':
-        address = bitcoin.address.fromOutputScript(scriptPubKeyBuffer, network);
-        break;
       case 'witness_v1_taproot':
-        const taprootAddress = bitcoin.payments.p2tr({
-          output: scriptPubKeyBuffer,
-          network,
-        });
-        address = taprootAddress.address ?? null;
+        address = bitcoin.address.fromOutputScript(scriptPubKeyBuffer, network);
         break;
       case 'pubkey':
         const decompiledScript = bitcoin.script.decompile(scriptPubKeyBuffer);

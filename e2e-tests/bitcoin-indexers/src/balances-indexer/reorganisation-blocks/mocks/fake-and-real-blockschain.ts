@@ -14,7 +14,10 @@ export const commonBlock = {
         {
           value: 50.0,
           n: 0,
-          scriptPubKey: { addresses: ['1BitcoinAddress'] },
+          scriptPubKey: {
+            hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+            type: 'pubkeyhash',
+          },
         },
       ],
     },
@@ -30,12 +33,18 @@ export const commonBlock = {
         {
           value: 25.0,
           n: 0,
-          scriptPubKey: { addresses: ['1BitcoinAddress'] },
+          scriptPubKey: {
+            hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+            type: 'pubkeyhash',
+          },
         },
         {
           value: 25.0,
           n: 1,
-          scriptPubKey: { addresses: ['1anotherAddress'] },
+          scriptPubKey: {
+            hex: 'a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba87',
+            type: 'scripthash',
+          },
         },
       ],
     },
@@ -50,7 +59,10 @@ export const commonBlock = {
         {
           value: 50.0,
           n: 0,
-          scriptPubKey: { addresses: ['1anotherAddress'] },
+          scriptPubKey: {
+            hex: 'a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba87',
+            type: 'scripthash',
+          },
         },
       ],
     },
@@ -66,7 +78,10 @@ export const commonBlock = {
         {
           value: 25.0,
           n: 0,
-          scriptPubKey: { addresses: ['1BitcoinAddress'] },
+          scriptPubKey: {
+            hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+            type: 'pubkeyhash',
+          },
         },
       ],
     },
@@ -112,12 +127,18 @@ export const mockFakeChainBlocks = [
           {
             value: 25.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
           {
             value: 25.0,
             n: 1,
-            scriptPubKey: { addresses: ['1anotherAddress'] },
+            scriptPubKey: {
+              hex: 'a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba87',
+              type: 'scripthash',
+            },
           },
         ],
       },
@@ -133,7 +154,10 @@ export const mockFakeChainBlocks = [
           {
             value: 25.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -155,7 +179,10 @@ export const mockFakeChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -171,7 +198,10 @@ export const mockFakeChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1anotherAddress'] },
+            scriptPubKey: {
+              hex: 'a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba87',
+              type: 'scripthash',
+            },
           },
         ],
       },
@@ -187,7 +217,10 @@ export const mockFakeChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -203,7 +236,10 @@ export const mockFakeChainBlocks = [
           {
             value: 25.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -233,7 +269,10 @@ export const mockRealChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -249,12 +288,18 @@ export const mockRealChainBlocks = [
           {
             value: 25.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
           {
             value: 25.0,
             n: 1,
-            scriptPubKey: { addresses: ['1anotherAddress'] },
+            scriptPubKey: {
+              hex: 'a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba87',
+              type: 'scripthash',
+            },
           },
         ],
       },
@@ -270,7 +315,10 @@ export const mockRealChainBlocks = [
           {
             value: 25.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -292,7 +340,10 @@ export const mockRealChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -308,7 +359,10 @@ export const mockRealChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1anotherAddress'] },
+            scriptPubKey: {
+              hex: 'a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba87',
+              type: 'scripthash',
+            },
           },
         ],
       },
@@ -324,7 +378,10 @@ export const mockRealChainBlocks = [
           {
             value: 50.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },
@@ -340,7 +397,10 @@ export const mockRealChainBlocks = [
           {
             value: 25.0,
             n: 0,
-            scriptPubKey: { addresses: ['1BitcoinAddress'] },
+            scriptPubKey: {
+              hex: '76a91489abcdefabbaabbaabbaabbaabbaabbaabbaabba88ac',
+              type: 'pubkeyhash',
+            },
           },
         ],
       },

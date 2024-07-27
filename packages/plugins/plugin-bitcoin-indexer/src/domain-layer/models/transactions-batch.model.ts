@@ -117,11 +117,12 @@ export class TransactionsBatch extends AggregateRoot {
   }
 
   private onBitcoinIndexerTransactionsBatchIndexedEvent({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
-    const { aggregateId, blockHeight, status, batch } = payload;
+    const { aggregateId, blockHeight, blockHash, status, batch } = payload;
     const { tx, n, isFinalBatch } = batch;
 
     this.aggregateId = aggregateId;
     this.blockHeight = Number(blockHeight);
+    this.blockHash = blockHash;
     this.status = status as BatchStatuses;
 
     this.batch = {

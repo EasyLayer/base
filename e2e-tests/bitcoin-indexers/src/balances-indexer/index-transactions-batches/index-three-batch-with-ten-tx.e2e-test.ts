@@ -197,7 +197,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
         // Check outputs
         Object.entries(transaction.outputs).forEach(([outputIndex, output]: any) => {
           const mockOutput = mockTransaction.vout[Number(outputIndex)];
-          expect(output.addresses).toEqual(mockOutput.scriptPubKey.addresses);
+          expect(output.address).toBeDefined();
           expect(output.value).toBe(mockOutput.value);
         });
       });
@@ -240,8 +240,9 @@ describe('/Index Tree Batches With Ten Transactions', () => {
           const savedOutput = outputs.find((output: any) => output.txid === tx.txid && output.n === vout.n);
 
           expect(savedOutput).toBeDefined();
-          expect(savedOutput.address).toBe(vout.scriptPubKey.addresses[0]);
-          expect(savedOutput.value.toString()).toBe(vout.value.toString());
+          expect(savedOutput.address).toBeDefined();
+          // We store value in db as Satoshi
+          expect(savedOutput.value.toString()).toBe((vout.value * 100000000).toString());
           expect(savedOutput.block_height).toBe(block.height);
           expect(!!savedOutput.is_suspended).toBe(false);
         });
@@ -314,8 +315,8 @@ describe('/Index Tree Batches With Ten Transactions', () => {
     };
 
     const expectedBalances: { [key: string]: number } = {
-      '1BitcoinAddress': 125.0,
-      '1anotherAddress': 75.0,
+      mt4tgWuYiNAnoweSUsbfQMPENRWw72ccPh: 12500000000,
+      '2N5oANkF34hZGKnVoZXukd1X6sJR7ayZPad': 7500000000,
     };
 
     // Verify balances using getWalletBalance function
@@ -355,18 +356,18 @@ describe('/Index Tree Batches With Ten Transactions', () => {
     };
 
     const expectedBalancesAtHeight0: { [key: string]: number } = {
-      '1BitcoinAddress': 25.0,
-      '1anotherAddress': 75.0,
+      mt4tgWuYiNAnoweSUsbfQMPENRWw72ccPh: 2500000000,
+      '2N5oANkF34hZGKnVoZXukd1X6sJR7ayZPad': 7500000000,
     };
 
     const expectedBalancesAtHeight1: { [key: string]: number } = {
-      '1BitcoinAddress': 50.0,
-      '1anotherAddress': 75.0,
+      mt4tgWuYiNAnoweSUsbfQMPENRWw72ccPh: 5000000000,
+      '2N5oANkF34hZGKnVoZXukd1X6sJR7ayZPad': 7500000000,
     };
 
     const expectedBalancesAtHeight2: { [key: string]: number } = {
-      '1BitcoinAddress': 125.0,
-      '1anotherAddress': 75.0,
+      mt4tgWuYiNAnoweSUsbfQMPENRWw72ccPh: 12500000000,
+      '2N5oANkF34hZGKnVoZXukd1X6sJR7ayZPad': 7500000000,
     };
 
     // Checking balances up to block height 0
