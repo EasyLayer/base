@@ -1,14 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Injectable, Inject } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { Saga, ICommand, executeWithRetry } from '@easylayer/cqrs';
-import { BlocksQueueService } from '@easylayer/bitcoin-blocks-queue';
+import { Saga, ICommand, executeWithRetry } from '@easylayer/core/cqrs';
+import { BlocksQueueService } from '@easylayer/core/bitcoin-blocks-queue';
 import {
   BitcoinIndexerInitializedEvent,
   BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerReorganisationStartedEvent,
   BitcoinIndexerReorganisationFinishedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
+} from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
 import { IndexerCommandFactoryService } from '../services';
 
 @Injectable()

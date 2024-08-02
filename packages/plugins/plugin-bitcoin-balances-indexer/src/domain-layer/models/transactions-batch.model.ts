@@ -1,9 +1,9 @@
-import { AggregateRoot } from '@easylayer/cqrs';
-import { BitcoinCryptoUtilsService } from '@easylayer/bitcoin-network-provider';
+import { AggregateRoot } from '@easylayer/core/cqrs';
+import { BitcoinCryptoUtilsService } from '@easylayer/core/bitcoin-network-provider';
 import {
   BitcoinBalancesIndexerTransactionsBatchIndexedEvent,
   BitcoinBalancesIndexerTransactionsBatchSuspendedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
+} from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 
 interface Vin {
   txid: string;

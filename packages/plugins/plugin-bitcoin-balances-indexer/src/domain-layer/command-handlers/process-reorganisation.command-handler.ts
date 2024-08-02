@@ -1,8 +1,7 @@
-import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore';
-import { EventStoreRepository } from '@easylayer/eventstore';
-import { ProcessReorganisationCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
-import { AppLogger } from '@easylayer/logger';
+import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
+import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
+import { ProcessReorganisationCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
+import { AppLogger } from '@easylayer/components/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import { TransactionsBatch } from '../models/transactions-batch.model';
 import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';

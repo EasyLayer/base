@@ -1,7 +1,7 @@
-import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
-import { AppLogger, RuntimeTracker } from '@easylayer/logger';
+import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
+import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
 // import { Transactional } from '@easylayer/read-database';
-import { BitcoinIndexerBlockIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-indexer';
+import { BitcoinIndexerBlockIndexedEvent } from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
 import { BlocksReadService } from '../services';
 
 @EventsHandler(BitcoinIndexerBlockIndexedEvent)

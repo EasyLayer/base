@@ -1,4 +1,4 @@
-import { Entity, Column, Unique, Index, PrimaryColumn } from '@easylayer/read-database';
+import { Entity, Column, Unique, Index, PrimaryColumn } from '@easylayer/core/read-database';
 
 @Entity('outputs')
 @Unique('UQ__txid__n', ['txid', 'n'])

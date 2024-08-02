@@ -1,11 +1,11 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { transformAndValidate } from 'class-transformer-validator';
-import { LoggerModule } from '@easylayer/logger';
-import { ArithmeticService } from '@easylayer/arithmetic';
-import { EventStoreModule } from '@easylayer/eventstore';
-import { ReadDatabaseModule } from '@easylayer/read-database';
-import { BlocksQueueModule } from '@easylayer/bitcoin-blocks-queue';
-import { BitcoinNetworkProviderModule } from '@easylayer/bitcoin-network-provider';
+import { LoggerModule } from '@easylayer/components/logger';
+import { ArithmeticService } from '@easylayer/components/arithmetic';
+import { EventStoreModule } from '@easylayer/core/eventstore';
+import { ReadDatabaseModule } from '@easylayer/core/read-database';
+import { BlocksQueueModule } from '@easylayer/core/bitcoin-blocks-queue';
+import { BitcoinNetworkProviderModule } from '@easylayer/core/bitcoin-network-provider';
 import { BalancesIndexerController } from './balances-indexer.controller';
 import { BalancesIndexerService } from './balances-indexer.service';
 import { IndexerSaga } from './application-layer/sagas';

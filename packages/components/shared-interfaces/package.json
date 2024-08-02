@@ -2,21 +2,11 @@
   "name": "@easylayer/shared-interfaces",
   "version": "0.0.2-experimental.1",
   "description": "",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": "./dist/index.js",
-    "./network-transport": "./dist/network-transport/index.js"
-  },
-  "files": [
-    "dist"
-  ],
+  "private": true,
   "scripts": {
     "clear": "yarn run clear:dist && yarn run clear:node_modules",
     "clear:node_modules": "rimraf node_modules",
-    "clear:dist": "rimraf dist && rimraf tsconfig.build.tsbuildinfo",
-    "prepublishOnly": "yarn clear:dist && yarn build",
-    "build": "tsc -b ./tsconfig.build.json",
+    "clear:dist": "rimraf dist",
     "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
     "format": "prettier -с .prettierrc.js --write \"src/**/*.ts\""
@@ -25,12 +15,7 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "devDependencies": {
-    "@easylayer/utils": "0.0.2-experimental.1",
     "@types/node": "20.10.4",
     "typescript": "5.3.3"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
   }
 }

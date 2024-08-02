@@ -1,8 +1,7 @@
-// import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
-import { EventPublisher } from '@easylayer/cqrs';
-import { RuntimeTracker } from '@easylayer/logger';
-import { EventStoreRepository } from '@easylayer/eventstore';
+import { EventPublisher } from '@easylayer/core/cqrs';
+import { EventStoreRepository } from '@easylayer/core/eventstore';
+import { RuntimeTracker } from '@easylayer/components/logger';
 import { Indexer } from '../models/indexer.model';
 
 @Injectable()

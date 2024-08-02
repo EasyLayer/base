@@ -1,0 +1,63 @@
+{
+    "name": "@easylayer/components",
+    "version": "0.0.2-experimental.1",
+    "description": "",
+    "exports": {
+        "./arithmetic": {
+            "default": "./dist/arithmetic/index.js",
+            "types": "./dist/arithmetic/index.d.ts"
+        },
+        "./logger": {
+            "default": "./dist/logger/index.js",
+            "types": "./dist/logger/index.d.ts"
+        },
+        "./bitcoin-blocks-queue": {
+            "default": "./dist/bitcoin-blocks-queue/index.js",
+            "types": "./dist/bitcoin-blocks-queue/index.d.ts"
+        },
+        "./domain-cqrs-components/bitcoin-indexer": {
+            "default": "./dist/domain-cqrs-components/bitcoin/bitcoin-indexer/index.js",
+            "types": "./dist/domain-cqrs-components/bitcoin/bitcoin-indexer/index.d.ts"
+        },
+        "./domain-cqrs-components/bitcoin-balances-indexer": {
+            "default": "./dist/domain-cqrs-components/bitcoin/bitcoin-balances-indexer/index.js",
+            "types": "./dist/domain-cqrs-components/bitcoin/bitcoin-balances-indexer/index.d.ts"
+        },
+        "./domain-cqrs-components/evm": {
+            "default": "./dist/domain-cqrs-components/evm/index.js",
+            "types": "./dist/domain-cqrs-components/evm/index.d.ts"
+        },
+        "./exponential-interval-async": {
+            "default": "./dist/exponential-interval-async/index.js",
+            "types": "./dist/exponential-interval-async/index.d.ts"
+        },
+        "./shared-interfaces": {
+            "default": "./dist/shared-interfaces/index.js",
+            "types": "./dist/shared-interfaces/index.d.ts"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "clear": "yarn run clear:dist && yarn run clear:node_modules",
+        "clear:node_modules": "rimraf node_modules",
+        "clear:dist": "rimraf dist",
+        "prepublishOnly": "yarn clear:dist && yarn build:prod",
+        "build:dev": "tsc -b tsconfig.json",
+        "build:prod": "tsc -b tsconfig.build.json"
+    },
+    "author": "Yaroslav Pavliuk",
+    "license": "",
+    "packageManager": "yarn@3.6.0",
+    "devDependencies": {
+        "@types/node": "20.10.4",
+        "rimraf": "5.0.5",
+        "ts-node": "10.9.2",
+        "typescript": "5.3.3"
+    },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    }
+}

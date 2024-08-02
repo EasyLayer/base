@@ -1,0 +1,18 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../dist/read-database",
+    "sourceMap": true,
+    "declarationMap": true,
+    "incremental": true,
+    "composite": true,
+    "tsBuildInfoFile": "../dist/read-database/tsconfig.tsbuildinfo"
+  },
+  "include": ["src"],
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__"
+  ]
+}

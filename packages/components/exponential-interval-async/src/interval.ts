@@ -10,6 +10,11 @@ export const exponentialIntervalAsync = async (
   options: IntervalOptions
 ): Promise<void> => {
   const { interval, multiplier, maxAttempts = Infinity, maxInterval } = options;
+
+  if (maxInterval < interval) {
+    throw new Error('maxInterval cannot be less than initial interval');
+  }
+
   let attemptCount = 0;
   let currentInterval = interval;
 

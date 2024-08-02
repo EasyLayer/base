@@ -4,15 +4,15 @@ import { config } from 'dotenv';
 import { take, Observable } from 'rxjs';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CoreModule } from '@easylayer/core';
+import { CoreModule } from '@easylayer/base';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
 import {
   BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerInitializedEvent,
   BitcoinIndexerTransactionsBatchIndexedEvent,
   BitcoinIndexerChainBlockAddedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { CustomEventBus, ofType, CqrsModule } from '@easylayer/cqrs';
+} from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
+import { CustomEventBus, ofType, CqrsModule } from '@easylayer/core/cqrs';
 import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
 import { mockBlocks } from './mocks/one-block-with-one-tx';
 import { cleanDataFolder } from '../../+helpers/clean-data-folder';

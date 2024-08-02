@@ -1,11 +1,18 @@
 {
-  "extends": "@easylayer/utils/tsconfigs/base.config.json",
+  "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "composite": true
+    "outDir": "../dist/shared-interfaces",
+    "sourceMap": true,
+    "declarationMap": true,
+    "incremental": true,
+    "composite": true,
+    "tsBuildInfoFile": "../dist/shared-interfaces/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "exclude": ["node_modules"],
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__"
+  ]
 }

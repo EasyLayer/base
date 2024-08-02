@@ -1,8 +1,8 @@
-import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
-import { AppLogger, RuntimeTracker } from '@easylayer/logger';
-import { Currency, Money } from '@easylayer/arithmetic';
-import { Transactional } from '@easylayer/read-database';
-import { BitcoinBalancesIndexerTransactionsBatchIndexedEvent } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
+import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
+import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
+import { Currency, Money } from '@easylayer/components/arithmetic';
+import { Transactional } from '@easylayer/core/read-database';
+import { BitcoinBalancesIndexerTransactionsBatchIndexedEvent } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 import { OutputsReadService, InputsReadService, COINBASE_OUTPUT_N, COINBASE_OUTPUT_VALUE } from '../services';
 import { BusinessConfig } from '../../config/business.config';
 

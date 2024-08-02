@@ -1,0 +1,26 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../dist/bitcoin-network-provider",
+    "sourceMap": true,
+    "declarationMap": true,
+    "allowJs": true,
+    "incremental": true,
+    "composite": true,
+    "tsBuildInfoFile": "../dist/bitcoin-network-provider/tsconfig.tsbuildinfo",
+    "typeRoots": [
+      "@types",
+      "../../../node_modules/@types"
+    ]
+  },
+  "references": [
+    { "path": "../../components/logger/tsconfig.json" }
+  ],
+  "include": ["src", "@types"],
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__"
+  ]
+}

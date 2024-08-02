@@ -1,11 +1,18 @@
 {
-  "extends": "@easylayer/utils/tsconfigs/base.config.json",
+  "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "composite": true
+    "outDir": "../dist/exponential-interval-async",
+    "sourceMap": true,
+    "declarationMap": true,
+    "composite": true,
+    "incremental": true,
+    "tsBuildInfoFile": "../dist/exponential-interval-async/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
-  "exclude": ["node_modules"],
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__"
+  ]
 }

@@ -1,4 +1,5 @@
-const baseConfig = require('@easylayer/utils/jests/base.config');
+const path = require('path');
+const baseConfig = require('../../../jest.config');
 
 module.exports = {
     ...baseConfig,
@@ -7,10 +8,12 @@ module.exports = {
         "<rootDir>/src/"
     ],
     transform: {
-        "^.+\\.ts?$": "ts-jest"
+      "^.+\\.ts?$": ['ts-jest', {
+        tsconfig: path.resolve(__dirname, './tsconfig.json'),
+      }]
     },
     testPathIgnorePatterns: baseConfig.testPathIgnorePatterns.concat([
         "<rootDir>/node_modules",
         "<rootDir>/dist"
-    ])
+    ]),
 };

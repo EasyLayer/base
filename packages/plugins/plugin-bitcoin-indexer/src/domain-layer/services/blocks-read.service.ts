@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository, In } from '@easylayer/read-database';
+import { InjectRepository, In } from '@easylayer/core/read-database';
 import { BlockViewModel } from '../view-models/block.view-model';
 
 @Injectable()

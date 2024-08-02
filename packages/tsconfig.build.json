@@ -1,0 +1,26 @@
+/* 
+  documentation tags: 8b6c4e42-715d-41e3-8683-c02e4acf2e61
+*/
+{
+    "files": [],
+    "references": [
+      {
+        "path": "./base/tsconfig.build.json"
+      },
+      {
+        "path": "./components/tsconfig.build.json"
+      },
+      {
+        "path": "./core/tsconfig.build.json"
+      },
+      {
+        "path": "./cli/create-easylayer-app/tsconfig.build.json"
+      },
+      {
+        "path": "./plugins/plugin-bitcoin-indexer/tsconfig.build.json"
+      },
+      {
+        "path": "./plugins/plugin-bitcoin-balances-indexer/tsconfig.build.json"
+      }
+    ]
+  }

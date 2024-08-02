@@ -4,8 +4,8 @@ import { config } from 'dotenv';
 import { Observable } from 'rxjs';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { BitcoinNetworkProviderService } from '@easylayer/bitcoin-network-provider';
-import { CoreModule } from '@easylayer/core';
+import { BitcoinNetworkProviderService } from '@easylayer/core/bitcoin-network-provider';
+import { CoreModule } from '@easylayer/base';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
 import {
   BitcoinIndexerBlockIndexedEvent,
@@ -16,8 +16,8 @@ import {
   BitcoinIndexerReorganisationStartedEvent,
   BitcoinIndexerBlockSuspendedEvent,
   BitcoinIndexerTransactionsBatchSuspendedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
-import { CustomEventBus, ofType, CqrsModule } from '@easylayer/cqrs';
+} from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
+import { CustomEventBus, ofType, CqrsModule } from '@easylayer/core/cqrs';
 import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
 import { commonBlock, mockFakeChainBlocks, mockRealChainBlocks } from './mocks/fake-and-real-blockschain';
 import { cleanDataFolder } from '../../+helpers/clean-data-folder';

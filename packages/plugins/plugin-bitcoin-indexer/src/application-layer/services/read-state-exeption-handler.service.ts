@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Subscription } from 'rxjs';
-import { UnhandledExceptionBus, IEvent } from '@easylayer/cqrs';
-import { AppLogger } from '@easylayer/logger';
+import { UnhandledExceptionBus, IEvent } from '@easylayer/core/cqrs';
+import { AppLogger } from '@easylayer/components/logger';
 
 interface UnhandledExceptionEvent {
   cause: IEvent;

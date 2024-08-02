@@ -9,6 +9,8 @@ suffix=$SUFFIX
 increment=$INCREMENT
 publishVersion="$baseVersion-$suffix.$increment"
 tagName="v$publishVersion"
+dockerUsername=$DOCKER_USERNAME
+dockerToken=$DOCKER_ACCESS_TOKEN
 
 # Update package versions (e.g., 0.0.1-beta.0)
 echo "Setting package versions to: $publishVersion"
@@ -26,6 +28,14 @@ git add **/package.json yarn.lock lerna.json
 git status
 git commit -m "Prerelease: $tagName"
 
+# Log in to Docker Hub
+echo "Logging in to Docker Hub"
+echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
+
+# Build Docker image
+echo "Building Docker image"
+docker build -t easylayer/base:$publishVersion .
+
 # Publish packages with the suffix as a tag
 echo "Publishing packages with tag: $suffix"
 ./node_modules/.bin/lerna publish from-package --no-private --dist-tag $suffix --yes --no-git-tag-version --force-publish
@@ -33,6 +43,10 @@ echo "Publishing packages with tag: $suffix"
 # Push to the Git branch
 echo "Pushing to head branch"
 git push origin HEAD
+
+# Push Docker image
+echo "Pushing Docker image"
+docker push easylayer/base:$version
 
 # Create and push a Git tag
 git tag $tagName

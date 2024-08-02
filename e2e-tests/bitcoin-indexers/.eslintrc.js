@@ -1,3 +1,3 @@
 module.exports = {
-    extends: require.resolve('@easylayer/utils/eslints/base.config.js')
+    extends: require.resolve('../../utils/eslints/base.config.js')
 };

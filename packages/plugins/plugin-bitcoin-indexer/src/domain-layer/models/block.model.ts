@@ -1,8 +1,8 @@
-import { AggregateRoot } from '@easylayer/cqrs';
+import { AggregateRoot } from '@easylayer/core/cqrs';
 import {
   BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerBlockSuspendedEvent,
-} from '@easylayer/domain-cqrs-components/bitcoin-indexer';
+} from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
 
 enum BlockStatuses {
   INDEXED = 'indexed',

@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, JoinColumn, OneToMany, ManyToOne } from '@easylayer/read-database';
+import { Entity, PrimaryColumn, Column, JoinColumn, OneToMany, ManyToOne } from '@easylayer/core/read-database';
 import { TransactionViewModel } from './transaction.view-model';
 
 @Entity('blocks')

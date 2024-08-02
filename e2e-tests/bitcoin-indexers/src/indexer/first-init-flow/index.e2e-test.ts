@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { config } from 'dotenv';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CoreModule } from '@easylayer/core';
+import { CoreModule } from '@easylayer/base';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
 import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
 import { cleanDataFolder } from '../../+helpers/clean-data-folder';

@@ -1,0 +1,35 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {    
+    "rootDir": "src",
+    "outDir": "../dist/bitcoin-blocks-queue",
+    "sourceMap": true,
+    "declarationMap": true,
+    "allowJs": true,
+    "incremental": true,
+    "composite": true,
+    "tsBuildInfoFile": "../dist/bitcoin-blocks-queue/tsconfig.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "typescript-transform-paths"
+      },
+      {
+        "transform": "typescript-transform-paths",
+        "afterDeclarations": true
+      }
+    ]
+  },
+  "references": [
+    { "path": "../cqrs/tsconfig.json" },
+    { "path": "../bitcoin-network-provider/tsconfig.json" },
+    { "path": "../../components/logger/tsconfig.json" },
+    { "path": "../../components/domain-cqrs-components/tsconfig.json" },
+    { "path": "../../components/exponential-interval-async/tsconfig.json" }
+  ],
+  "include": ["src"],
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__"
+  ]
+}

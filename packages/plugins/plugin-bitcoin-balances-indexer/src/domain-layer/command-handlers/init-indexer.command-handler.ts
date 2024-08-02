@@ -1,9 +1,8 @@
 // import { v4 as uuidv4 } from 'uuid';
-import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore';
-import { EventStoreRepository } from '@easylayer/eventstore';
-import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin-balances-indexer';
-import { AppLogger } from '@easylayer/logger';
+import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
+import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
+import { InitIndexerCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
+import { AppLogger } from '@easylayer/components/logger';
 import { AppConfig } from '../../config';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import { BalancesIndexerModelFactoryService, TransactionsBatchModelFactoryService } from '../services';

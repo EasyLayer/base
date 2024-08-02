@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { EventPublisher } from '@easylayer/cqrs';
-import { EventStoreRepository } from '@easylayer/eventstore';
+import { EventPublisher } from '@easylayer/core/cqrs';
+import { EventStoreRepository } from '@easylayer/core/eventstore';
 import { Block } from '../models/block.model';
 
 @Injectable()

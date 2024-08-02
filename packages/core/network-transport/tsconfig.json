@@ -1,0 +1,32 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "../dist/network-transport",
+    "sourceMap": true,
+    "declarationMap": true,
+    "incremental": true,
+    "composite": true,
+    "tsBuildInfoFile": "../dist/network-transport/tsconfig.tsbuildinfo",
+    "plugins": [
+      {
+        "transform": "typescript-transform-paths"
+      },
+      {
+        "transform": "typescript-transform-paths",
+        "afterDeclarations": true
+      }
+    ]
+  },
+  "references": [
+    { "path": "../cqrs/tsconfig.json" },
+    { "path": "../../components/logger/tsconfig.json" },
+    { "path": "../../components/shared-interfaces/tsconfig.json" }
+  ],
+  "include": ["src"],
+  "exclude": [
+    "dist",
+    "**/*.test.ts",
+    "**/__tests__"
+  ]
+}

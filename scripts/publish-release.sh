@@ -6,10 +6,25 @@ set -e
 # Get the version from lerna.json
 version=$(jq -r '.version' lerna.json)
 tagName="v$version"
+dockerUsername=$DOCKER_USERNAME
+dockerToken=$DOCKER_ACCESS_TOKEN
+
+# Log in to Docker Hub
+echo "Logging in to Docker Hub"
+echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
+
+# Build Docker image
+echo "Building Docker image"
+docker build -t easylayer/base:$version -t easylayer/base:latest .
 
 # Publish packages with default "latest" tag
 echo "Publishing packages with tag: latest"
 ./node_modules/.bin/lerna publish from-package --no-private --yes --no-git-tag-version --force-publish
+
+# Push Docker image
+echo "Pushing Docker image"
+docker push easylayer/base:$version
+docker push easylayer/base::latest
 
 # Create and push a Git tag
 echo "Pushing tag $tagName to master branch"

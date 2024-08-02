@@ -1,4 +1,4 @@
-import { Entity, ManyToOne, Column, Unique, JoinColumn, PrimaryColumn } from '@easylayer/read-database';
+import { Entity, ManyToOne, Column, Unique, JoinColumn, PrimaryColumn } from '@easylayer/core/read-database';
 import { OutputViewModel } from './otputs.view-model';
 
 @Entity('inputs')
