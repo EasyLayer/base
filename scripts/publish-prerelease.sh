@@ -34,7 +34,7 @@ echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
 
 # Build Docker image
 echo "Building Docker image"
-docker build -t easylayer/base:$publishVersion .
+docker build -t easylayer/base:$publishVersion ./packages/base/
 
 # Publish packages with the suffix as a tag
 echo "Publishing packages with tag: $suffix"
@@ -46,7 +46,7 @@ git push origin HEAD
 
 # Push Docker image
 echo "Pushing Docker image"
-docker push easylayer/base:$version
+docker push easylayer/base:$publishVersion
 
 # Create and push a Git tag
 git tag $tagName

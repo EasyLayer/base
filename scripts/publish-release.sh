@@ -15,7 +15,7 @@ echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
 
 # Build Docker image
 echo "Building Docker image"
-docker build -t easylayer/base:$version -t easylayer/base:latest .
+docker build -t easylayer/base:$version -t easylayer/base:latest ./packages/base/
 
 # Publish packages with default "latest" tag
 echo "Publishing packages with tag: latest"
@@ -24,7 +24,7 @@ echo "Publishing packages with tag: latest"
 # Push Docker image
 echo "Pushing Docker image"
 docker push easylayer/base:$version
-docker push easylayer/base::latest
+docker push easylayer/base:latest
 
 # Create and push a Git tag
 echo "Pushing tag $tagName to master branch"
