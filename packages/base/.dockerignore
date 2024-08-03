@@ -1,0 +1,94 @@
+# Node.js
+node_modules/
+npm-debug.log
+.husky
+.github
+
+# Yarn
+.npm
+.pnp.*
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+yarn-error.log
+!.yarn/.gitkeep
+!.yarn/patches
+!.yarn/sdks
+!.yarn/versions
+
+# TypeScript
+*.tsbuildinfo
+*.build.tsbuildinfo
+dist/
+
+# Environment files
+.env
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+*.DS_Store
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Other
+*.log
+*.tmp
+*.bak
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+*.test.js
+*.spec.js
+*.test.ts
+*.spec.ts
+jest.config.js
+jest.config.ts
+coverage/
+__tests__/
+__mocks__/
+tests/
+
+.prettierrc
+.prettierrc.js
+.prettierrc.json
+.prettierrc.yml
+.prettierrc.yaml
+.prettierrc.toml
+.prettierignore
+.prettier.config.js
+
+.eslintrc
+.eslintrc.js
+.eslintrc.json
+.eslintrc.yml
+.eslintrc.yaml
+.eslintignore
+eslint.config.js
+
+.czrc
+.editorconfig
+typedoc.json
+
+*.log
+
+.git
+.gitignore
+
+# Project
+api-docs
+config-docs
+docs
+apps
+e2e-tests
+utils

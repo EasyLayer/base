@@ -1,0 +1,178 @@
+export const mockBlocks = [
+  {
+    hash: '0000000000000000000000000000000000000000000000000000000000000001',
+    confirmations: 4,
+    strippedsize: 204,
+    size: 204,
+    weight: 816,
+    height: 0,
+    version: 1,
+    versionHex: '00000001',
+    merkleroot: '4d6f636b4d65726b6c65526f6f74000000000000000000000000000000000000',
+    tx: [
+      {
+        txid: 'tx0-1',
+        hash: 'abcd1234',
+        version: 1,
+        size: 134,
+        vsize: 134,
+        weight: 536,
+        locktime: 0,
+        vin: [
+          {
+            coinbase: '03e8a34d696e656420627920416e74506f6f6c312c204c4c43',
+            sequence: 4294967295,
+          },
+        ],
+        vout: [
+          {
+            value: 50.0,
+            n: 0,
+            scriptPubKey: {
+              asm: 'OP_DUP OP_HASH160 1bc3305d889ed9519b8ab87cd43968b64f2d380d OP_EQUALVERIFY OP_CHECKSIG',
+              hex: '76a9141bc3305d889ed9519b8ab87cd43968b64f2d380d88ac',
+              reqSigs: 1,
+              type: 'pubkeyhash',
+              addresses: ['1BitcoinAddress'],
+            },
+          },
+        ],
+      },
+    ],
+    time: 1610000000,
+    mediantime: 1610000000,
+    nonce: 0,
+    bits: '1d00ffff',
+    difficulty: 1,
+    chainwork: '0000000000000000000000000000000000000000000000000000000100010001',
+    previousblockhash: '0000000000000000000000000000000000000000000000000000000000000000',
+    nextblockhash: '0000000000000000000000000000000000000000000000000000000000000002',
+  },
+  {
+    hash: '0000000000000000000000000000000000000000000000000000000000000002',
+    confirmations: 3,
+    strippedsize: 204,
+    size: 204,
+    weight: 816,
+    height: 1,
+    version: 1,
+    versionHex: '00000001',
+    merkleroot: '4d6f636b4d65726b6c65526f6f74000000000000000000000000000000000000',
+    tx: [
+      {
+        txid: 'tx1-1',
+        hash: 'abcd1235',
+        version: 1,
+        size: 134,
+        vsize: 134,
+        weight: 536,
+        locktime: 0,
+        vin: [
+          {
+            coinbase: '03e8a34d696e656420627920416e74506f6f6c312c204c4c44',
+            sequence: 4294967295,
+          },
+        ],
+        vout: [
+          {
+            value: 50.0,
+            n: 0,
+            scriptPubKey: {
+              asm: 'OP_DUP OP_HASH160 1bc3305d889ed9519b8ab87cd43968b64f2d380d OP_EQUALVERIFY OP_CHECKSIG',
+              hex: '76a9141bc3305d889ed9519b8ab87cd43968b64f2d380d88ac',
+              reqSigs: 1,
+              type: 'pubkeyhash',
+              addresses: ['1BitcoinAddress'],
+            },
+          },
+        ],
+      },
+      {
+        txid: 'tx1-2',
+        hash: 'abcd1236',
+        version: 1,
+        size: 144,
+        vsize: 144,
+        weight: 576,
+        locktime: 0,
+        vin: [
+          {
+            txid: 'tx0-1',
+            vout: 0,
+            scriptSig: {
+              asm: '3045022100abcdef...022100123456...',
+              hex: '483045022100abcdef...022100123456...',
+            },
+            sequence: 4294967294,
+          },
+        ],
+        vout: [
+          {
+            value: 25.0,
+            n: 0,
+            scriptPubKey: {
+              asm: 'OP_DUP OP_HASH160 2bc3305d889ed9519b8ab87cd43968b64f2d380d OP_EQUALVERIFY OP_CHECKSIG',
+              hex: '76a9142bc3305d889ed9519b8ab87cd43968b64f2d380d88ac',
+              reqSigs: 1,
+              type: 'pubkeyhash',
+              addresses: ['1BitcoinAddress1'],
+            },
+          },
+          {
+            value: 25.0,
+            n: 1,
+            scriptPubKey: {
+              asm: 'OP_DUP OP_HASH160 3bc3305d889ed9519b8ab87cd43968b64f2d380d OP_EQUALVERIFY OP_CHECKSIG',
+              hex: '76a9143bc3305d889ed9519b8ab87cd43968b64f2d380d88ac',
+              reqSigs: 1,
+              type: 'pubkeyhash',
+              addresses: ['1BitcoinAddress2'],
+            },
+          },
+        ],
+      },
+      // Add 18 more transactions
+      ...Array.from({ length: 18 }, (_, i) => ({
+        txid: `tx1-${i + 3}`,
+        hash: `abcd123${i + 7}`,
+        version: 1,
+        size: 144,
+        vsize: 144,
+        weight: 576,
+        locktime: 0,
+        vin: [
+          {
+            txid: `tx1-${i + 2}`,
+            vout: 0,
+            scriptSig: {
+              asm: '3045022100abcdef...022100123456...',
+              hex: '483045022100abcdef...022100123456...',
+            },
+            sequence: 4294967294,
+          },
+        ],
+        vout: [
+          {
+            value: 25.0,
+            n: 0,
+            scriptPubKey: {
+              asm: 'OP_DUP OP_HASH160 4bc3305d889ed9519b8ab87cd43968b64f2d380d OP_EQUALVERIFY OP_CHECKSIG',
+              hex: '76a9144bc3305d889ed9519b8ab87cd43968b64f2d380d88ac',
+              reqSigs: 1,
+              type: 'pubkeyhash',
+              addresses: ['1BitcoinAddress3'],
+            },
+          },
+        ],
+      })),
+    ],
+    time: 1610001000,
+    mediantime: 1610001000,
+    nonce: 1,
+    bits: '1d00ffff',
+    difficulty: 1,
+    chainwork: '0000000000000000000000000000000000000000000000000000000200020002',
+    previousblockhash: '0000000000000000000000000000000000000000000000000000000000000001',
+    nextblockhash: '0000000000000000000000000000000000000000000000000000000000000003',
+  },
+];

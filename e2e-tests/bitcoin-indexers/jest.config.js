@@ -1,4 +1,4 @@
-const baseConfig = require('@easylayer/utils/jests/base.config');
+const baseConfig = require('../../jest.config');
 
 module.exports = {
     ...baseConfig,

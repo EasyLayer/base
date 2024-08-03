@@ -1,46 +1,51 @@
 import 'reflect-metadata';
-import { resolve, join } from 'node:path';
-import { readdir, unlink } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import { EventEmitter } from 'node:events';
 import { config } from 'dotenv';
-import supertest from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CoreModule } from '@easylayer/core';
+import { CoreModule } from '@easylayer/base';
 import BitcoinIndexer from '@easylayer/plugin-bitcoin-indexer';
-import { initializeTransactionalContext } from '@easylayer/eventstore/transactional-hooks';
-import { SQLiteService } from '../../helpers/sqlite/sqlite.service';
+import { SQLiteService } from '../../+helpers/sqlite/sqlite.service';
 import { mockIndexerEvent } from './mocks/indexer-event';
+import { cleanDataFolder } from '../../+helpers/clean-data-folder';
 
 describe('/Second Initialization Application Write State Checkin', () => {
   let app: INestApplication;
   let dbService: SQLiteService;
 
+  afterAll(async () => {
+    if (app) {
+      try {
+        await app.close();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    if (dbService) {
+      try {
+        await dbService.close();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  });
+
   beforeAll(async () => {
     jest.useFakeTimers();
     const eventEmitter = new EventEmitter();
 
-    // Mock the BlocksQueueService with runQueue() method
+    // Mock the BlocksQueueService with start() method
     const mockBlocksQueueService = {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      runQueue: jest.fn().mockImplementation(async (height: bigint | string | number) => {
-        // Emit an event to signal that runQueue was called
-        eventEmitter.emit('runQueueCalled');
+      start: jest.fn().mockImplementation(async (height: string | number) => {
+        // Emit an event to signal that start() was called
+        eventEmitter.emit('startCalled');
       }),
     };
 
     // Clear the database
-    const dataDir = resolve(process.cwd(), 'data');
-    try {
-      const files = await readdir(dataDir);
-      const unlinkPromises = files.map((file) => unlink(join(dataDir, file)));
-      await Promise.all(unlinkPromises);
-    } catch (err) {
-      console.error('Failed to clean data directory', err);
-    }
-
-    // Initialize transactional context before any database interaction
-    initializeTransactionalContext();
+    await cleanDataFolder();
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/second-init-flow/.env') });
@@ -48,7 +53,7 @@ describe('/Second Initialization Application Write State Checkin', () => {
     // We want to prepare a database, with an event as if there was already an aggregate there
     // IMPORTANT: it must be before create Test nestjs app
     dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/indexer-write.db') });
-    await dbService.initializeDatabase(resolve(process.cwd(), 'src/indexer/second-init-flow/dump.sql'));
+    await dbService.initializeDatabase(resolve(process.cwd(), 'src/+dumps/events-table.sql'));
     const eventKeys = Object.keys(mockIndexerEvent);
     const eventValues = Object.values(mockIndexerEvent).map((value) =>
       value === null ? 'NULL' : typeof value === 'string' ? `'${value}'` : value,
@@ -72,24 +77,20 @@ describe('/Second Initialization Application Write State Checkin', () => {
 
     // Create a promise to wait for the event
     // Set up the event listener before app.init()
-    const runQueueCalled = new Promise<void>((resolve) => {
-      eventEmitter.once('runQueueCalled', resolve);
+    const startCalled = new Promise<void>((resolve) => {
+      eventEmitter.once('startCalled', resolve);
     });
 
     await app.init();
 
     jest.runAllTimersAsync();
 
-    // Wait for the startBlocksLoading() method
-    await runQueueCalled;
+    // Wait for the startCalled() method
+    await startCalled;
 
-    // We wait until startBlocksLoadingCalled() will be executed
+    // We wait until startCalled() will be executed
     // This is because we want to test an app that has already initialized and stopped
     await app.close();
-  });
-
-  it('/healthcheck (GET)', async () => {
-    await supertest(app.getHttpServer()).get('/bitcoin-indexer/healthcheck').expect(200);
   });
 
   it('should restore correct old indexer aggregate', async () => {
@@ -107,23 +108,6 @@ describe('/Second Initialization Application Write State Checkin', () => {
 
     const payload = JSON.parse(events[1].payload);
     expect(payload.status).toBe('awaiting');
-    expect(payload.height).toBe('-1');
-  });
-
-  afterAll(async () => {
-    if (app) {
-      try {
-        await app.close();
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    if (dbService) {
-      try {
-        await dbService.close();
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    expect(payload.indexedHeight).toBe('-1');
   });
 });

@@ -4,28 +4,21 @@
   "version": "0.0.2-experimental.1",
   "description": "This is an example app for development",
   "scripts": {
+    "clear": "yarn clear cache && yarn clear:dist && clear:node_modules",
+    "clear:node_modules": "rimraf node_module",
+    "clear:data": "rimraf data/",
+    "clear:dist": "rimraf dist",
     "start:dev": "ts-node src/main.ts",
-    "build": "tsc -p ./tsconfig.build.json",
-    "start": "node src/main.ts",
-    "clear": "yarn clear cache && rimraf dist && rimraf node_module",
-    "lint": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\"",
-    "lint:fix": "eslint -c .eslintrc.js \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\""
+    "build": "tsc -b ./tsconfig.json",
+    "start": "node dist/main.js"
   },
   "dependencies": {
-    "@easylayer/core": "0.0.2-experimental.1",
-    "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.1",
-    "@easylayer/utils": "0.0.2-experimental.1"
+    "@easylayer/base": "0.0.2-experimental.1",
+    "@easylayer/plugin-bitcoin-balances-indexer": "0.0.2-experimental.1",
+    "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.1"
   },
   "devDependencies": {
-    "@tsconfig/node18": "18.2.2",
     "@types/node": "20.10.4",
-    "@typescript-eslint/eslint-plugin": "6.13.2",
-    "@typescript-eslint/parser": "6.13.2",
-    "eslint": "8.55.0",
-    "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-prettier": "5.0.1",
-    "prettier": "3.1.1",
     "rimraf": "5.0.5",
     "ts-node": "10.9.2",
     "typescript": "5.3.3"

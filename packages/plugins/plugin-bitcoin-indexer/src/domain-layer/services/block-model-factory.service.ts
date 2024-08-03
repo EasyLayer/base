@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { EventPublisher } from '@easylayer/cqrs';
-import { EventStoreRepository } from '@easylayer/eventstore';
+import { EventPublisher } from '@easylayer/core/cqrs';
+import { EventStoreRepository } from '@easylayer/core/eventstore';
 import { Block } from '../models/block.model';
 
 @Injectable()
@@ -21,12 +21,6 @@ export class BlockModelFactoryService {
     return await this.blocksRepository.getOne(model);
   }
 
-  // Логика наверное должна быть другой
-  // Мы это события кладем в аггрегатор чтобы можно было его через commit запустить?
-  // Но нужно решить:
-  // 1 - что п осохранению в базе, мы ж не можем это решать как то вручную и там же есть уже такая запись в базе
-  // 2 - состояние аггрегата, чтобы небыло дубликатов
-  // С первым наверное сохранять все же внутри метода commit??
   public async publishLastEvent(aggragatorId: string): Promise<void> {
     const model = this.createNewModel();
     model.aggregateId = aggragatorId;
@@ -36,8 +30,15 @@ export class BlockModelFactoryService {
     }
   }
 
-  public async initAllModels(): Promise<Block[]> {
-    // TODO
-    return [];
+  public async initExistingModels(aggregateIds: string[]): Promise<Block[]> {
+    const models: Block[] = [];
+
+    aggregateIds.forEach((item) => {
+      const model = this.createNewModel();
+      model.aggregateId = item;
+      models.push(model);
+    });
+
+    return await this.blocksRepository.getMany(models);
   }
 }

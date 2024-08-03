@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import commander from 'commander';
-import { checkInstallPath, generate, GeneraeOptions } from '@easylayer/generator';
+import { Command } from 'commander';
+import { checkInstallPath, generate, GeneraeOptions } from '@easylayer/cli/generator';
 import { promptUser } from './utils/prompt-user';
 import { parsePlugins, validatePlugins } from './utils/plugins';
 import { dependencies } from './utils/dependencies';
@@ -48,7 +48,7 @@ const generateApp = (projectName: string, options: GeneraeOptions) => {
   });
 };
 
-const command = new commander.Command(packageJson.name);
+const command = new Command(packageJson.name);
 
 command
   .version(packageJson.version)

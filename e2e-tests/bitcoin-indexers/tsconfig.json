@@ -1,13 +1,9 @@
 {
-  "extends": "@easylayer/utils/tsconfigs/app.config.json",
-
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "outDir": "dist"
   },
-
-  "references": [],
   "include": ["src"],
   "exclude": ["node_modules"]
 }

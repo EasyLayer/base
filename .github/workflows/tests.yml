@@ -34,5 +34,5 @@ jobs:
         uses: ./.github/actions/run-build
       - name: Monorepo lint
         uses: ./.github/actions/run-lints
-      - name: Monorepo tests
+      - name: Monorepo unit tests
         uses: ./.github/actions/run-unit-tests

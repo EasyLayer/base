@@ -1,36 +1,37 @@
-import { EventsHandler, IEventHandler } from '@easylayer/cqrs';
-import { AppLogger } from '@easylayer/logger';
-import { BitcoinTransactionsBatchWithIndexCreatedEvent } from '@easylayer/domain-cqrs-components/bitcoin';
-import { BlocksReadService, TransactionsReadService } from '../services';
+import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
+import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
+import { Transactional } from '@easylayer/core/read-database';
+import { BitcoinIndexerTransactionsBatchIndexedEvent } from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
+import { TransactionsReadService } from '../services';
 
-@EventsHandler(BitcoinTransactionsBatchWithIndexCreatedEvent)
-export class TransactionsBatchWithIndexCreatedEventHandler
-  implements IEventHandler<BitcoinTransactionsBatchWithIndexCreatedEvent>
+@EventsHandler(BitcoinIndexerTransactionsBatchIndexedEvent)
+export class BitcoinIndexerTransactionsBatchIndexedEventHandler
+  implements IEventHandler<BitcoinIndexerTransactionsBatchIndexedEvent>
 {
   constructor(
     private readonly log: AppLogger,
-    private readonly blocksService: BlocksReadService,
     private readonly transactionsService: TransactionsReadService
   ) {}
 
-  // IMPORTANT: at this stage if this method would throw an error
-  // - we won't catch it! (the app should restart after that)
-  async handle({ payload }: BitcoinTransactionsBatchWithIndexCreatedEvent) {
+  @Transactional({ connectionName: 'indexer-read' })
+  @RuntimeTracker({ label: 'read update', showMemory: true })
+  async handle({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) {
     try {
-      this.log.debug('2handle()', payload, this.constructor.name);
+      this.log.debug('handle()', payload, this.constructor.name);
 
-      const { blockHash, status, batch } = payload;
+      const { blockHash, batch } = payload;
 
-      // Check if block exists
-      const block = await this.blocksService.findOne({
-        where: { hash: blockHash },
-        // relations: ['transactions']
+      const processTransactions: any[] = [];
+
+      batch.tx.forEach((item: any) => {
+        processTransactions.push({
+          txid: item.txid,
+          vin: item.vin,
+          vout: item.vout,
+        });
       });
-      if (!block) {
-        throw new Error('Block is not found');
-      }
 
-      return await this.transactionsService.createMany({ block, batch, status });
+      return await this.transactionsService.createMany({ blockHash, transactions: processTransactions });
     } catch (error) {
       this.log.error('handle()', error, this.constructor.name);
       throw error;

@@ -1,11 +1,27 @@
 {
-  "extends": "@easylayer/utils/tsconfigs/base.config.json",
+  "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "composite": true
+    "outDir": "dist",
+    "sourceMap": true,
+    "declarationMap": true
   },
+  "references": [
+    {"path": "../../core/cqrs/tsconfig.json"},
+    {"path": "../../core/bitcoin-blocks-queue/tsconfig.json"},
+    {"path": "../../core/eventstore/tsconfig.json"},
+    {"path": "../../core/cqrs-transport/tsconfig.json"},
+    {"path": "../../core/network-transport/tsconfig.json"},
+    {"path": "../../core/read-database/tsconfig.json"},
+    {"path": "../../components/logger/tsconfig.json"},
+    {"path": "../../components/domain-cqrs-components/tsconfig.json"},
+    {"path": "../../components/arithmetic/tsconfig.json"}
+  ],
   "include": ["src"],
-  "exclude": ["node_modules"],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "**/*.test.ts",
+    "**/__tests__",
+  ],
 }

@@ -1,0 +1,62 @@
+{
+    "name": "@easylayer/core",
+    "version": "0.0.2-experimental.1",
+    "description": "",
+    "exports": {
+        "./cqrs": {
+            "default": "./dist/cqrs/index.js",
+            "types": "./dist/cqrs/index.d.ts"
+        },
+        "./cqrs-transport": {
+            "default": "./dist/cqrs-transport/index.js",
+            "types": "./dist/cqrs-transport/index.d.ts"
+        },
+        "./network-transport": {
+            "default": "./dist/network-transport/index.js",
+            "types": "./dist/network-transport/index.d.ts"
+        },
+        "./eventstore": {
+            "default": "./dist/eventstore/index.js",
+            "types": "./dist/eventstore/index.d.ts"
+        },
+        "./read-database": {
+            "default": "./dist/read-database/index.js",
+            "types": "./dist/read-database/index.d.ts"
+        },
+        "./bitcoin-blocks-queue": {
+            "default": "./dist/bitcoin-blocks-queue/index.js",
+            "types": "./dist/bitcoin-blocks-queue/index.d.ts"
+        },
+        "./bitcoin-network-provider": {
+            "default": "./dist/bitcoin-network-provider/index.js",
+            "types": "./dist/bitcoin-network-provider/index.d.ts"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "clear": "yarn run clear:dist && yarn run clear:node_modules",
+        "clear:node_modules": "rimraf node_modules",
+        "clear:dist": "rimraf dist",
+        "prepublishOnly": "yarn clear:dist && yarn build:prod",
+        "build:dev": "tsc -b tsconfig.json",
+        "build:prod": "tsc -b tsconfig.build.json"
+    },
+    "author": "Yaroslav Pavliuk",
+    "license": "",
+    "packageManager": "yarn@3.6.0",
+    "dependencies": {
+        "@easylayer/components": "0.0.2-experimental.1"
+    },
+    "devDependencies": {
+        "@types/node": "20.10.4",
+        "rimraf": "5.0.5",
+        "ts-node": "10.9.2",
+        "typescript": "5.3.3"
+    },
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    }
+}

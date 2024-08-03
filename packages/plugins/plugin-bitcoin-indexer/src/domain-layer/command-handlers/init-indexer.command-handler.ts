@@ -1,12 +1,9 @@
-// import { v4 as uuidv4 } from 'uuid';
-import { CommandHandler, ICommandHandler } from '@easylayer/cqrs';
-import { Transactional } from '@easylayer/eventstore/transactional-hooks';
-import { EventStoreRepository } from '@easylayer/eventstore';
-import { InitIndexerCommand } from '@easylayer/domain-cqrs-components/bitcoin';
-import { AppLogger } from '@easylayer/logger';
+import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
+import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
+import { InitIndexerCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
+import { AppLogger } from '@easylayer/components/logger';
 import { Indexer } from '../models/indexer.model';
-import { Block } from '../models/block.model';
-// import { TransactionsBatch } from '../models/transactions-batch.model';
+import { AppConfig } from '../../config';
 import {
   IndexerModelFactoryService,
   BlockModelFactoryService,
@@ -17,10 +14,11 @@ import {
 export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCommand> {
   constructor(
     private readonly log: AppLogger,
+    private readonly appConfig: AppConfig,
     private readonly eventStore: EventStoreRepository,
     private readonly indexerModelFactory: IndexerModelFactoryService,
     private readonly blocksModelFactory: BlockModelFactoryService,
-    private readonly batchesModelFactory: TransactionsBatchModelFactoryService
+    private readonly batchModelFactory: TransactionsBatchModelFactoryService
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
@@ -28,24 +26,38 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { requestId } = payload;
+      const { requestId, startHeight } = payload;
 
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
-      await indexerModel.init({ requestId });
+      await indexerModel.init({
+        requestId,
+        startHeight,
+      });
 
-      if (indexerModel.status === 'indexing' || indexerModel.status === 'awaiting') {
-        // Publish last block event and last transactions batch (if its exist)
-        const lastBlockAggregateId = String(indexerModel.chain.lastBlockHash);
-        if (lastBlockAggregateId) {
+      // Publish last indexer event to process reorganisation
+      await this.indexerModelFactory.publishLastEvent();
+
+      if (indexerModel.status === 'awaiting') {
+        // Get last blocks from IndexerModel
+        const blocks = indexerModel.chain.getLastNBlocks(
+          this.appConfig.BITCOIN_INDEXER_START_INIT_REPUBLISH_BLOCKS_COUNT
+        );
+
+        this.log.debug(
+          'Index Aggregate last blocks init staring...',
+          { blocksLength: blocks.length },
+          this.constructor.name
+        );
+
+        for (const block of blocks) {
+          const { hash, batches } = block;
+
           // Publish last block event
-          await this.blocksModelFactory.publishLastEvent(lastBlockAggregateId);
-          const blockModel: Block = await this.blocksModelFactory.initExistingModel(lastBlockAggregateId);
-          if (blockModel) {
-            const lastBatchAggregateId = String(blockModel.lastBatch?.aggregateId);
-            if (lastBatchAggregateId) {
-              // Publish last batch event
-              await this.batchesModelFactory.publishLastEvent(lastBatchAggregateId);
-            }
+          await this.blocksModelFactory.publishLastEvent(hash);
+
+          for (const batchId of batches) {
+            // Publish last batch event
+            await this.batchModelFactory.publishLastEvent(batchId);
           }
         }
       }
