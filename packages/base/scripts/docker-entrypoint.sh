@@ -28,8 +28,8 @@ if [ ! -f "/package.json" ]; then
 fi
 
 # Install base package
-echo "Installing Base package: @easylayer/base"
-yarn add "@easylayer/base"
+echo "Installing Base package: @easylayer/base@$PUBLISH_VERSION"
+yarn add "@easylayer/base@$PUBLISH_VERSION"
 
 # Install additional npm packages if any
 if [ ! -z "$PLUGIN_NAMES" ]; then
@@ -37,8 +37,8 @@ if [ ! -z "$PLUGIN_NAMES" ]; then
     if yarn list --pattern "@easylayer/$plugin" | grep -q "@easylayer/$plugin"; then
       echo "Plugin @easylayer/$plugin is already installed. Skipping..."
     else
-      echo "Installing plugin: @easylayer/$plugin"
-      yarn add "@easylayer/$plugin"
+      echo "Installing plugin: @easylayer/$plugin@$PUBLISH_VERSION"
+      yarn add "@easylayer/$plugin@$PUBLISH_VERSION"
     fi
   done
 fi
