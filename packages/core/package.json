@@ -1,6 +1,6 @@
 {
     "name": "@easylayer/core",
-    "version": "0.0.2-experimental.2",
+    "version": "0.0.2-experimental.3",
     "description": "",
     "exports": {
         "./cqrs": {
@@ -47,7 +47,7 @@
     "license": "",
     "packageManager": "yarn@3.6.0",
     "dependencies": {
-        "@easylayer/components": "0.0.2-experimental.2"
+        "@easylayer/components": "0.0.2-experimental.3"
     },
     "devDependencies": {
         "@types/node": "20.10.4",
