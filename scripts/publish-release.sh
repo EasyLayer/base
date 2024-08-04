@@ -15,7 +15,7 @@ echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
 
 # Build Docker image
 echo "Building Docker image"
-docker build -t easylayer/base:$version -t easylayer/base:latest ./packages/base/
+docker build --build-arg PUBLISH_VERSION=$version -t easylayer/base:$version -t easylayer/base:latest ./packages/base/
 
 # Publish packages with default "latest" tag
 echo "Publishing packages with tag: latest"

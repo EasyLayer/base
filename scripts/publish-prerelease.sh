@@ -34,7 +34,7 @@ echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
 
 # Build Docker image
 echo "Building Docker image"
-docker build -t easylayer/base:$publishVersion ./packages/base/
+docker build --build-arg PUBLISH_VERSION=$publishVersion -t easylayer/base:$publishVersion ./packages/base/
 
 # Publish packages with the suffix as a tag
 echo "Publishing packages with tag: $suffix"

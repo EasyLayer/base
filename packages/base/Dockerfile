@@ -28,6 +28,10 @@ COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 # Make the script executable
 RUN chmod +x /docker-entrypoint.sh
 
+# Set an environment variable to store the version
+ARG PUBLISH_VERSION
+ENV PUBLISH_VERSION=$PUBLISH_VERSION
+
 # Expose the application port
 EXPOSE 3000
 
