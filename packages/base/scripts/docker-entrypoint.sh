@@ -3,6 +3,11 @@
 # This variable sets the path to the .env file, which is located at the root of the container.
 ENV_FILE_PATH="/.env"
 
+# Get UID and GID from environment variables set by Docker
+# If not passed, use root (UID=0, GID=0)
+USER_ID=${UID:-0}
+GROUP_ID=${GID:-0}
+
 # Check if the .env file exists.
 # If not, create the file. 
 # This ensures that the application has an environment file to read from.
@@ -19,6 +24,13 @@ fi
 if [ ! -d "/data" ]; then
   echo "Creating data directory"
   mkdir -p /data
+fi
+
+# Change the owner of the folder and file to the specified UID and GID if they are not root
+if [ "$USER_ID" -ne 0 ] && [ "$GROUP_ID" -ne 0 ]; then
+  chown -R ${USER_ID}:${GROUP_ID} /.env /data
+else
+  echo "Using root as the default user."
 fi
 
 # Initialize a new Node.js project if package.json does not exist
