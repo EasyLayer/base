@@ -2,6 +2,7 @@
 
 # This variable sets the path to the .env file, which is located at the root of the container.
 ENV_FILE_PATH="/.env"
+EXAMPLE_ENV_FILE_PATH="/.env.example"
 
 # Get UID and GID from environment variables set by Docker
 # If not passed, use root (UID=0, GID=0)
@@ -12,8 +13,8 @@ GROUP_ID=${GID:-0}
 # If not, create the file. 
 # This ensures that the application has an environment file to read from.
 if [ ! -f "$ENV_FILE_PATH" ]; then
-  echo "Creating .env file"
-  touch "$ENV_FILE_PATH"
+  echo "Creating .env file from .env.example"
+  cp "$EXAMPLE_ENV_FILE_PATH" "$ENV_FILE_PATH"
 fi
 
 # Ensure the data directory exists, 

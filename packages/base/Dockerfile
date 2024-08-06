@@ -3,7 +3,7 @@
 #
 
 # Use the official Node.js 18 image from Docker Hub
-FROM node:18-alpine as production
+FROM node:18-alpine AS production
 
 # Install common dependencies
 RUN set -x && \
@@ -17,10 +17,7 @@ RUN set -x && \
 # Set the working directory to the root directory
 WORKDIR /
 
-# Create the data directory for database storage
-RUN mkdir -p /data
-
-COPY .env.example /.env
+COPY .env.example /.env.example
 
 # Copy the entry point script to the container
 COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh

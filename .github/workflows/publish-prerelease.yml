@@ -35,7 +35,7 @@ jobs:
           allowedHosts: 'https://registry.npmjs.org'
           allowedURLs: ''
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
       - name: Publish Prerelease Packages
         run: bash ./scripts/publish-prerelease.sh
         env:
