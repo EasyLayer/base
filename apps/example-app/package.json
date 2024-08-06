@@ -1,7 +1,7 @@
 {
   "name": "example-app",
   "private": true,
-  "version": "0.0.2-experimental.8",
+  "version": "0.0.2-experimental.9",
   "description": "This is an example app for development",
   "scripts": {
     "clear": "yarn clear cache && yarn clear:dist && clear:node_modules",
@@ -13,9 +13,9 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
-    "@easylayer/base": "0.0.2-experimental.8",
-    "@easylayer/plugin-bitcoin-balances-indexer": "0.0.2-experimental.8",
-    "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.8"
+    "@easylayer/base": "0.0.2-experimental.9",
+    "@easylayer/plugin-bitcoin-balances-indexer": "0.0.2-experimental.9",
+    "@easylayer/plugin-bitcoin-indexer": "0.0.2-experimental.9"
   },
   "devDependencies": {
     "@types/node": "20.10.4",
