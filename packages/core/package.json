@@ -1,6 +1,6 @@
 {
   "name": "@easylayer/core",
-  "version": "0.0.2-experimental.6",
+  "version": "0.0.2-experimental.7",
   "description": "",
   "exports": {
     "./cqrs": {
@@ -53,7 +53,7 @@
   "license": "",
   "packageManager": "yarn@3.6.0",
   "dependencies": {
-    "@easylayer/components": "0.0.2-experimental.6",
+    "@easylayer/components": "0.0.2-experimental.7",
     "@nestjs/common": "10.2.10",
     "@nestjs/core": "10.2.10",
     "@nestjs/cqrs": "10.2.6",
