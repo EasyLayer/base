@@ -8,10 +8,11 @@ FROM node:18-alpine AS production
 # Install common dependencies
 RUN set -x && \
     apk --no-cache add \
+    build-base \    
     libc6-compat \
-    make \
-    g++ \
     python3 \
+    py3-pip \
+    py3-setuptools \
     sqlite
     
 # Set the working directory to the root directory
