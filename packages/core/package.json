@@ -56,6 +56,7 @@
     "@easylayer/components": "0.0.2-experimental.6",
     "@nestjs/common": "10.2.10",
     "@nestjs/core": "10.2.10",
+    "@nestjs/cqrs": "10.2.6",
     "@nestjs/swagger": "7.1.17",
     "@nestjs/typeorm": "10.0.2",
     "axios": "1.6.7",
