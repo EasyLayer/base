@@ -1,62 +1,94 @@
 {
-    "name": "@easylayer/core",
-    "version": "0.0.2-experimental.1",
-    "description": "",
-    "exports": {
-        "./cqrs": {
-            "default": "./dist/cqrs/index.js",
-            "types": "./dist/cqrs/index.d.ts"
-        },
-        "./cqrs-transport": {
-            "default": "./dist/cqrs-transport/index.js",
-            "types": "./dist/cqrs-transport/index.d.ts"
-        },
-        "./network-transport": {
-            "default": "./dist/network-transport/index.js",
-            "types": "./dist/network-transport/index.d.ts"
-        },
-        "./eventstore": {
-            "default": "./dist/eventstore/index.js",
-            "types": "./dist/eventstore/index.d.ts"
-        },
-        "./read-database": {
-            "default": "./dist/read-database/index.js",
-            "types": "./dist/read-database/index.d.ts"
-        },
-        "./bitcoin-blocks-queue": {
-            "default": "./dist/bitcoin-blocks-queue/index.js",
-            "types": "./dist/bitcoin-blocks-queue/index.d.ts"
-        },
-        "./bitcoin-network-provider": {
-            "default": "./dist/bitcoin-network-provider/index.js",
-            "types": "./dist/bitcoin-network-provider/index.d.ts"
-        }
+  "name": "@easylayer/core",
+  "version": "0.0.2-experimental.1",
+  "description": "",
+  "exports": {
+    "./cqrs": {
+      "default": "./cqrs/dist/index.js",
+      "types": "./cqrs/dist/index.d.ts"
     },
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "clear": "yarn run clear:dist && yarn run clear:node_modules",
-        "clear:node_modules": "rimraf node_modules",
-        "clear:dist": "rimraf dist",
-        "prepublishOnly": "yarn clear:dist && yarn build:prod",
-        "build:dev": "tsc -b tsconfig.json",
-        "build:prod": "tsc -b tsconfig.build.json"
+    "./cqrs-transport": {
+      "default": "./cqrs-transport/dist/index.js",
+      "types": "./cqrs-transport/dist/index.d.ts"
     },
-    "author": "Yaroslav Pavliuk",
-    "license": "",
-    "packageManager": "yarn@3.6.0",
-    "dependencies": {
-        "@easylayer/components": "0.0.2-experimental.1"
+    "./network-transport": {
+      "default": "./network-transport/dist/index.js",
+      "types": "./network-transport/dist/index.d.ts"
     },
-    "devDependencies": {
-        "@types/node": "20.10.4",
-        "rimraf": "5.0.5",
-        "ts-node": "10.9.2",
-        "typescript": "5.3.3"
+    "./eventstore": {
+      "default": "./eventstore/dist/index.js",
+      "types": "./eventstore/dist/index.d.ts"
     },
-    "publishConfig": {
-        "access": "public",
-        "registry": "https://registry.npmjs.org/"
+    "./read-database": {
+      "default": "./read-database/dist/index.js",
+      "types": "./read-database/dist/index.d.ts"
+    },
+    "./bitcoin-blocks-queue": {
+      "default": "./bitcoin-blocks-queue/dist/index.js",
+      "types": "./bitcoin-blocks-queue/dist/index.d.ts"
+    },
+    "./bitcoin-network-provider": {
+      "default": "./bitcoin-network-provider/dist/index.js",
+      "types": "./bitcoin-network-provider/dist/index.d.ts"
     }
+  },
+  "files": [
+    "bitcoin-blocks-queue/dist",
+    "bitcoin-network-provider/dist",
+    "cqrs/dist",
+    "cqrs-network-provider/dist",
+    "eventstore/dist",
+    "network-transport/dist",
+    "read-database/dist"
+  ],
+  "scripts": {
+    "clear": "yarn run clear:dist && yarn run clear:node_modules",
+    "clear:node_modules": "rimraf node_modules",
+    "clear:dist": "rimraf dist",
+    "prepublishOnly": "yarn clear:dist && yarn build:prod",
+    "build:dev": "tsc -b tsconfig.json",
+    "build:prod": "tsc -b tsconfig.build.json"
+  },
+  "author": "Yaroslav Pavliuk",
+  "license": "",
+  "packageManager": "yarn@3.6.0",
+  "dependencies": {
+    "@easylayer/components": "0.0.2-experimental.1",
+    "@nestjs/common": "10.2.10",
+    "@nestjs/core": "10.2.10",
+    "@nestjs/swagger": "7.1.17",
+    "@nestjs/typeorm": "10.0.2",
+    "axios": "1.6.7",
+    "axios-rate-limit": "1.3.0",
+    "bip32": "4.0.0",
+    "bip39": "3.1.0",
+    "bitcoin-core": "4.1.0",
+    "bitcoinjs-lib": "6.1.6",
+    "class-transformer": "0.5.1",
+    "class-transformer-validator": "0.9.1",
+    "class-validator": "0.14.0",
+    "ecpair": "2.1.0",
+    "object-sizeof": "2.6.4",
+    "p-queue": "6.6.2",
+    "pg-error-enum": "0.7.1",
+    "piscina": "4.1.0",
+    "reflect-metadata": "0.1.14",
+    "rxjs": "7.8.1",
+    "sqlite3": "5.1.7",
+    "stream-json": "1.8.0",
+    "tiny-secp256k1": "2.2.3",
+    "typeorm": "0.3.20",
+    "typeorm-transactional": "0.5.0",
+    "uuid": "9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.4",
+    "rimraf": "5.0.5",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

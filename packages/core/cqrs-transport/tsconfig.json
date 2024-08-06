@@ -2,12 +2,12 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "../dist/cqrs-transport",
+    "outDir": "dist",
     "sourceMap": true,
     "declarationMap": true,
     "incremental": true,
     "composite": true,
-    "tsBuildInfoFile": "../dist/cqrs-transport/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "plugins": [
       {
         "transform": "typescript-transform-paths"

@@ -2,13 +2,13 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "../dist/bitcoin-network-provider",
+    "outDir": "dist",
     "sourceMap": true,
     "declarationMap": true,
     "allowJs": true,
     "incremental": true,
     "composite": true,
-    "tsBuildInfoFile": "../dist/bitcoin-network-provider/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "typeRoots": [
       "@types",
       "../../../node_modules/@types"

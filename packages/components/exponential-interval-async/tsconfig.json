@@ -2,12 +2,12 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "../dist/exponential-interval-async",
+    "outDir": "dist",
     "sourceMap": true,
     "declarationMap": true,
     "composite": true,
     "incremental": true,
-    "tsBuildInfoFile": "../dist/exponential-interval-async/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
   "exclude": [

@@ -2,13 +2,13 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {    
     "rootDir": "src",
-    "outDir": "../dist/bitcoin-blocks-queue",
+    "outDir": "dist",
     "sourceMap": true,
     "declarationMap": true,
     "allowJs": true,
     "incremental": true,
     "composite": true,
-    "tsBuildInfoFile": "../dist/bitcoin-blocks-queue/tsconfig.tsbuildinfo",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "plugins": [
       {
         "transform": "typescript-transform-paths"
