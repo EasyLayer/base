@@ -36,7 +36,7 @@
     "bitcoin-blocks-queue/dist",
     "bitcoin-network-provider/dist",
     "cqrs/dist",
-    "cqrs-network-provider/dist",
+    "cqrs-transport/dist",
     "eventstore/dist",
     "network-transport/dist",
     "read-database/dist"
