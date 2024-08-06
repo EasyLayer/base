@@ -16,10 +16,10 @@ echo "${dockerToken}" | docker login -u "${dockerUsername}" --password-stdin
 # Build Docker image using Docker Buildx for multi-platform support
 echo "Building multi-platform Docker image"
 docker buildx build \
-  --platform linux/amd64 \  # Specify platforms
-  --build-arg PUBLISH_VERSION=$version \  # Pass build arguments
-  -t easylayer/base:$version -t easylayer/base:latest ./packages/base/ \  # Set image tag
-  --load # # Upload the image to the local Docker client
+  --platform linux/amd64 \
+  --build-arg PUBLISH_VERSION=$version \
+  -t easylayer/base:$version -t easylayer/base:latest ./packages/base/ \
+  --load
 
 # Publish packages with default "latest" tag
 echo "Publishing packages with tag: latest"
