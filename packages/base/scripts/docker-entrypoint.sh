@@ -61,9 +61,9 @@ echo "Running bootstrap method..."
 node -e "
   (async () => {
       const packageName = '@easylayer/base';
-      const package = require(packageName);
-      if (typeof package.bootstrap === 'function') {
-        await package.bootstrap();
+      const pkg = require(packageName);
+      if (typeof pkg.bootstrap === 'function') {
+        await pkg.bootstrap({appName:'easylayer'});
       } else {
         console.error('Bootstrap method not found in package', packageName);
         process.exit(1); // Terminate with an error
