@@ -2,12 +2,12 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "../dist/arithmetic",
+    "outDir": "dist",
     "sourceMap": true,
     "declarationMap": true,
     "composite": true,
     "incremental": true,
-    "tsBuildInfoFile": "../dist/arithmetic/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
   "exclude": [

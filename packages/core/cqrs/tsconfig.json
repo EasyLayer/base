@@ -2,12 +2,12 @@
     "extends": "../../../tsconfig.json",
     "compilerOptions": {
     "rootDir": "src",
-    "outDir": "../dist/cqrs",
+    "outDir": "dist",
     "sourceMap": true,
     "declarationMap": true,
     "incremental": true,
     "composite": true,
-    "tsBuildInfoFile": "../dist/cqrs/tsconfig.tsbuildinfo"
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
   },
   "include": ["src"],
   "exclude": [
