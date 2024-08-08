@@ -15,15 +15,23 @@ sanitize_input() {
   fi
 }
 
-# Function to append command-line parameters to the .env file
-append_cmdline_vars() {
-  echo "Appending command-line parameters to .env file"
+# Function to append or update command-line parameters in the .env file
+append_or_update_cmdline_vars() {
+  echo "Appending or updating command-line parameters in .env file"
   for var in "$@"; do
     if echo "$var" | grep -q '='; then
       sanitized_var=$(sanitize_input "$var")
       if [ -n "$sanitized_var" ]; then
-        echo "" >> "$ENV_FILE_PATH" # Add a new line after each env variable
-        echo "$sanitized_var" >> "$ENV_FILE_PATH"
+        key="${sanitized_var%%=*}"
+        value="${sanitized_var#*=}"
+        if grep -q "^$key=" "$ENV_FILE_PATH"; then
+          # Key exists, update it
+          sed -i "s/^$key=.*/$sanitized_var/" "$ENV_FILE_PATH"
+        else
+          # Key does not exist, append it
+          echo "" >> "$ENV_FILE_PATH"
+          echo "$sanitized_var" >> "$ENV_FILE_PATH"
+        fi
       fi
     fi
   done
