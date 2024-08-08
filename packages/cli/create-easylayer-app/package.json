@@ -1,6 +1,6 @@
 {
   "name": "create-easylayer-app",
-  "version": "0.0.2-experimental.16",
+  "version": "0.0.2-experimental.17",
   "description": "",
   "main": "",
   "bin": "./bin/index.js",

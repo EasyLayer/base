@@ -663,12 +663,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/base@0.0.2-experimental.16, @easylayer/base@workspace:packages/base":
+"@easylayer/base@0.0.2-experimental.17, @easylayer/base@workspace:packages/base":
   version: 0.0.0-use.local
   resolution: "@easylayer/base@workspace:packages/base"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
-    "@easylayer/core": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
+    "@easylayer/core": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/platform-express": 10.2.10
@@ -698,7 +698,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@easylayer/bitcoin-blocks-queue@workspace:packages/core/bitcoin-blocks-queue"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/swagger": 7.1.17
@@ -726,7 +726,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@easylayer/bitcoin-network-provider@workspace:packages/core/bitcoin-network-provider"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/swagger": 7.1.17
@@ -761,7 +761,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/components@0.0.2-experimental.16, @easylayer/components@workspace:packages/components":
+"@easylayer/components@0.0.2-experimental.17, @easylayer/components@workspace:packages/components":
   version: 0.0.0-use.local
   resolution: "@easylayer/components@workspace:packages/components"
   dependencies:
@@ -780,11 +780,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/core@0.0.2-experimental.16, @easylayer/core@workspace:packages/core":
+"@easylayer/core@0.0.2-experimental.17, @easylayer/core@workspace:packages/core":
   version: 0.0.0-use.local
   resolution: "@easylayer/core@workspace:packages/core"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/cqrs": 10.2.6
@@ -954,7 +954,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@easylayer/network-transport@workspace:packages/core/network-transport"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/testing": 10.2.10
@@ -973,12 +973,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/plugin-bitcoin-balances-indexer@0.0.2-experimental.16, @easylayer/plugin-bitcoin-balances-indexer@workspace:packages/plugins/plugin-bitcoin-balances-indexer":
+"@easylayer/plugin-bitcoin-balances-indexer@0.0.2-experimental.17, @easylayer/plugin-bitcoin-balances-indexer@workspace:packages/plugins/plugin-bitcoin-balances-indexer":
   version: 0.0.0-use.local
   resolution: "@easylayer/plugin-bitcoin-balances-indexer@workspace:packages/plugins/plugin-bitcoin-balances-indexer"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
-    "@easylayer/core": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
+    "@easylayer/core": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/swagger": 7.1.17
@@ -999,12 +999,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@easylayer/plugin-bitcoin-indexer@0.0.2-experimental.16, @easylayer/plugin-bitcoin-indexer@workspace:packages/plugins/plugin-bitcoin-indexer":
+"@easylayer/plugin-bitcoin-indexer@0.0.2-experimental.17, @easylayer/plugin-bitcoin-indexer@workspace:packages/plugins/plugin-bitcoin-indexer":
   version: 0.0.0-use.local
   resolution: "@easylayer/plugin-bitcoin-indexer@workspace:packages/plugins/plugin-bitcoin-indexer"
   dependencies:
-    "@easylayer/components": 0.0.2-experimental.16
-    "@easylayer/core": 0.0.2-experimental.16
+    "@easylayer/components": 0.0.2-experimental.17
+    "@easylayer/core": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/swagger": 7.1.17
@@ -5059,11 +5059,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "e2e-bitcoin-indexers@workspace:e2e-tests/bitcoin-indexers"
   dependencies:
-    "@easylayer/base": 0.0.2-experimental.16
-    "@easylayer/components": 0.0.2-experimental.16
-    "@easylayer/core": 0.0.2-experimental.16
-    "@easylayer/plugin-bitcoin-balances-indexer": 0.0.2-experimental.16
-    "@easylayer/plugin-bitcoin-indexer": 0.0.2-experimental.16
+    "@easylayer/base": 0.0.2-experimental.17
+    "@easylayer/components": 0.0.2-experimental.17
+    "@easylayer/core": 0.0.2-experimental.17
+    "@easylayer/plugin-bitcoin-balances-indexer": 0.0.2-experimental.17
+    "@easylayer/plugin-bitcoin-indexer": 0.0.2-experimental.17
     "@nestjs/common": 10.2.10
     "@nestjs/core": 10.2.10
     "@nestjs/testing": 10.2.10
@@ -5463,9 +5463,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "example-app@workspace:apps/example-app"
   dependencies:
-    "@easylayer/base": 0.0.2-experimental.16
-    "@easylayer/plugin-bitcoin-balances-indexer": 0.0.2-experimental.16
-    "@easylayer/plugin-bitcoin-indexer": 0.0.2-experimental.16
+    "@easylayer/base": 0.0.2-experimental.17
+    "@easylayer/plugin-bitcoin-balances-indexer": 0.0.2-experimental.17
+    "@easylayer/plugin-bitcoin-indexer": 0.0.2-experimental.17
     "@types/node": 20.10.4
     rimraf: 5.0.5
     ts-node: 10.9.2
