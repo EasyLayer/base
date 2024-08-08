@@ -24,7 +24,7 @@ export class EventStoreModule {
     initializeTransactionalContext();
 
     // TODO: remove from here
-    const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'data', `${name}.db`) : name;
+    const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'easylayer/data', `${name}.db`) : name;
 
     // // Dynamically add index to EventDataModel if useAggregateIdIndex is true
     // const dynamicEntities: EntityTarget<any>[] = [EventDataModel];

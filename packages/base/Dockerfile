@@ -8,7 +8,7 @@ FROM node:18-alpine AS production
 # Install common dependencies
 RUN set -x && \
     apk --no-cache add \
-    build-base \    
+    build-base \
     libc6-compat \
     python3 \
     py3-pip \

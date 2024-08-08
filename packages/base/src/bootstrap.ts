@@ -27,7 +27,7 @@ export const bootstrap = async ({
 
   // IMPORTANT: we use dotenv here to load envs globaly.
   // It have to be before import all plugins.
-  config({ path: resolve(process.cwd(), '.env') });
+  config({ path: resolve(process.cwd(), `easylayer/.env`) });
 
   const externalPlugins = [];
   // TODO: move to external method
