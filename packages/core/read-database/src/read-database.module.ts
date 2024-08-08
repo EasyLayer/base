@@ -21,7 +21,7 @@ export class ReadDatabaseModule {
     initializeTransactionalContext();
 
     // TODO: remove from here
-    const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'data', `${name}.db`) : name;
+    const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'easylayer/data', `${name}.db`) : name;
 
     return {
       module: ReadDatabaseModule,

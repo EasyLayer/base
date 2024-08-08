@@ -22,6 +22,7 @@ append_cmdline_vars() {
     if echo "$var" | grep -q '='; then
       sanitized_var=$(sanitize_input "$var")
       if [ -n "$sanitized_var" ]; then
+        echo "" >> "$ENV_FILE_PATH" # Add a new line after each env variable
         echo "$sanitized_var" >> "$ENV_FILE_PATH"
       fi
     fi
@@ -29,8 +30,11 @@ append_cmdline_vars() {
 }
 
 # This variable sets the path to the .env file, which is located at the root of the container.
-ENV_FILE_PATH="/.env"
+ENV_FILE_PATH="/easylayer/.env"
 EXAMPLE_ENV_FILE_PATH="/.env.example"
+DATA_FOLDER_PATH="/easylayer/data"
+
+mkdir -p "/easylayer"
 
 # Get UID and GID from environment variables set by Docker
 # If not passed, use root (UID=0, GID=0)
@@ -43,6 +47,9 @@ GROUP_ID=${GID:-0}
 if [ ! -f "$ENV_FILE_PATH" ]; then
   echo "Creating .env file from .env.example"
   cp "$EXAMPLE_ENV_FILE_PATH" "$ENV_FILE_PATH"
+else
+  echo ".env file already exists. Appending .env.example contents to .env."
+  cat "$EXAMPLE_ENV_FILE_PATH" >> "$ENV_FILE_PATH"
 fi
 
 # Ensure the data directory exists, 
@@ -50,14 +57,14 @@ fi
 # such as a SQLite database. 
 # Creating this directory ensures data persistence 
 # if you bind the directory to a host volume.
-if [ ! -d "/data" ]; then
+if [ ! -d "$DATA_FOLDER_PATH" ]; then
   echo "Creating data directory"
-  mkdir -p /data
+  mkdir -p "$DATA_FOLDER_PATH"
 fi
 
 # Change the owner of the folder and file to the specified UID and GID if they are not root
 if [ "$USER_ID" -ne 0 ] && [ "$GROUP_ID" -ne 0 ]; then
-  chown -R ${USER_ID}:${GROUP_ID} /.env /data
+  chown -R ${USER_ID}:${GROUP_ID} /easylayer
 else
   echo "Using root as the default user."
 fi
@@ -91,13 +98,18 @@ fi
 echo "Running bootstrap method..."
 node -e "
   (async () => {
+    try {
       const packageName = '@easylayer/base';
       const pkg = require(packageName);
       if (typeof pkg.bootstrap === 'function') {
         await pkg.bootstrap({});
       } else {
         console.error('Bootstrap method not found in package', packageName);
-        process.exit(1); // Terminate with an error
+        process.exit(1);
       }
+    } catch(error) {
+      console.error('Bootstrap catch error', error);
+      process.exit(1);
+    }
   })();
 "
