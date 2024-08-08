@@ -44,15 +44,14 @@ export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> 
 
   public async healthcheck(): Promise<boolean> {
     try {
-      return true;
-      // const response = await this._httpClient.post('/', {
-      //   jsonrpc: '2.0',
-      //   method: 'getblockchaininfo',
-      //   params: [],
-      //   id: 1,
-      // });
+      const response = await this._httpClient.post('/', {
+        jsonrpc: '2.0',
+        method: 'getblockchaininfo',
+        params: [],
+        id: 1,
+      });
 
-      // return response.status === 200;
+      return response.status === 200 && response.data.result !== undefined;
     } catch (error) {
       return false;
     }
