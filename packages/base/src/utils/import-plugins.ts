@@ -15,8 +15,6 @@ export const importPlugins = async (basePath: string): Promise<DynamicModule[]> 
   const nodeModulesPath = resolveNodeModulesPath(basePath);
   const customPluginsPath = resolveCustomPluginsPath(basePath);
 
-  // Тепреь нужно найти конкретно те плагины что есть в package.json найти их в node_modules
-
   const easylayerPlugins = await findEasylayerPlugins(nodeModulesPath);
   const customPlugins = await findCustomPlugins(customPluginsPath);
 

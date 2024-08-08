@@ -1,5 +1,33 @@
 #!/bin/sh
 
+# Function to validate and sanitize input
+sanitize_input() {
+  local input="$1"
+  # Check that the key contains only allowed characters: letters, numbers, and '_', '.', '-'
+  if echo "$input" | grep -Eq '^[A-Za-z0-9_.-]+=.*$'; then
+    # Escaping potentially dangerous characters in the value (after '=')
+    local key="${input%%=*}"
+    local value="${input#*=}"
+    value=$(echo "$value" | sed 's/[\&;\|$`\\]//g') # removing potentially dangerous characters
+    echo "$key=$value"
+  else
+    echo "Skipping invalid input: $input"
+  fi
+}
+
+# Function to append command-line parameters to the .env file
+append_cmdline_vars() {
+  echo "Appending command-line parameters to .env file"
+  for var in "$@"; do
+    if echo "$var" | grep -q '='; then
+      sanitized_var=$(sanitize_input "$var")
+      if [ -n "$sanitized_var" ]; then
+        echo "$sanitized_var" >> "$ENV_FILE_PATH"
+      fi
+    fi
+  done
+}
+
 # This variable sets the path to the .env file, which is located at the root of the container.
 ENV_FILE_PATH="/.env"
 EXAMPLE_ENV_FILE_PATH="/.env.example"
@@ -34,6 +62,9 @@ else
   echo "Using root as the default user."
 fi
 
+# Append command-line parameters to the .env file
+append_cmdline_vars "$@"
+
 # Initialize a new Node.js project if package.json does not exist
 if [ ! -f "/package.json" ]; then
   echo "Initializing new Node.js project"
@@ -61,9 +92,9 @@ echo "Running bootstrap method..."
 node -e "
   (async () => {
       const packageName = '@easylayer/base';
-      const package = require(packageName);
-      if (typeof package.bootstrap === 'function') {
-        await package.bootstrap();
+      const pkg = require(packageName);
+      if (typeof pkg.bootstrap === 'function') {
+        await pkg.bootstrap();
       } else {
         console.error('Bootstrap method not found in package', packageName);
         process.exit(1); // Terminate with an error

@@ -9,4 +9,5 @@ bootstrap({
     // BitcoinBalancesIndexer,
     BitcoinIndexer,
   ],
+  isAutoImportDisable: true
 }); //.catch((error) => console.error(error));

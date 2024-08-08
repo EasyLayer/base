@@ -6,7 +6,7 @@ import { DynamicModule } from '@nestjs/common';
 import { NestLogger } from '@easylayer/components/logger';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
-import { setupSwaggerServer } from './utils';
+import { setupSwaggerServer, importPlugins } from './utils';
 
 export interface RegisterablePlugin {
   register: () => DynamicModule | Promise<DynamicModule>;
@@ -15,14 +15,15 @@ export interface RegisterablePlugin {
 export interface BootstrapOptions {
   appName?: string;
   plugins?: RegisterablePlugin[];
+  isAutoImportDisable?: boolean;
 }
 
-// initializeTransactionalContext();
-
-export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => {
+export const bootstrap = async ({
+  appName = 'easylayer',
+  plugins = [],
+  isAutoImportDisable = false,
+}: BootstrapOptions) => {
   const logger = new NestLogger();
-
-  // const basePath = resolve(process.cwd());
 
   // IMPORTANT: we use dotenv here to load envs globaly.
   // It have to be before import all plugins.
@@ -39,12 +40,18 @@ export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => 
       process.exit(1);
     }
   }
-  // const internalPlugins = await importPlugins(basePath);
+
+  let internalPlugins: DynamicModule[] = [];
+
+  if (!isAutoImportDisable) {
+    const basePath = resolve(process.cwd());
+    internalPlugins = await importPlugins(basePath);
+  }
 
   // Create a root app module that already includes dynamic modules
   const rootModule = CoreModule.forRoot({
     appName: appName || 'easylayer starter',
-    plugins: [...externalPlugins],
+    plugins: [...externalPlugins, ...internalPlugins],
   });
 
   // Create a Nest application
