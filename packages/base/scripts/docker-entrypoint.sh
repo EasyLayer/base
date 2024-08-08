@@ -94,7 +94,7 @@ node -e "
       const packageName = '@easylayer/base';
       const pkg = require(packageName);
       if (typeof pkg.bootstrap === 'function') {
-        await pkg.bootstrap();
+        await pkg.bootstrap({});
       } else {
         console.error('Bootstrap method not found in package', packageName);
         process.exit(1); // Terminate with an error
