@@ -3,10 +3,7 @@ import { BaseNodeProvider, BaseNodeProviderOptions } from './base-node-provider'
 import { NodeProviderTypes, Hash } from './interfaces';
 
 export interface SelfNodeProviderOptions extends BaseNodeProviderOptions {
-  host: string;
-  port: number;
-  username: string;
-  password: string;
+  url: string;
 }
 
 export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNodeProvider => {
@@ -16,38 +13,24 @@ export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNo
 export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> {
   readonly type: NodeProviderTypes = 'selfnode';
   private _httpClient: any;
-  host: string;
-  port: number;
-  username: string;
-  password: string;
+  url: string;
 
   constructor(options: SelfNodeProviderOptions) {
     super(options);
-    this.host = options.host;
-    this.port = options.port;
-    this.username = options.username;
-    this.password = options.password;
-    console.log(options);
+    this.url = options.url;
   }
 
   get connectionOptions() {
     return {
       type: this.type,
       uniqName: this.uniqName,
-      host: this.host,
-      port: this.port,
-      username: this.username,
-      password: this.password,
+      url: this.url,
     };
   }
 
   public async connect() {
     this._httpClient = axios.create({
-      baseURL: `http://${this.host}:${this.port}`,
-      auth: {
-        username: this.username,
-        password: this.password,
-      },
+      baseURL: this.url,
       headers: {
         'Content-Type': 'application/json',
       },

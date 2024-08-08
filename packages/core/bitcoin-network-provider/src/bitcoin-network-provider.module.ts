@@ -25,8 +25,8 @@ export class BitcoinNetworkProviderModule {
 
     // Create QuickNode providers
     const quickNodeProviders: ProviderOptions[] = [];
-    if (providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_BASE_URLS) {
-      for (const quickNodeProviderOption of providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_BASE_URLS) {
+    if (providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_URLS) {
+      for (const quickNodeProviderOption of providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_URLS) {
         quickNodeProviders.push({
           useFactory: () =>
             new QuickNodeProvider({
@@ -39,20 +39,12 @@ export class BitcoinNetworkProviderModule {
 
     // Create SelfNode providers
     const selfNodeProviders: ProviderOptions[] = [];
-    if (
-      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_HOST &&
-      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PASSWORD &&
-      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PORT &&
-      providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_USERNAME
-    ) {
+    if (providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_URL) {
       selfNodeProviders.push({
         useFactory: () =>
           new SelfNodeProvider({
             uniqName: uuidv4(),
-            host: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_HOST!,
-            port: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PORT!,
-            username: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_USERNAME!,
-            password: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_PASSWORD!,
+            url: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_URL!,
           }),
       });
     }
