@@ -32,6 +32,8 @@ append_or_update_cmdline_vars() {
         echo "Updating or adding variable: $key=$value"
         # Remove the existing line with the key if it exists
         sed -i '' "/^$key=/d" "$ENV_FILE_PATH"
+        # Append a new line
+        echo "" >> "$ENV_FILE_PATH"
         # Append the sanitized variable
         echo "$sanitized_var" >> "$ENV_FILE_PATH"
       fi
