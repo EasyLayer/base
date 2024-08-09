@@ -8,22 +8,30 @@ sanitize_input() {
     # Escaping potentially dangerous characters in the value (after '=')
     local key="${input%%=*}"
     local value="${input#*=}"
-    value=$(echo "$value" | sed 's/[\&;\|$`\\]//g') # removing potentially dangerous characters
+    # removing potentially dangerous characters
+    value=$(echo "$value" | sed 's/[&;|$`\\]//g')
+    # Return sanitized key-value pair
+    echo "$key=$value"
   else
     echo "Skipping invalid input: $input"
+    # Indicate failure
+    return 1
   fi
 }
 
 # Function to append or update command-line parameters in the .env file
 append_or_update_cmdline_vars() {
+  echo "Appending or updating command-line parameters in .env file"
   for var in "$@"; do
     if echo "$var" | grep -q '='; then
       sanitized_var=$(sanitize_input "$var")
-      if [ -n "$sanitized_var" ]; then
+      if [ $? -eq 0 ]; then
+        # Only proceed if sanitize_input was successful
         key="${sanitized_var%%=*}"
         value="${sanitized_var#*=}"
+        echo "Updating or adding variable: $key=$value"
         # Remove the existing line with the key if it exists
-        sed -i.bak "/^$key=/d" "$ENV_FILE_PATH" && rm "$ENV_FILE_PATH.bak"
+        sed -i '' "/^$key=/d" "$ENV_FILE_PATH"
         # Append the sanitized variable
         echo "$sanitized_var" >> "$ENV_FILE_PATH"
       fi
