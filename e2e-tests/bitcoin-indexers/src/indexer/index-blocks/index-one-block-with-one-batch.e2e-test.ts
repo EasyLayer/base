@@ -61,7 +61,7 @@ describe('/Index One Block With One Transactions Batch', () => {
     jest.useFakeTimers({ advanceTimers: true });
 
     // Clear the database
-    await cleanDataFolder();
+    await cleanDataFolder('easylayer/data');
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/index-blocks/.env') });
@@ -110,7 +110,7 @@ describe('/Index One Block With One Transactions Batch', () => {
 
   it('should save events of index aggregates correctly', async () => {
     // Connect to the write database (event store)
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/indexer-write.db') });
     await dbService.connect();
 
     // Get aggregates events
@@ -156,7 +156,7 @@ describe('/Index One Block With One Transactions Batch', () => {
 
   it('should save new block and transactions into read db', async () => {
     // Connect to the read database
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/indexer-read.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/indexer-read.db') });
     await dbService.connect();
 
     // Fetch blocks with their transactions

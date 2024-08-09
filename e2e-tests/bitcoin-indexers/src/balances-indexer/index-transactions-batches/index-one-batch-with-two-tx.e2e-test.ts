@@ -61,7 +61,7 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
     jest.useFakeTimers({ advanceTimers: true });
 
     // Clear the database
-    await cleanDataFolder();
+    await cleanDataFolder('easylayer/data');
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/balances-indexer/index-transactions-batches/.env') });
@@ -109,7 +109,7 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
 
   it('should save events of index aggregates correctly', async () => {
     // Connect to the write database (event store)
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-write.db') });
     await dbService.connect();
 
     // Get aggregates events
@@ -159,7 +159,7 @@ describe('/Index One Batch With One Coinbase Transaction', () => {
 
   it('should save new output and input into read db', async () => {
     // Connect to the read database
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-read.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-read.db') });
     await dbService.connect();
 
     // Fetch outputs from the database

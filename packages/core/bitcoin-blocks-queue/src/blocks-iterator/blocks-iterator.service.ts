@@ -1,11 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { AppLogger } from '@easylayer/components/logger';
 import { BlocksQueue } from '../blocks-queue';
 import { Block, BlocksCommandExecutor } from '../interfaces';
 
 @Injectable()
-export class BlocksQueueIteratorService {
+export class BlocksQueueIteratorService implements OnModuleDestroy {
   private _queue!: BlocksQueue<Block>;
   private _isIterating: boolean = false;
   private blockProcessedPromise!: Promise<void>;
@@ -23,6 +23,10 @@ export class BlocksQueueIteratorService {
 
   get isIterating() {
     return this._isIterating;
+  }
+
+  onModuleDestroy() {
+    this._isIterating = false;
   }
 
   /**
@@ -45,25 +49,11 @@ export class BlocksQueueIteratorService {
 
     this.initBlockProcessedPromise();
 
-    for await (const block of this.blocksIterator()) {
-      try {
-        await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
-      } catch (error) {
-        this.log.error('Failed to itarate the block', error, this.constructor.name);
-
-        // IMPORTANT: We call this to resolve queue promise
-        // that we can try same block one more time
-        this._resolveNextBlock();
-      }
-    }
-  }
-
-  private async *blocksIterator(): AsyncGenerator<Block, void, unknown> {
-    while (true) {
+    while (this.isIterating) {
       if (this._queue.length > 0) {
         const block = await this.peekFirstBlock();
         if (block) {
-          yield block;
+          await this.processBlock(block);
         }
       } else {
         // TODO: add description about why we use setTimeout() here
@@ -74,7 +64,19 @@ export class BlocksQueueIteratorService {
     }
   }
 
-  private async peekFirstBlock(): Promise<Block | undefined> {
+  private async processBlock(block: Block) {
+    try {
+      await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
+    } catch (error) {
+      this.log.error('Failed to iterate the block', error, this.constructor.name);
+
+      // IMPORTANT: We call this to resolve queue promise
+      // that we can try same block one more time
+      this._resolveNextBlock();
+    }
+  }
+
+  private async peekFirstBlock(): Promise<Block | null> {
     // NOTE: Before processing the next block from the queue,
     // we wait for the resolving of the promise of the previous block
     await this.blockProcessedPromise;

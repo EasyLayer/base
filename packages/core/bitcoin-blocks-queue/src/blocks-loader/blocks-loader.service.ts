@@ -37,6 +37,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
   async onModuleDestroy() {
     this.destroyStrategy();
+    this._isLoading = false;
   }
 
   public async startBlocksLoading(indexedHeight: number | string, queue: BlocksQueue<Block>): Promise<void> {
@@ -58,13 +59,13 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     this._queue.lastHeight = Number(indexedHeight);
 
     await exponentialIntervalAsync(
-      async () => {
+      async (resetInterval) => {
+        if (!this._isLoading) {
+          return;
+        }
+
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
-          this.log.info(
-            'Reached max block height',
-            { lastuQueueHeight: this._queue.lastHeight },
-            this.constructor.name
-          );
+          this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
           return;
         }
 
@@ -75,9 +76,19 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
           await this._loadingStrategy?.load(this._currentNetworkHeight);
         } catch (error) {
           this.log.error('Load blocks strategy error', error, this.constructor.name);
+
+          // IMPORTANT: In case of an error, reset the interval
+          resetInterval();
+
           // IMPORTANT: In case of an error, we are obliged to restart the strategy
           await this.destroyStrategy();
         }
+
+        this.log.info(
+          'Load blocks waiting...',
+          { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
+          this.constructor.name
+        );
       },
       {
         interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
