@@ -79,9 +79,7 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
   private async peekFirstBlock(): Promise<Block | null> {
     // NOTE: Before processing the next block from the queue,
     // we wait for the resolving of the promise of the previous block
-    this.log.info('1blockProcessedPromise', null, this.constructor.name);
     await this.blockProcessedPromise;
-    this.log.info('2blockProcessedPromise', null, this.constructor.name);
 
     // Init the promise for the next wait
     this.initBlockProcessedPromise();

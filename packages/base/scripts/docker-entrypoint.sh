@@ -53,6 +53,7 @@ mkdir -p "/easylayer"
 USER_ID=${UID:-0}
 GROUP_ID=${GID:-0}
 
+# TODO: fix envs duplication on HOST when recreate container
 # Check if the .env file exists.
 # If not, create the file. 
 # This ensures that the application has an environment file to read from.
