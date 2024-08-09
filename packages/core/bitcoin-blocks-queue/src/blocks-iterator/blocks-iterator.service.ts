@@ -8,7 +8,6 @@ import { Block, BlocksCommandExecutor } from '../interfaces';
 export class BlocksQueueIteratorService implements OnModuleDestroy {
   private _queue!: BlocksQueue<Block>;
   private _isIterating: boolean = false;
-  private _isActive: boolean = true;
   private blockProcessedPromise!: Promise<void>;
   protected _resolveNextBlock!: () => void;
 
@@ -27,7 +26,7 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    this._isActive = false;
+    this._isIterating = false;
   }
 
   /**
@@ -50,27 +49,11 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
 
     this.initBlockProcessedPromise();
 
-    for await (const block of this.blocksIterator()) {
-      try {
-        await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
-      } catch (error) {
-        this.log.error('Failed to itarate the block', error, this.constructor.name);
-
-        // IMPORTANT: We call this to resolve queue promise
-        // that we can try same block one more time
-        this._resolveNextBlock();
-      }
-    }
-  }
-
-  private async *blocksIterator(): AsyncGenerator<Block, void, unknown> {
-    // IMPORTANT: _isActive is needed to successfully shutdown the generator loop.
-    // We can't use _isIterating because there is a bug where we have to start with a 'true' value.
-    while (this._isActive) {
+    while (this.isIterating) {
       if (this._queue.length > 0) {
         const block = await this.peekFirstBlock();
         if (block) {
-          yield block;
+          await this.processBlock(block);
         }
       } else {
         // TODO: add description about why we use setTimeout() here
@@ -78,6 +61,18 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
         await new Promise((resolve) => setTimeout(resolve, 0));
         this.log.debug('Queue is empty', {}, this.constructor.name);
       }
+    }
+  }
+
+  private async processBlock(block: Block) {
+    try {
+      await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
+    } catch (error) {
+      this.log.error('Failed to iterate the block', error, this.constructor.name);
+
+      // IMPORTANT: We call this to resolve queue promise
+      // that we can try same block one more time
+      this._resolveNextBlock();
     }
   }
 

@@ -3,7 +3,6 @@ import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
 import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
 import { InitIndexerCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger } from '@easylayer/components/logger';
-import { AppConfig } from '../../config';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import { BalancesIndexerModelFactoryService, TransactionsBatchModelFactoryService } from '../services';
 
@@ -11,7 +10,6 @@ import { BalancesIndexerModelFactoryService, TransactionsBatchModelFactoryServic
 export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCommand> {
   constructor(
     private readonly log: AppLogger,
-    private readonly appConfig: AppConfig,
     private readonly eventStore: EventStoreRepository,
     private readonly indexerModelFactory: BalancesIndexerModelFactoryService,
     private readonly batchModelFactory: TransactionsBatchModelFactoryService
@@ -22,7 +20,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { requestId, startHeight } = payload;
+      const { requestId, startHeight, restoreFromHeight } = payload;
 
       const indexerModel: BalancesIndexer = await this.indexerModelFactory.initModel();
       await indexerModel.init({
@@ -30,17 +28,11 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         startHeight,
       });
 
-      if (indexerModel.status === 'awaiting') {
-        // Get last blocks from IndexerModel
-        const blocks = indexerModel.chain.getLastNBlocks(
-          this.appConfig.BITCOIN_BALANCES_INDEXER_START_INIT_REPUBLISH_BLOCKS_COUNT
-        );
+      if (indexerModel.status === 'awaiting' && restoreFromHeight) {
+        const restoreBlocksCount = indexerModel.chain.lastBlockHeight - restoreFromHeight;
+        const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount);
 
-        this.log.debug(
-          'Index Aggregate last blocks init staring...',
-          { blocksLength: blocks.length },
-          this.constructor.name
-        );
+        this.log.info('Index Aggregate restore blocks staring...', { restoreBlocksCount }, this.constructor.name);
 
         for (const block of blocks) {
           const { batches } = block;

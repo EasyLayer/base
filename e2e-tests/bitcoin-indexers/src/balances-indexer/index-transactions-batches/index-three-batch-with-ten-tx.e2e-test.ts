@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
 import { Observable } from 'rxjs';
-// import supertest from 'supertest';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { CoreModule } from '@easylayer/base';
@@ -61,7 +60,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
     jest.useFakeTimers({ advanceTimers: true });
 
     // Clear the database
-    await cleanDataFolder();
+    await cleanDataFolder('easylayer/data');
 
     // Calculate the size of transactions
     // IMPORTANT: We want to know how much transactions weigh
@@ -138,7 +137,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
 
   it('should save events of index aggregates correctly', async () => {
     // Connect to the write database (event store)
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-write.db') });
     await dbService.connect();
 
     // Get aggregates events
@@ -206,7 +205,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
 
   it('should save new output and input into read db', async () => {
     // Connect to the read database
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-read.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-read.db') });
     await dbService.connect();
 
     // Fetch outputs from the database
@@ -288,7 +287,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
 
   it('should correctly calculate the wallet balance', async () => {
     // Connect to the read database
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-read.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-read.db') });
     await dbService.connect();
 
     const getWalletBalance = async (address: string) => {
@@ -328,7 +327,7 @@ describe('/Index Tree Batches With Ten Transactions', () => {
 
   it('should correctly calculate the wallet balance for specific block', async () => {
     // Connect to the read database
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-read.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-read.db') });
     await dbService.connect();
 
     const getWalletBalanceUpToBlockHeight = async (address: string, blockHeight: number) => {

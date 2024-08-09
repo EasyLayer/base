@@ -57,30 +57,24 @@ describe('BlocksQueueIteratorService', () => {
     service['_queue'] = mockQueue;
   });
 
-  describe('startQueueIterating', () => {
-    it('should not start iterating if already iterating', async () => {
-      jest.spyOn(service as any, 'initBlockProcessedPromise').mockImplementation(() => {});
-      jest.spyOn(service as any, 'blocksIterator').mockImplementation(async function* () {});
-
-      await service.startQueueIterating(mockQueue);
-      await service.startQueueIterating(mockQueue);
-
-      expect(service['isIterating']).toBe(true);
-      expect(service['blocksIterator']).toHaveBeenCalledTimes(1);
-      expect(service['initBlockProcessedPromise']).toHaveBeenCalledTimes(1);
-    });
-  });
-
   describe('peekFirstBlock', () => {
-    it('should resolve the promise and return the first block', async () => {
+    it('should wait for blockProcessedPromise before returning the first block', async () => {
       const blockMock = new TestBlock(0);
       mockQueue.enqueue(blockMock);
 
       service['initBlockProcessedPromise']();
+      const spy = jest.spyOn(service['_queue'], 'peekFirstBlock');
+
+      const promise = service['peekFirstBlock']();
+
+      expect(spy).not.toHaveBeenCalled();
+
       service['resolveNextBlock']();
 
-      const result = await service['peekFirstBlock']();
+      const result = await promise;
+
       expect(result).toEqual(blockMock);
+      expect(service['_queue'].peekFirstBlock).toHaveBeenCalled();
     });
   });
 
@@ -108,33 +102,25 @@ describe('BlocksQueueIteratorService', () => {
     });
   });
 
-  describe('blocksIterator', () => {
-    it('should wait for blockProcessedPromise before yielding the next block', async () => {
-      jest.useFakeTimers({ advanceTimers: true });
-
+  describe('processBlock', () => {
+    it('should call blocksCommandExecutor.processBlock with correct arguments', async () => {
       const blockMock = new TestBlock(0);
-      mockQueue.enqueue(blockMock);
+      await service['processBlock'](blockMock);
 
-      const blockProcessedPromise = new Promise<void>((resolve) => setTimeout(resolve, 50));
-      service['blockProcessedPromise'] = blockProcessedPromise;
+      expect(mockBlocksCommandExecutor.indexBlock).toHaveBeenCalledWith({ block: blockMock, requestId: 'mock-uuid' });
+    });
 
-      jest.spyOn(mockQueue, 'peekFirstBlock').mockReturnValue(blockMock);
+    it('should log an error if blocksCommandExecutor.processBlock throws an error', async () => {
+      const blockMock = new TestBlock(0);
+      mockBlocksCommandExecutor.indexBlock.mockRejectedValueOnce(new Error('Test Error'));
+      service['initBlockProcessedPromise']();
+      await service['processBlock'](blockMock);
 
-      const blocks = [];
-      const iterator = service['blocksIterator']();
-      const block1 = await iterator.next();
-      blocks.push(block1.value);
-
-      // Simulate confirmation of the first block
-      service['resolveNextBlock']();
-
-      const block2 = await iterator.next();
-      blocks.push(block2.value);
-      jest.advanceTimersByTime(50);
-
-      expect(blocks).toEqual([blockMock, blockMock]);
-      expect(mockQueue.peekFirstBlock).toHaveBeenCalledTimes(2);
-      jest.useRealTimers();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to iterate the block',
+        new Error('Test Error'),
+        'BlocksQueueIteratorService'
+      );
     });
   });
 });

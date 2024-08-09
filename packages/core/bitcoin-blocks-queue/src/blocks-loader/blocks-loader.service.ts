@@ -65,11 +65,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
         }
 
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
-          this.log.info(
-            'Reached max block height',
-            { lastuQueueHeight: this._queue.lastHeight },
-            this.constructor.name
-          );
+          this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
           return;
         }
 

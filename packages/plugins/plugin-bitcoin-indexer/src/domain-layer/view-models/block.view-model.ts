@@ -7,8 +7,8 @@ export class BlockViewModel {
   @PrimaryColumn({ type: 'varchar' })
   public hash!: string;
 
-  @Column({ type: 'bigint' })
-  public height!: string;
+  @Column({ type: 'integer' })
+  public height!: number;
 
   @Column({ type: 'varchar', nullable: true })
   public previousblockhash!: string;

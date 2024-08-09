@@ -65,7 +65,7 @@ describe('/Reorganise(Suspend) Two Blocks When the Wrong Chain Was Specified', (
     jest.useFakeTimers({ advanceTimers: true });
 
     // Clear the database
-    await cleanDataFolder();
+    await cleanDataFolder('easylayer/data');
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/balances-indexer/reorganisation-blocks/.env') });
@@ -144,7 +144,7 @@ describe('/Reorganise(Suspend) Two Blocks When the Wrong Chain Was Specified', (
 
   it('should save events of suspend aggregates correctly', async () => {
     // Connect to the write database (event store)
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-write.db') });
     await dbService.connect();
 
     // Get aggregates events
@@ -189,7 +189,7 @@ describe('/Reorganise(Suspend) Two Blocks When the Wrong Chain Was Specified', (
 
   it('should update utxo with suspend status into read db', async () => {
     // Connect to the read database
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-read.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-read.db') });
     await dbService.connect();
 
     // Fetch all outputs and their related transactions
