@@ -1,5 +1,5 @@
 import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
-import { AppLogger } from '@easylayer/components/logger';
+import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
 import { Transactional } from '@easylayer/core/read-database';
 import { BitcoinBalancesIndexerTransactionsBatchSuspendedEvent } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 import { OutputsReadService } from '../services';
@@ -14,6 +14,7 @@ export class BitcoinBalancesIndexerTransactionsBatchSuspendedEventHandler
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-read' })
+  @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinBalancesIndexerTransactionsBatchSuspendedEvent) {
     try {
       this.log.debug('handle()', payload, this.constructor.name);

@@ -21,7 +21,7 @@ export class AppConfig {
   }
 
   isDEBUG(): boolean {
-    return process.env.DEBUG === 'y';
+    return process.env.DEBUG === '1';
   }
 
   isTEST(): boolean {

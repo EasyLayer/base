@@ -1,7 +1,7 @@
 import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
 import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
 import { ProcessReorganisationCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
-import { AppLogger } from '@easylayer/components/logger';
+import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import { TransactionsBatch } from '../models/transactions-batch.model';
 import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
@@ -16,21 +16,16 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
+  @RuntimeTracker({ showMemory: true })
   async execute({ payload }: ProcessReorganisationCommand) {
     try {
-      this.log.debug('execute()', payload, this.constructor.name);
-
       // NOTE: blocks - need to be reorganised (from BalancesIndexerModel),
       // height - is height of reorganisation(the last height where the blocks matched)
       const { blocks, height, requestId } = payload;
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
-
-      this.log.debug('Init Balances Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
-
       const batchesIds = blocks.flatMap((block: any) => block.batches);
-
       const batchesModels: TransactionsBatch[] = await this.batchModelFactory.initExistingModels(batchesIds);
 
       // IMPORTANT: We must roll back batches in a certain order, namely from the end
@@ -53,8 +48,8 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
 
       await indexerModel.commit();
 
-      this.log.debug(
-        `Blockchain successfull reorganised`,
+      this.log.info(
+        `Blockchain successfull reorganised to height`,
         {
           lastBlockHeight: indexerModel.chain.lastBlockHeight,
         },

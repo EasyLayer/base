@@ -8,6 +8,10 @@ import { CoreModule } from './core.module';
 import { AppConfig } from './config';
 import { setupSwaggerServer, importPlugins } from './utils';
 
+// IMPORTANT: we use dotenv here to load envs globaly.
+// It have to be before import all plugins.
+config({ path: resolve(process.cwd(), `easylayer/.env`) });
+
 export interface RegisterablePlugin {
   register: () => DynamicModule | Promise<DynamicModule>;
 }
@@ -24,10 +28,6 @@ export const bootstrap = async ({
   isAutoImportDisable = false,
 }: BootstrapOptions) => {
   const logger = new NestLogger();
-
-  // IMPORTANT: we use dotenv here to load envs globaly.
-  // It have to be before import all plugins.
-  config({ path: resolve(process.cwd(), `easylayer/.env`) });
 
   const externalPlugins = [];
   // TODO: move to external method

@@ -43,7 +43,6 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         );
 
         for (const block of blocks) {
-          console.log('DDDDDD\n\n\n\n');
           const { batches } = block;
           for (const batchId of batches) {
             // Publish last batch event
@@ -53,7 +52,6 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
       }
 
       if (indexerModel.status === 'reorganisation') {
-        console.log('2DDDDDD\n\n\n\n');
         // Publish last indexer event to process reorganisation
         await this.indexerModelFactory.publishLastEvent();
       }
@@ -61,7 +59,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
       await this.eventStore.save(indexerModel);
       await indexerModel.commit();
 
-      this.log.debug('Aggregates successfull init', {}, this.constructor.name);
+      this.log.info('Aggregates successfull init', {}, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       throw error;

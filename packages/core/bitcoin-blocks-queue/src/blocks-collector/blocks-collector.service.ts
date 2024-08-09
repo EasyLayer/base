@@ -22,6 +22,7 @@ export class BlocksQueueCollectorService {
   }
 
   public init(queue: BlocksQueue<Block>) {
+    this.log.info('Setup blocks collecting', {}, this.constructor.name);
     this._queue = queue;
   }
 

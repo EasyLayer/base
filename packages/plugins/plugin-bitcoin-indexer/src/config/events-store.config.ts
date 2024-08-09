@@ -20,6 +20,6 @@ export class EventStoreConfig {
   BITCOIN_INDEXER_EVENTSTORE_DB_IS_WAL: boolean = true;
 
   isLogging(): boolean {
-    return process.env.DEBUG === 'y';
+    return process.env.DB_DEBUG === '1';
   }
 }

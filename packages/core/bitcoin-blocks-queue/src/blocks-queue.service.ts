@@ -39,8 +39,6 @@ export class BlocksQueueService {
 
   async start(indexedHeight: string | number) {
     try {
-      this.log.debug('start()', { indexedHeight }, this.constructor.name);
-
       await Promise.allSettled([
         this.blocksQueueLoader.startBlocksLoading(Number(indexedHeight), this._blockQueue),
         this.blocksQueueIterator.startQueueIterating(this._blockQueue),
@@ -51,8 +49,6 @@ export class BlocksQueueService {
   }
 
   public async reorganizeBlocks(newStartHeight: string | number): Promise<void> {
-    this.log.debug('reorganizeBlocks()', { newStartHeight }, this.constructor.name);
-
     //  NOTE: We clear the entire queue
     // because if a reorganization has occurred, this means that all the blocks in the queue
     // have already gone along the wrong chain
@@ -63,12 +59,10 @@ export class BlocksQueueService {
 
     this.blocksQueueIterator.resolveNextBlock();
 
-    this.log.debug('Block Queue was clear to height: ', { newStartHeight }, this.constructor.name);
+    this.log.info('Queue was clear to height: ', { newStartHeight }, this.constructor.name);
   }
 
   public async confirmIndexBlock(blockHash: string): Promise<void> {
-    this.log.debug(`confirmIndexBlock()`, { blockHash }, this.constructor.name);
-
     // IMPORTANT: This method must be idenpotent.
     // To do this, we added a check and remove only the required block from the queue,
     // BUT if there is no such block, then we will skip it, without an error!

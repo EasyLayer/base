@@ -18,7 +18,7 @@ export class BitcoinBalancesIndexerTransactionsBatchIndexedEventHandler
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-read' })
-  @RuntimeTracker({ label: 'read update', showMemory: true })
+  @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinBalancesIndexerTransactionsBatchIndexedEvent) {
     try {
       this.log.debug('handle()', payload, this.constructor.name);

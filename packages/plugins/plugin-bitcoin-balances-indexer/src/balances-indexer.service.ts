@@ -17,7 +17,7 @@ export class BalancesIndexerService implements OnModuleInit {
   }
 
   private async initialization(): Promise<void> {
-    this.log.info('Initialization all systems');
+    this.log.info('Initialization Bitcoin Balances Indexer systems');
 
     try {
       await this.indexerCommandFactory.init({

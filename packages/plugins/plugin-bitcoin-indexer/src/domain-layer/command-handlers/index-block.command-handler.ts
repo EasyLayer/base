@@ -27,7 +27,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   ) {}
 
   @Transactional({ connectionName: 'indexer-write' })
-  @RuntimeTracker({ label: 'write block', showMemory: true })
+  @RuntimeTracker({ showMemory: true })
   async execute({ payload }: IndexBlockCommand) {
     try {
       this.log.debug('execute()', payload, this.constructor.name);

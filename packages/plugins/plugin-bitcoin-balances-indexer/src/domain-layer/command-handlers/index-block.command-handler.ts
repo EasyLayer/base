@@ -3,7 +3,7 @@ import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
 import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
 import { BitcoinNetworkProviderService, BitcoinCryptoUtilsService } from '@easylayer/core/bitcoin-network-provider';
 import { IndexBlockCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
-import { AppLogger /*RuntimeTracker*/ } from '@easylayer/components/logger';
+import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 import { TransactionsBatch } from '../models/transactions-batch.model';
 import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
@@ -22,11 +22,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
-  // @RuntimeTracker({ label: 'write update', showMemory: true })
+  @RuntimeTracker({ showMemory: true })
   async execute({ payload }: IndexBlockCommand) {
     try {
-      this.log.debug('execute()', payload, this.constructor.name);
-
       // NOTE: block - is from BlocksQueue
       const { block, requestId } = payload;
       const { tx, ...blockWithoutTx } = block;
@@ -34,8 +32,6 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
-
-      this.log.debug('Init Balances Indexer model', { aggregateId: indexerModel.aggregateId }, this.constructor.name);
 
       /* Reorganisation */
       // IMPORTANT: We do this check here, and not inside the aggregate,
@@ -50,13 +46,11 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         await this.eventStore.save(indexerModel);
         this.balancesIndexerModelFactory.updateCache(indexerModel);
         await indexerModel.commit();
-        this.log.debug(`Balances Indexer reorganisation started`, {}, this.constructor.name);
+        this.log.info(`Balances Indexer reorganisation started`, {}, this.constructor.name);
         return;
       }
 
       const batches = [];
-
-      this.log.debug('Transactions lenght', { length: tx.length }, this.constructor.name);
 
       // Split transactions by batches
       const transactionSlices = this.splitTransactionsIntoSlices(
@@ -86,8 +80,6 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
         batches.push(transactionBatch);
       }
 
-      this.log.debug('Batches lenght', { length: batches.length }, this.constructor.name);
-
       await indexerModel.addBlock({
         requestId,
         block: {
@@ -110,10 +102,9 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
 
       this.log.info(
         'Balances successfull indexed',
-        { blockHeight: height, blockHash: hash, batches: batches.length },
+        { blockHeight: height, blockHash: hash, batches: batches.length, txLength: tx.length },
         this.constructor.name
       );
-      this.log.debug('Balances successfull indexed', { batches: batches.length }, this.constructor.name);
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       this.balancesIndexerModelFactory.clearCache();

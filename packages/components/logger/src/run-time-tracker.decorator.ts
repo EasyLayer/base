@@ -14,21 +14,19 @@ function getMemoryUsage() {
 }
 
 export interface RuntimeTrackerParams {
-  label: string;
   warningThresholdMs?: number;
   errorThresholdMs?: number;
   showMemory?: boolean;
 }
 
 export function RuntimeTracker({
-  label,
   warningThresholdMs,
   errorThresholdMs,
   showMemory = false,
 }: RuntimeTrackerParams): MethodDecorator {
   return (target: object, key: string | symbol, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
-    const log = logger(label);
+    const log = logger('tracker');
 
     descriptor.value = async function (...args: any[]) {
       const start = Date.now();
@@ -38,28 +36,30 @@ export function RuntimeTracker({
       } catch (error) {
         throw error;
       } finally {
-        const time = Date.now() - start;
-        const context = `${target.constructor.name}.${String(key)}`;
-        const logArgs: any = {
-          time: `${time} ms`,
-        };
+        if (process.env.DEBUG === '1') {
+          const time = Date.now() - start;
+          const context = `${target.constructor.name}.${String(key)}`;
+          const logArgs: any = {
+            time: `${time} ms`,
+          };
 
-        if (showMemory) {
-          logArgs.memory = getMemoryUsage();
-        }
-        if (warningThresholdMs !== undefined) {
-          logArgs.warningThresholdMs = warningThresholdMs;
-        }
-        if (errorThresholdMs !== undefined) {
-          logArgs.errorThresholdMs = errorThresholdMs;
-        }
+          if (showMemory) {
+            logArgs.memory = getMemoryUsage();
+          }
+          if (warningThresholdMs !== undefined) {
+            logArgs.warningThresholdMs = warningThresholdMs;
+          }
+          if (errorThresholdMs !== undefined) {
+            logArgs.errorThresholdMs = errorThresholdMs;
+          }
 
-        if (errorThresholdMs && time > errorThresholdMs) {
-          log.error('Method takes too long to execute', logArgs, context);
-        } else if (warningThresholdMs && time > warningThresholdMs) {
-          log.warn('Method takes too long to execute', logArgs, context);
-        } else {
-          log.info('Time:', logArgs, context);
+          if (errorThresholdMs && time > errorThresholdMs) {
+            log.error('Method takes too long to execute', logArgs, context);
+          } else if (warningThresholdMs && time > warningThresholdMs) {
+            log.warn('Method takes too long to execute', logArgs, context);
+          } else {
+            log.debug('Time:', logArgs, context);
+          }
         }
       }
     };
