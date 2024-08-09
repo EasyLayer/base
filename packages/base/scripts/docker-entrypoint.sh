@@ -9,7 +9,6 @@ sanitize_input() {
     local key="${input%%=*}"
     local value="${input#*=}"
     value=$(echo "$value" | sed 's/[\&;\|$`\\]//g') # removing potentially dangerous characters
-    echo "$key=$value"
   else
     echo "Skipping invalid input: $input"
   fi
@@ -17,21 +16,16 @@ sanitize_input() {
 
 # Function to append or update command-line parameters in the .env file
 append_or_update_cmdline_vars() {
-  echo "Appending or updating command-line parameters in .env file"
   for var in "$@"; do
     if echo "$var" | grep -q '='; then
       sanitized_var=$(sanitize_input "$var")
       if [ -n "$sanitized_var" ]; then
         key="${sanitized_var%%=*}"
         value="${sanitized_var#*=}"
-        if grep -q "^$key=" "$ENV_FILE_PATH"; then
-          # Key exists, update it
-          sed -i "s/^$key=.*/$sanitized_var/" "$ENV_FILE_PATH"
-        else
-          # Key does not exist, append it
-          echo "" >> "$ENV_FILE_PATH"
-          echo "$sanitized_var" >> "$ENV_FILE_PATH"
-        fi
+        # Remove the existing line with the key if it exists
+        sed -i.bak "/^$key=/d" "$ENV_FILE_PATH" && rm "$ENV_FILE_PATH.bak"
+        # Append the sanitized variable
+        echo "$sanitized_var" >> "$ENV_FILE_PATH"
       fi
     fi
   done
@@ -78,7 +72,7 @@ else
 fi
 
 # Append command-line parameters to the .env file
-append_cmdline_vars "$@"
+append_or_update_cmdline_vars "$@"
 
 # Initialize a new Node.js project if package.json does not exist
 if [ ! -f "/package.json" ]; then
