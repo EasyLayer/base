@@ -40,7 +40,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   public async startBlocksLoading(indexedHeight: number | string, queue: BlocksQueue<Block>): Promise<void> {
-    this.log.debug('startBlocksLoading()', { indexedHeight }, this.constructor.name);
+    this.log.info('Setup blocks loading from height', { indexedHeight }, this.constructor.name);
 
     // NOTE: We use this to make sure that
     // method startQueueIterating() is executed only once in its entire life.
@@ -59,9 +59,12 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
     await exponentialIntervalAsync(
       async () => {
-        this.log.info('Loading blocks...', null, this.constructor.name);
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
-          this.log.info('Reached max block height', { height: this._queue.lastHeight }, this.constructor.name);
+          this.log.info(
+            'Reached max block height',
+            { lastuQueueHeight: this._queue.lastHeight },
+            this.constructor.name
+          );
           return;
         }
 
@@ -71,12 +74,8 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
         try {
           await this._loadingStrategy?.load(this._currentNetworkHeight);
         } catch (error) {
+          this.log.error('Load blocks strategy error', error, this.constructor.name);
           // IMPORTANT: In case of an error, we are obliged to restart the strategy
-          await this.destroyStrategy();
-        }
-
-        if (this._queue.lastHeight >= this._currentNetworkHeight) {
-          // IMPORTANT: If the strategy has caught up with the network, we recreate it
           await this.destroyStrategy();
         }
       },
@@ -99,6 +98,7 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   private async setupStrategy(): Promise<void> {
+    this.log.info('Setup blocks loading strategy...', {}, this.constructor.name);
     // IMPORTANT: If a strategy is selected in which the .load() method completes immediately,
     // then this provider method will be called many times at first
     // (until the intervals become longer).

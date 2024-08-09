@@ -29,7 +29,7 @@ export class BlocksQueueIteratorService {
    * Starts iterating over the block queue and processing blocks.
    */
   public async startQueueIterating(queue: BlocksQueue<Block>): Promise<void> {
-    this.log.debug('startQueueIterating()', {}, this.constructor.name);
+    this.log.info('Setup blocks iterating', {}, this.constructor.name);
 
     // NOTE: We use this to make sure that
     // method startQueueIterating() is executed only once in its entire life.
@@ -49,7 +49,7 @@ export class BlocksQueueIteratorService {
       try {
         await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
       } catch (error) {
-        this.log.error('Failed to process block:', error, this.constructor.name);
+        this.log.error('Failed to itarate the block', error, this.constructor.name);
 
         // IMPORTANT: We call this to resolve queue promise
         // that we can try same block one more time
@@ -69,6 +69,7 @@ export class BlocksQueueIteratorService {
         // TODO: add description about why we use setTimeout() here
         // await new Promise(resolve => setImmediate(resolve));
         await new Promise((resolve) => setTimeout(resolve, 0));
+        this.log.debug('Queue is empty', {}, this.constructor.name);
       }
     }
   }

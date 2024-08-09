@@ -36,7 +36,14 @@ export class PullNetworkProviderByWorkersStrategy implements BlocksLoadingStrate
 
     this._isLoading = true;
 
-    while (this.queue.length < this.queue.maxQueueLength && this.queue.lastHeight < currentNetworkHeight) {
+    while (this.queue.lastHeight < currentNetworkHeight) {
+      if (this.queue.length >= this.queue.maxQueueLength) {
+        // When the queue is full, we skip the loop iteration and,
+        // in order not to block the thread, we add a zero wait.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        continue;
+      }
+
       try {
         // IMPORTANT: This is a temp array
         // it needs to calculate blocks from parallel threds before enqueue

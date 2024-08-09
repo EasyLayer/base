@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import sizeof from 'object-sizeof';
+// import sizeof from 'object-sizeof';
 import { Block } from './interfaces';
 
 /**
@@ -110,10 +110,10 @@ export class BlocksQueue<T extends Block> {
     this.inStack.push(block);
     this._lastHeight = Number(block.height);
 
-    if (process.env.DEBUG === 'y') {
-      this._size += sizeof(block);
-      console.debug('BLOCKS QUEUE ENQUEUE SIZE: ', this._size);
-    }
+    // if (process.env.DEBUG === '1') {
+    //   this._size += sizeof(block);
+    //   console.debug('BLOCKS QUEUE ENQUEUE SIZE: ', this._size);
+    // }
 
     return true;
   }
@@ -129,12 +129,12 @@ export class BlocksQueue<T extends Block> {
 
     const block = this.outStack.pop();
 
-    if (process.env.DEBUG === 'y') {
-      if (block) {
-        this._size -= sizeof(block);
-        console.debug('BLOCKS QUEUE DEQUEUE SIZE: ', this._size);
-      }
-    }
+    // if (process.env.DEBUG === '1') {
+    //   if (block) {
+    //     this._size -= sizeof(block);
+    //     console.debug('BLOCKS QUEUE DEQUEUE SIZE: ', this._size);
+    //   }
+    // }
 
     return block;
   }
