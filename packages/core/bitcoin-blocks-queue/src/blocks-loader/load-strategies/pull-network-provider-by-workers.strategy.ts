@@ -77,7 +77,7 @@ export class PullNetworkProviderByWorkersStrategy implements BlocksLoadingStrate
         throw error;
       }
     }
-    console.log('QQQ\n', this.queue.lastHeight, currentNetworkHeight);
+
     await this.stop();
   }
 

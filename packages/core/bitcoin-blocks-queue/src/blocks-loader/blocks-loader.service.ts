@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { AppLogger } from '@easylayer/components/logger';
 import { BitcoinNetworkProviderService, BitcoinWebhookStreamService } from '@easylayer/core/bitcoin-network-provider';
-import { exponentialIntervalAsync } from '@easylayer/components/exponential-interval-async';
+// import { exponentialIntervalAsync } from '@easylayer/components/exponential-interval-async';
 import { BlocksQueue } from '../blocks-queue';
 import { Block } from '../interfaces';
 import {
@@ -58,44 +58,35 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
     // (NOT the next one)
     this._queue.lastHeight = Number(indexedHeight);
 
-    await exponentialIntervalAsync(
-      async (resetInterval) => {
-        if (!this._isLoading) {
-          return;
-        }
-
-        if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
-          this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
-          return;
-        }
-
-        // Setup the strategy
-        await this.setupStrategy();
-
-        try {
-          await this._loadingStrategy?.load(this._currentNetworkHeight);
-        } catch (error) {
-          this.log.error('Load blocks strategy error', error, this.constructor.name);
-
-          // IMPORTANT: In case of an error, reset the interval
-          resetInterval();
-
-          // IMPORTANT: In case of an error, we are obliged to restart the strategy
-          await this.destroyStrategy();
-        }
-
-        this.log.info(
-          'Load blocks waiting...',
-          { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
-          this.constructor.name
-        );
-      },
-      {
-        interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
-        maxInterval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
-        multiplier: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+    while (this._isLoading) {
+      if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
+        this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
+        return;
       }
-    );
+
+      // Setup the strategy
+      await this.setupStrategy();
+
+      if (this._queue.lastHeight >= this._currentNetworkHeight) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        continue;
+      }
+
+      try {
+        await this._loadingStrategy?.load(this._currentNetworkHeight);
+      } catch (error) {
+        this.log.error('Load blocks strategy error', error, this.constructor.name);
+
+        // IMPORTANT: In case of an error, we are obliged to restart the strategy
+        await this.destroyStrategy();
+      }
+
+      this.log.info(
+        'Load blocks waiting...',
+        { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
+        this.constructor.name
+      );
+    }
   }
 
   public async handleBlockFromStream(block: Block): Promise<void> {
