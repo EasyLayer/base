@@ -1,13 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, OnModuleDestroy } from '@nestjs/common';
 import { AppLogger } from '@easylayer/components/logger';
 import { BlocksQueue } from '../blocks-queue';
 import { Block, BlocksCommandExecutor } from '../interfaces';
 
 @Injectable()
-export class BlocksQueueIteratorService {
+export class BlocksQueueIteratorService implements OnModuleDestroy {
   private _queue!: BlocksQueue<Block>;
   private _isIterating: boolean = false;
+  private _isActive: boolean = true;
   private blockProcessedPromise!: Promise<void>;
   protected _resolveNextBlock!: () => void;
 
@@ -23,6 +24,10 @@ export class BlocksQueueIteratorService {
 
   get isIterating() {
     return this._isIterating;
+  }
+
+  onModuleDestroy() {
+    this._isActive = false;
   }
 
   /**
@@ -59,7 +64,9 @@ export class BlocksQueueIteratorService {
   }
 
   private async *blocksIterator(): AsyncGenerator<Block, void, unknown> {
-    while (true) {
+    // IMPORTANT: _isActive is needed to successfully shutdown the generator loop.
+    // We can't use _isIterating because there is a bug where we have to start with a 'true' value.
+    while (this._isActive) {
       if (this._queue.length > 0) {
         const block = await this.peekFirstBlock();
         if (block) {
@@ -74,7 +81,7 @@ export class BlocksQueueIteratorService {
     }
   }
 
-  private async peekFirstBlock(): Promise<Block | undefined> {
+  private async peekFirstBlock(): Promise<Block | null> {
     // NOTE: Before processing the next block from the queue,
     // we wait for the resolving of the promise of the previous block
     await this.blockProcessedPromise;

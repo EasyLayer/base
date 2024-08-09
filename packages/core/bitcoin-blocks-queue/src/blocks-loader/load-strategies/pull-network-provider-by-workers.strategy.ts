@@ -57,7 +57,6 @@ export class PullNetworkProviderByWorkersStrategy implements BlocksLoadingStrate
           }
         }
 
-        blocksBatch.forEach((item: any) => console.log(item?.height));
         const results = await Promise.allSettled(promises);
 
         results.forEach((result) => {

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
-import { DynamicModule } from '@nestjs/common';
+import { DynamicModule, INestApplication } from '@nestjs/common';
 import { NestLogger } from '@easylayer/components/logger';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
@@ -68,7 +68,29 @@ export const bootstrap = async ({
     });
   }
 
+  process.on('SIGINT', () => gracefulShutdown(app, logger));
+  process.on('SIGTERM', () => gracefulShutdown(app, logger));
+
   const port = appConfig.PORT;
   await app.listen(port);
   logger.log(`Http server is listening on port ${port}`, 'NestApplication');
 };
+
+function gracefulShutdown(app: INestApplication, logger: NestLogger) {
+  logger.log('Graceful shutdown initiated...');
+
+  // IMPORTANT: Let's set the timeout to 0 ms
+  // so that the completion occurs after all asynchronous operations.
+  setTimeout(async () => {
+    try {
+      logger.log('Closing application...');
+      await app.close();
+    } catch (error) {
+      logger.error('Error during shutdown');
+      process.exit(1);
+    } finally {
+      logger.log('Application closed successfully.');
+      process.exit(0);
+    }
+  }, 0);
+}
