@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
 import { DynamicModule, INestApplication } from '@nestjs/common';
-import { NestLogger } from '@easylayer/components/logger';
+import { NestLogger, logger } from '@easylayer/components/logger';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
 import { setupSwaggerServer, importPlugins } from './utils';
@@ -27,7 +27,8 @@ export const bootstrap = async ({
   plugins = [],
   isAutoImportDisable = false,
 }: BootstrapOptions) => {
-  const logger = new NestLogger();
+  logger(appName);
+  const nestLogger = new NestLogger();
 
   const externalPlugins = [];
   // TODO: move to external method
@@ -36,7 +37,7 @@ export const bootstrap = async ({
       const registeredPlugin = await plugin.register();
       externalPlugins.push(registeredPlugin);
     } catch (error) {
-      logger.error(`Error importing plugins: ${error}`);
+      nestLogger.error(`Error importing plugins: ${error}`);
       process.exit(1);
     }
   }
@@ -55,7 +56,7 @@ export const bootstrap = async ({
   });
 
   // Create a Nest application
-  const app = await NestFactory.create(rootModule, { logger });
+  const app = await NestFactory.create(rootModule, { logger: nestLogger });
 
   const appConfig = app.get(AppConfig);
 
@@ -68,12 +69,12 @@ export const bootstrap = async ({
     });
   }
 
-  process.on('SIGINT', () => gracefulShutdown(app, logger));
-  process.on('SIGTERM', () => gracefulShutdown(app, logger));
+  process.on('SIGINT', () => gracefulShutdown(app, nestLogger));
+  process.on('SIGTERM', () => gracefulShutdown(app, nestLogger));
 
   const port = appConfig.PORT;
   await app.listen(port);
-  logger.log(`Http server is listening on port ${port}`, 'NestApplication');
+  nestLogger.log(`Http server is listening on port ${port}`, 'NestApplication');
 };
 
 function gracefulShutdown(app: INestApplication, logger: NestLogger) {
