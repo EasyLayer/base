@@ -26,7 +26,7 @@ export function RuntimeTracker({
 }: RuntimeTrackerParams): MethodDecorator {
   return (target: object, key: string | symbol, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
-    const log = logger('tracker');
+    const log = logger();
 
     descriptor.value = async function (...args: any[]) {
       const start = Date.now();
