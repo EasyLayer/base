@@ -26,7 +26,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     try {
       this.log.debug('execute()', payload, this.constructor.name);
 
-      const { requestId, startHeight } = payload;
+      const { requestId, startHeight, restoreFromHeight } = payload;
 
       const indexerModel: Indexer = await this.indexerModelFactory.initModel();
       await indexerModel.init({
@@ -34,27 +34,16 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         startHeight,
       });
 
-      // Publish last indexer event to process reorganisation
-      await this.indexerModelFactory.publishLastEvent();
+      if (indexerModel.status === 'awaiting' && restoreFromHeight) {
+        const restoreBlocksCount = indexerModel.chain.lastBlockHeight - restoreFromHeight;
+        const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount);
 
-      if (indexerModel.status === 'awaiting') {
-        // Get last blocks from IndexerModel
-        const blocks = indexerModel.chain.getLastNBlocks(
-          this.appConfig.BITCOIN_INDEXER_START_INIT_REPUBLISH_BLOCKS_COUNT
-        );
-
-        this.log.debug(
-          'Index Aggregate last blocks init staring...',
-          { blocksLength: blocks.length },
-          this.constructor.name
-        );
+        this.log.info('Index Aggregate restore blocks staring...', { restoreBlocksCount }, this.constructor.name);
 
         for (const block of blocks) {
           const { hash, batches } = block;
-
           // Publish last block event
           await this.blocksModelFactory.publishLastEvent(hash);
-
           for (const batchId of batches) {
             // Publish last batch event
             await this.batchModelFactory.publishLastEvent(batchId);

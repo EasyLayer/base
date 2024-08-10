@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { DynamicModule } from '@nestjs/common';
 import { findEasylayerPlugins, resolveNodeModulesPath } from './find-easylayer-plugins';
-import { findCustomPlugins, resolveCustomPluginsPath } from './find-custom-plugins';
+// import { findCustomPlugins, resolveCustomPluginsPath } from './find-custom-plugins';
 import { PluginInfo } from './utils.interfaces';
 
 const isDynamicModule = (object: any): object is DynamicModule => {
@@ -13,18 +13,16 @@ export const importPlugins = async (basePath: string): Promise<DynamicModule[]> 
   // findEasylayePlugins in this file (wich start from @easylayer/plugin-)
 
   const nodeModulesPath = resolveNodeModulesPath(basePath);
-  const customPluginsPath = resolveCustomPluginsPath(basePath);
-
-  // Тепреь нужно найти конкретно те плагины что есть в package.json найти их в node_modules
+  // const customPluginsPath = resolveCustomPluginsPath(basePath);
 
   const easylayerPlugins = await findEasylayerPlugins(nodeModulesPath);
-  const customPlugins = await findCustomPlugins(customPluginsPath);
+  // const customPlugins = await findCustomPlugins(customPluginsPath);
 
   // Comparing plugins and resolving conflicts
-  const combinedPlugins = resolvePluginConflicts(easylayerPlugins, customPlugins);
+  // const combinedPlugins = resolvePluginConflicts(easylayerPlugins, customPlugins);
 
   // Importing plugins
-  const pluginImports = combinedPlugins.map(importAndInitializePlugin);
+  const pluginImports = easylayerPlugins.map(importAndInitializePlugin);
   return Promise.all(pluginImports);
 };
 

@@ -2,11 +2,15 @@ import 'reflect-metadata';
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
-import { DynamicModule } from '@nestjs/common';
-import { NestLogger } from '@easylayer/components/logger';
+import { DynamicModule, INestApplication } from '@nestjs/common';
+import { NestLogger, logger } from '@easylayer/components/logger';
 import { CoreModule } from './core.module';
 import { AppConfig } from './config';
-import { setupSwaggerServer } from './utils';
+import { setupSwaggerServer, importPlugins } from './utils';
+
+// IMPORTANT: we use dotenv here to load envs globaly.
+// It have to be before import all plugins.
+config({ path: resolve(process.cwd(), `easylayer/.env`) });
 
 export interface RegisterablePlugin {
   register: () => DynamicModule | Promise<DynamicModule>;
@@ -15,18 +19,16 @@ export interface RegisterablePlugin {
 export interface BootstrapOptions {
   appName?: string;
   plugins?: RegisterablePlugin[];
+  isAutoImportDisable?: boolean;
 }
 
-// initializeTransactionalContext();
-
-export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => {
-  const logger = new NestLogger();
-
-  // const basePath = resolve(process.cwd());
-
-  // IMPORTANT: we use dotenv here to load envs globaly.
-  // It have to be before import all plugins.
-  config({ path: resolve(process.cwd(), '.env') });
+export const bootstrap = async ({
+  appName = 'easylayer',
+  plugins = [],
+  isAutoImportDisable = false,
+}: BootstrapOptions) => {
+  logger(appName);
+  const nestLogger = new NestLogger();
 
   const externalPlugins = [];
   // TODO: move to external method
@@ -35,20 +37,26 @@ export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => 
       const registeredPlugin = await plugin.register();
       externalPlugins.push(registeredPlugin);
     } catch (error) {
-      logger.error(`Error importing plugins: ${error}`);
+      nestLogger.error(`Error importing plugins: ${error}`);
       process.exit(1);
     }
   }
-  // const internalPlugins = await importPlugins(basePath);
+
+  let internalPlugins: DynamicModule[] = [];
+
+  if (!isAutoImportDisable) {
+    const basePath = resolve(process.cwd());
+    internalPlugins = await importPlugins(basePath);
+  }
 
   // Create a root app module that already includes dynamic modules
   const rootModule = CoreModule.forRoot({
     appName: appName || 'easylayer starter',
-    plugins: [...externalPlugins],
+    plugins: [...externalPlugins, ...internalPlugins],
   });
 
   // Create a Nest application
-  const app = await NestFactory.create(rootModule, { logger });
+  const app = await NestFactory.create(rootModule, { logger: nestLogger });
 
   const appConfig = app.get(AppConfig);
 
@@ -61,7 +69,29 @@ export const bootstrap = async ({ appName, plugins = [] }: BootstrapOptions) => 
     });
   }
 
+  process.on('SIGINT', () => gracefulShutdown(app, nestLogger));
+  process.on('SIGTERM', () => gracefulShutdown(app, nestLogger));
+
   const port = appConfig.PORT;
   await app.listen(port);
-  logger.log(`Http server is listening on port ${port}`, 'NestApplication');
+  nestLogger.log(`Http server is listening on port ${port}`, 'NestApplication');
 };
+
+function gracefulShutdown(app: INestApplication, logger: NestLogger) {
+  logger.log('Graceful shutdown initiated...');
+
+  // IMPORTANT: Let's set the timeout to 0 ms
+  // so that the completion occurs after all asynchronous operations.
+  setTimeout(async () => {
+    try {
+      logger.log('Closing application...');
+      await app.close();
+    } catch (error) {
+      logger.error('Error during shutdown');
+      process.exit(1);
+    } finally {
+      logger.log('Application closed successfully.');
+      process.exit(0);
+    }
+  }, 0);
+}

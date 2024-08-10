@@ -31,7 +31,7 @@ describe('/First Initialization Application Write State Checkin', () => {
   });
 
   beforeAll(async () => {
-    jest.useFakeTimers();
+    jest.useFakeTimers({ advanceTimers: true });
     const eventEmitter = new EventEmitter();
 
     // Mock the BlocksQueueService with start() method
@@ -44,7 +44,7 @@ describe('/First Initialization Application Write State Checkin', () => {
     };
 
     // Clear the database
-    await cleanDataFolder();
+    await cleanDataFolder('easylayer/data');
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/indexer/first-init-flow/.env') });
@@ -71,8 +71,6 @@ describe('/First Initialization Application Write State Checkin', () => {
 
     await app.init();
 
-    jest.runAllTimersAsync();
-
     // Wait for the startBlocksLoading() method
     await startCalled;
 
@@ -83,7 +81,7 @@ describe('/First Initialization Application Write State Checkin', () => {
 
   it('should create new indexer aggregate', async () => {
     // Connect to the write database (event store)
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/indexer-write.db') });
     await dbService.connect();
 
     // Check if the indexer aggregate is created

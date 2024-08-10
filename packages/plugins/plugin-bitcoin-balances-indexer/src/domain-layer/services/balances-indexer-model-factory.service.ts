@@ -1,7 +1,6 @@
 // import { v4 as uuidv4 } from 'uuid';
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/core/cqrs';
-import { RuntimeTracker } from '@easylayer/components/logger';
 import { EventStoreRepository } from '@easylayer/core/eventstore';
 import { BalancesIndexer } from '../models/balances-indexer.model';
 
@@ -19,7 +18,6 @@ export class BalancesIndexerModelFactoryService {
     return this.publisher.mergeObjectContext(new BalancesIndexer());
   }
 
-  @RuntimeTracker({ label: 'init aggregate', showMemory: true })
   public async initModel(): Promise<BalancesIndexer> {
     const cachedModel = this.cache.get(this.cacheKey);
 

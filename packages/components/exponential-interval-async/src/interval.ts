@@ -6,7 +6,7 @@ type IntervalOptions = {
 };
 
 export const exponentialIntervalAsync = async (
-  asyncFunction: () => Promise<void>,
+  asyncFunction: (resetInterval: () => void) => Promise<void>,
   options: IntervalOptions
 ): Promise<void> => {
   const { interval, multiplier, maxAttempts = Infinity, maxInterval } = options;
@@ -18,6 +18,12 @@ export const exponentialIntervalAsync = async (
   let attemptCount = 0;
   let currentInterval = interval;
 
+  // Interval reset function
+  const resetInterval = () => {
+    currentInterval = interval;
+    attemptCount = 0;
+  };
+
   return new Promise<void>((resolve, reject) => {
     async function scheduler() {
       if (maxAttempts !== Infinity && attemptCount >= maxAttempts) {
@@ -26,7 +32,7 @@ export const exponentialIntervalAsync = async (
       }
 
       try {
-        await asyncFunction();
+        await asyncFunction(resetInterval);
       } catch (error) {
         reject(error);
         return;

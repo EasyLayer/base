@@ -46,28 +46,28 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
       { maxRequests: 15, perMilliseconds: 1000 }
     );
 
-    if (!this.healthcheck()) {
+    const health = await this.healthcheck();
+    if (!health) {
       throw new Error('Cant connect');
     }
   }
 
-  public async disconnect() {}
-
   public async healthcheck(): Promise<boolean> {
     try {
-      return true;
-      // const response = await this._httpClient.post('/', {
-      //   jsonrpc: '2.0',
-      //   method: 'getblockchaininfo',
-      //   params: [],
-      //   id: 1,
-      // });
+      const response = await this._httpClient.post('/', {
+        jsonrpc: '2.0',
+        method: 'getblockchaininfo',
+        params: [],
+        id: 1,
+      });
 
-      // return response.status === 200;
+      return response.status === 200 && response.data.result !== undefined;
     } catch (error) {
       return false;
     }
   }
+
+  public async disconnect() {}
 
   public async getBlockHeight(): Promise<number> {
     try {

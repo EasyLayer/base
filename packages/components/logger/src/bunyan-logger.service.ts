@@ -61,7 +61,7 @@ function replacer(key: string, value: any) {
 }
 
 export function createLogger(name: string): bunyan {
-  const level = process.env.DEBUG === 'y' ? 'debug' : 'info';
+  const level = process.env.DEBUG === '1' ? 'debug' : 'info';
 
   const options: LoggerOptions = {
     name,

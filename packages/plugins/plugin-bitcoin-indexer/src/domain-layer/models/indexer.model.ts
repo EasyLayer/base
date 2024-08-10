@@ -312,6 +312,10 @@ export class Blockchain {
    * Complexity: O(n), where n - is the number of blocks to retrieve
    */
   public getLastNBlocks(n: number): LightBlock[] {
+    if (n <= 0) {
+      return [];
+    }
+
     const blocks: LightBlock[] = [];
     let currentNode = this.tail;
     let count = 0;

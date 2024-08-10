@@ -8,7 +8,7 @@ FROM node:18-alpine AS production
 # Install common dependencies
 RUN set -x && \
     apk --no-cache add \
-    build-base \    
+    build-base \ 
     libc6-compat \
     python3 \
     py3-pip \
@@ -33,5 +33,5 @@ ENV PUBLISH_VERSION=$PUBLISH_VERSION
 # Expose the application port
 EXPOSE 3000
 
-# Set the default command to run the script
-CMD ["sh", "/docker-entrypoint.sh"]
+# Use shell form for ENTRYPOINT to allow shell processing
+ENTRYPOINT ["sh", "/docker-entrypoint.sh"]

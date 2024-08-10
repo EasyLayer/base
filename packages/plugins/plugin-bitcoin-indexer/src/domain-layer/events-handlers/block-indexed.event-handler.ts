@@ -1,6 +1,6 @@
 import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
 import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
-// import { Transactional } from '@easylayer/read-database';
+import { Transactional } from '@easylayer/core/read-database';
 import { BitcoinIndexerBlockIndexedEvent } from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
 import { BlocksReadService } from '../services';
 
@@ -11,8 +11,8 @@ export class BitcoinIndexerBlockIndexedEventHandler implements IEventHandler<Bit
     private readonly service: BlocksReadService
   ) {}
 
-  // @Transactional({ connectionName: 'indexer-read' })
-  @RuntimeTracker({ label: 'read update', showMemory: true })
+  @Transactional({ connectionName: 'indexer-read' })
+  @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinIndexerBlockIndexedEvent) {
     try {
       this.log.debug('handle()', payload, this.constructor.name);

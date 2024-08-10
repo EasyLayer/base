@@ -1,6 +1,6 @@
 import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@easylayer/core/read-database';
+import { InjectRepository, FindOneOptions, FindOptionsOrder } from '@easylayer/core/read-database';
 import { OutputViewModel, InputViewModel } from '../view-models';
 
 export const COINBASE_OUTPUT_VALUE = '0';
@@ -65,6 +65,25 @@ export class OutputsReadService {
 
   //   return outputs;
   // }
+  async findOne(
+    options: FindOneOptions<OutputViewModel> & { order?: FindOptionsOrder<OutputViewModel> }
+  ): Promise<OutputViewModel | null> {
+    const { order, ...rest } = options;
+
+    return await this.readDb.findOne({
+      ...rest,
+      order,
+    });
+  }
+
+  public async getLastOutput(): Promise<OutputViewModel> {
+    const [lastOutput] = await this.readDb.find({
+      order: { block_height: 'DESC' },
+      take: 1,
+    });
+
+    return lastOutput;
+  }
 
   async getBalanceByAdress(address: string) {
     const result = await this.readDb

@@ -32,7 +32,7 @@ describe('/Second Initialization Application Write State Checkin', () => {
   });
 
   beforeAll(async () => {
-    jest.useFakeTimers();
+    jest.useFakeTimers({ advanceTimers: true });
     const eventEmitter = new EventEmitter();
 
     // Mock the mockBLocksQueueService with start() method
@@ -45,14 +45,14 @@ describe('/Second Initialization Application Write State Checkin', () => {
     };
 
     // Clear the database
-    await cleanDataFolder();
+    await cleanDataFolder('easylayer/data');
 
     // Load environment variables
     config({ path: resolve(process.cwd(), 'src/balances-indexer/second-init-flow/.env') });
 
     // We want to prepare a database, with an event as if there was already an aggregate there
     // IMPORTANT: it must be before create Test nestjs app
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-write.db') });
     await dbService.initializeDatabase(resolve(process.cwd(), 'src/+dumps/events-table.sql'));
     const eventKeys = Object.keys(mockIndexerEvent);
     const eventValues = Object.values(mockIndexerEvent).map((value) =>
@@ -83,8 +83,6 @@ describe('/Second Initialization Application Write State Checkin', () => {
 
     await app.init();
 
-    jest.runAllTimersAsync();
-
     // Wait for the startCalled() method
     await startCalled;
 
@@ -95,7 +93,7 @@ describe('/Second Initialization Application Write State Checkin', () => {
 
   it('should restore correct old indexer aggregate', async () => {
     // Connect to the write database (event store)
-    dbService = new SQLiteService({ path: resolve(process.cwd(), 'data/balances-indexer-write.db') });
+    dbService = new SQLiteService({ path: resolve(process.cwd(), 'easylayer/data/balances-indexer-write.db') });
     await dbService.connect();
 
     // Check if the balances-indexer aggregate is created

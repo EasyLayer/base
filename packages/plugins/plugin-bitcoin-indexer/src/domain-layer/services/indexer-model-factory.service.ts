@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { EventPublisher } from '@easylayer/core/cqrs';
 import { EventStoreRepository } from '@easylayer/core/eventstore';
-import { RuntimeTracker } from '@easylayer/components/logger';
 import { Indexer } from '../models/indexer.model';
 
 @Injectable()
@@ -18,7 +17,6 @@ export class IndexerModelFactoryService {
     return this.publisher.mergeObjectContext(new Indexer());
   }
 
-  @RuntimeTracker({ label: 'init aggregate', showMemory: true })
   public async initModel(): Promise<Indexer> {
     const cachedModel = this.cache.get(this.cacheKey);
 

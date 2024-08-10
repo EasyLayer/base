@@ -1,20 +1,68 @@
 #!/bin/sh
 
+# Function to validate and sanitize input
+sanitize_input() {
+  local input="$1"
+  # Check that the key contains only allowed characters: letters, numbers, and '_', '.', '-'
+  if echo "$input" | grep -Eq '^[A-Za-z0-9_.-]+=.*$'; then
+    # Escaping potentially dangerous characters in the value (after '=')
+    local key="${input%%=*}"
+    local value="${input#*=}"
+    # removing potentially dangerous characters
+    value=$(echo "$value" | sed 's/[&;|$`\\]//g')
+    # Return sanitized key-value pair
+    echo "$key=$value"
+  else
+    echo "Skipping invalid input: $input"
+    # Indicate failure
+    return 1
+  fi
+}
+
+# Function to append or update command-line parameters in the .env file
+append_or_update_cmdline_vars() {
+  echo "Appending or updating command-line parameters in .env file"
+  for var in "$@"; do
+    if echo "$var" | grep -q '='; then
+      sanitized_var=$(sanitize_input "$var")
+      if [ $? -eq 0 ]; then
+        # Only proceed if sanitize_input was successful
+        key="${sanitized_var%%=*}"
+        value="${sanitized_var#*=}"
+        echo "Updating or adding variable: $key=$value"
+        # Remove the existing line with the key if it exists
+        sed -i '' "/^$key=/d" "$ENV_FILE_PATH"
+        # Append a new line
+        echo "" >> "$ENV_FILE_PATH"
+        # Append the sanitized variable
+        echo "$sanitized_var" >> "$ENV_FILE_PATH"
+      fi
+    fi
+  done
+}
+
 # This variable sets the path to the .env file, which is located at the root of the container.
-ENV_FILE_PATH="/.env"
+ENV_FILE_PATH="/easylayer/.env"
 EXAMPLE_ENV_FILE_PATH="/.env.example"
+DATA_FOLDER_PATH="/easylayer/data"
+
+mkdir -p "/easylayer"
 
 # Get UID and GID from environment variables set by Docker
 # If not passed, use root (UID=0, GID=0)
 USER_ID=${UID:-0}
 GROUP_ID=${GID:-0}
 
+# TODO: fix envs duplication on HOST when recreate container
 # Check if the .env file exists.
 # If not, create the file. 
 # This ensures that the application has an environment file to read from.
 if [ ! -f "$ENV_FILE_PATH" ]; then
   echo "Creating .env file from .env.example"
   cp "$EXAMPLE_ENV_FILE_PATH" "$ENV_FILE_PATH"
+else
+  echo ".env file already exists. Appending .env.example contents to .env."
+  cat "$EXAMPLE_ENV_FILE_PATH" >> "$ENV_FILE_PATH"
 fi
 
 # Ensure the data directory exists, 
@@ -22,17 +70,20 @@ fi
 # such as a SQLite database. 
 # Creating this directory ensures data persistence 
 # if you bind the directory to a host volume.
-if [ ! -d "/data" ]; then
+if [ ! -d "$DATA_FOLDER_PATH" ]; then
   echo "Creating data directory"
-  mkdir -p /data
+  mkdir -p "$DATA_FOLDER_PATH"
 fi
 
 # Change the owner of the folder and file to the specified UID and GID if they are not root
 if [ "$USER_ID" -ne 0 ] && [ "$GROUP_ID" -ne 0 ]; then
-  chown -R ${USER_ID}:${GROUP_ID} /.env /data
+  chown -R ${USER_ID}:${GROUP_ID} /easylayer
 else
   echo "Using root as the default user."
 fi
+
+# Append command-line parameters to the .env file
+append_or_update_cmdline_vars "$@"
 
 # Initialize a new Node.js project if package.json does not exist
 if [ ! -f "/package.json" ]; then
@@ -60,13 +111,18 @@ fi
 echo "Running bootstrap method..."
 node -e "
   (async () => {
+    try {
       const packageName = '@easylayer/base';
       const pkg = require(packageName);
       if (typeof pkg.bootstrap === 'function') {
-        await pkg.bootstrap({appName:'easylayer'});
+        await pkg.bootstrap({});
       } else {
         console.error('Bootstrap method not found in package', packageName);
-        process.exit(1); // Terminate with an error
+        process.exit(1);
       }
+    } catch(error) {
+      console.error('Bootstrap catch error', error);
+      process.exit(1);
+    }
   })();
 "
