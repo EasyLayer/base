@@ -14,25 +14,31 @@ export class OutputsReadService {
     private readDb: Repository<OutputViewModel>
   ) {}
 
-  async createMany({ outputs, blockHeight }: { outputs: any; blockHeight: string }): Promise<OutputViewModel[]> {
+  async createMany(processedOutputs: Map<number, any[]>): Promise<OutputViewModel[]> {
+    const valuesToInsert = [];
+
+    for (const [blockHeight, outputs] of processedOutputs) {
+      valuesToInsert.push(
+        ...outputs.map((output) => ({
+          ...output,
+          block_height: blockHeight,
+          value: output.value.toString(),
+          n: Number(output.n),
+          is_suspended: false,
+        }))
+      );
+    }
+
     const { raw } = await this.readDb
       .createQueryBuilder()
       .insert()
       .into(OutputViewModel)
-      .values(
-        outputs.map((item: any) => ({
-          ...item,
-          value: item.value.toString(),
-          n: Number(item.n),
-          block_height: Number(blockHeight),
-          is_suspended: false,
-        }))
-      )
+      .values(valuesToInsert)
       // IMPORTANT: At the current stage this ensures idempotency
       .orIgnore()
       // .orUpdate(
-      //   ['txid', 'n'],
-      //   ['value']
+      //   ['output_txid', 'output_n'],
+      //   ['txid']
       // )
       // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
       // (without select after insert)

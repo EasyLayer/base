@@ -60,8 +60,6 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
     await exponentialIntervalAsync(
       async (resetInterval) => {
-        this.log.info('Loading blocks...', null, this.constructor.name);
-
         if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
           this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
           return;

@@ -66,7 +66,7 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
 
   private async processBlock(block: Block) {
     try {
-      await this.blocksCommandExecutor.indexBlock({ block, requestId: uuidv4() });
+      await this.blocksCommandExecutor.indexBlock({ batch: [block], requestId: uuidv4() });
     } catch (error) {
       this.log.error('Failed to iterate the block', error, this.constructor.name);
 

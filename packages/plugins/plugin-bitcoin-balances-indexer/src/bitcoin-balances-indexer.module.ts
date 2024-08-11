@@ -15,12 +15,7 @@ import {
   ReadStateExceptionHandlerService,
   BlocksCommandFactoryService,
 } from './application-layer/services';
-import {
-  BalancesIndexerModelFactoryService,
-  TransactionsBatchModelFactoryService,
-  OutputsReadService,
-  InputsReadService,
-} from './domain-layer/services';
+import { BalancesIndexerModelFactoryService, OutputsReadService, InputsReadService } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 import { EventsHandlers } from './domain-layer/events-handlers';
 import { AppConfig, EventStoreConfig, ReadDatabaseConfig, BusinessConfig } from './config';
@@ -52,7 +47,7 @@ export class BitcoinBalancesIndexerModule {
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
-          // enableWAL: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
+          enableWAL: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
 
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error.
@@ -66,6 +61,7 @@ export class BitcoinBalancesIndexerModule {
           logging: readdatabaseConfig.isLogging(),
           enableWAL: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
           entities: [OutputViewModel, InputViewModel],
+          extra: {},
         }),
         BlocksQueueModule.forRootAsync({
           blocksCommandExecutor: BlocksCommandFactoryService,
@@ -103,7 +99,6 @@ export class BitcoinBalancesIndexerModule {
         IndexerSaga,
         BalancesIndexerCommandFactoryService,
         ReadStateExceptionHandlerService,
-        TransactionsBatchModelFactoryService,
         ...CommandHandlers,
         ...EventsHandlers,
       ],

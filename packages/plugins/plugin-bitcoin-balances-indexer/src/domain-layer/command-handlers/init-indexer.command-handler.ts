@@ -1,18 +1,16 @@
-// import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
 import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
 import { InitIndexerCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger } from '@easylayer/components/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
-import { BalancesIndexerModelFactoryService, TransactionsBatchModelFactoryService } from '../services';
+import { BalancesIndexerModelFactoryService } from '../services';
 
 @CommandHandler(InitIndexerCommand)
 export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCommand> {
   constructor(
     private readonly log: AppLogger,
     private readonly eventStore: EventStoreRepository,
-    private readonly indexerModelFactory: BalancesIndexerModelFactoryService,
-    private readonly batchModelFactory: TransactionsBatchModelFactoryService
+    private readonly indexerModelFactory: BalancesIndexerModelFactoryService
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
@@ -22,31 +20,28 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
 
       const { requestId, startHeight, restoreFromHeight } = payload;
 
+      const restoreBlocks: string[] = [];
+
       const indexerModel: BalancesIndexer = await this.indexerModelFactory.initModel();
-      await indexerModel.init({
-        requestId,
-        startHeight,
-      });
 
       if (indexerModel.status === 'awaiting' && restoreFromHeight) {
         const restoreBlocksCount = indexerModel.chain.lastBlockHeight - restoreFromHeight;
         const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount);
-
-        this.log.info('Index Aggregate restore blocks staring...', { restoreBlocksCount }, this.constructor.name);
-
-        for (const block of blocks) {
-          const { batches } = block;
-          for (const batchId of batches) {
-            // Publish last batch event
-            await this.batchModelFactory.publishLastEvent(batchId);
-          }
-        }
+        // For restore block in read state we publish indexer with blocks hashes
+        blocks.forEach((item) => restoreBlocks.push(item.hash));
+        console.log(indexerModel.chain.lastBlockHeight, restoreFromHeight);
       }
 
       if (indexerModel.status === 'reorganisation') {
         // Publish last indexer event to process reorganisation
         await this.indexerModelFactory.publishLastEvent();
       }
+
+      await indexerModel.init({
+        requestId,
+        startHeight,
+        restoreBlocks,
+      });
 
       await this.eventStore.save(indexerModel);
       await indexerModel.commit();

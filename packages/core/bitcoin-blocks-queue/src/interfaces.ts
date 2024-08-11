@@ -33,5 +33,5 @@ export interface Block {
 }
 
 export interface BlocksCommandExecutor {
-  indexBlock({ block, requestId }: { block: Block; requestId: string }): Promise<void>;
+  indexBlock({ batch, requestId }: { batch: Block[]; requestId: string }): Promise<void>;
 }

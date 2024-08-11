@@ -11,18 +11,24 @@ export class InputsReadService {
     private readDb: Repository<InputViewModel>
   ) {}
 
-  async createMany({ inputs }: { inputs: any }): Promise<InputViewModel[]> {
+  async createMany(processedInputs: Map<number, any[]>): Promise<InputViewModel[]> {
+    const valuesToInsert = [];
+
+    for (const [, inputs] of processedInputs) {
+      valuesToInsert.push(
+        ...inputs.map((input) => ({
+          txid: input.txid,
+          output_txid: input.outputTxId,
+          output_n: Number(input.outputN),
+        }))
+      );
+    }
+
     const { raw } = await this.readDb
       .createQueryBuilder()
       .insert()
       .into(InputViewModel)
-      .values(
-        inputs.map((item: any) => ({
-          ...item,
-          output_txid: item.outputTxId,
-          output_n: Number(item.outputN),
-        }))
-      )
+      .values(valuesToInsert)
       // IMPORTANT: At the current stage this ensures idempotency
       .orIgnore()
       // .orUpdate(
@@ -36,6 +42,31 @@ export class InputsReadService {
 
     return raw;
   }
+  // async createMany({ inputs }: { inputs: any }): Promise<InputViewModel[]> {
+  //   const { raw } = await this.readDb
+  //     .createQueryBuilder()
+  //     .insert()
+  //     .into(InputViewModel)
+  //     .values(
+  //       inputs.map((item: any) => ({
+  //         ...item,
+  //         output_txid: item.outputTxId,
+  //         output_n: Number(item.outputN),
+  //       }))
+  //     )
+  //     // IMPORTANT: At the current stage this ensures idempotency
+  //     .orIgnore()
+  //     // .orUpdate(
+  //     //   ['output_txid', 'output_n'],
+  //     //   ['txid']
+  //     // )
+  //     // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+  //     // (without select after insert)
+  //     .updateEntity(false)
+  //     .execute();
+
+  //   return raw;
+  // }
 
   async updateWithBuilder(criteria: any, dto: any): Promise<any> {
     const queryBuilder = this.readDb.createQueryBuilder().update(InputViewModel).set(dto);

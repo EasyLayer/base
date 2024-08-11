@@ -1,23 +1,17 @@
-import { v4 as uuidv4 } from 'uuid';
 import { CommandHandler, ICommandHandler } from '@easylayer/core/cqrs';
 import { Transactional, EventStoreRepository } from '@easylayer/core/eventstore';
-import { BitcoinNetworkProviderService, BitcoinCryptoUtilsService } from '@easylayer/core/bitcoin-network-provider';
+import { BitcoinNetworkProviderService } from '@easylayer/core/bitcoin-network-provider';
 import { IndexBlockCommand } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
 import { BalancesIndexer } from '../models/balances-indexer.model';
-import { TransactionsBatch } from '../models/transactions-batch.model';
-import { TransactionsBatchModelFactoryService, BalancesIndexerModelFactoryService } from '../services';
-import { AppConfig } from '../../config';
+import { BalancesIndexerModelFactoryService } from '../services';
 
 @CommandHandler(IndexBlockCommand)
 export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockCommand> {
   constructor(
     private readonly log: AppLogger,
-    private readonly appConfig: AppConfig,
-    private readonly batchModelFactory: TransactionsBatchModelFactoryService,
     private readonly balancesIndexerModelFactory: BalancesIndexerModelFactoryService,
     private readonly networkProviderService: BitcoinNetworkProviderService,
-    private readonly cryptoUtilsService: BitcoinCryptoUtilsService,
     private readonly eventStore: EventStoreRepository
   ) {}
 
@@ -25,125 +19,31 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   @RuntimeTracker({ showMemory: true })
   async execute({ payload }: IndexBlockCommand) {
     try {
-      // NOTE: block - is from BlocksQueue
-      const { block, requestId } = payload;
-      const { tx, ...blockWithoutTx } = block;
-      const { height, hash, previousblockhash } = blockWithoutTx;
+      const { batch, requestId } = payload;
 
-      // TODO: Indexer should be in snapshot cache
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
 
-      /* Reorganisation */
-      // IMPORTANT: We do this check here, and not inside the aggregate,
-      // because we don’t want to throw an error and process it
-      if (!indexerModel.chain.validateNextBlock(height, previousblockhash)) {
-        await indexerModel.startReorganisation({
-          height,
-          requestId,
-          service: this.networkProviderService,
-          blocks: [],
-        });
-        await this.eventStore.save(indexerModel);
-        this.balancesIndexerModelFactory.updateCache(indexerModel);
-        await indexerModel.commit();
-        this.log.info(`Balances Indexer reorganisation started`, {}, this.constructor.name);
-        return;
-      }
+      const blocks = batch.map((block: any) => ({
+        ...block,
+        tx: block.tx.map((t: any) => t.txid),
+      }));
 
-      const batches = [];
-
-      // Split transactions by batches
-      const transactionSlices = this.splitTransactionsIntoSlices(
-        tx,
-        this.appConfig.BITCOIN_BALANCES_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE
-      );
-
-      for (let n = 0; n < transactionSlices.length; n++) {
-        const transactions = transactionSlices[n];
-
-        // TODO: add type
-        const transactionBatch: TransactionsBatch = this.batchModelFactory.createNewModel();
-
-        // Check if this is the last batch
-        const isFinalBatch = n === transactionSlices.length - 1;
-
-        await transactionBatch.index({
-          service: this.cryptoUtilsService,
-          aggregateId: uuidv4(),
-          requestId,
-          transactions,
-          blockHeight: height,
-          n,
-          isFinalBatch,
-        });
-
-        batches.push(transactionBatch);
-      }
-
-      await indexerModel.addBlock({
+      await indexerModel.addBlocks({
         requestId,
-        block: {
-          ...blockWithoutTx,
-          // NOTE: we store batches ids with block in Indexer Blockchain structure
-          batches: batches.map((item) => item.aggregateId),
-        },
+        blocks,
+        service: this.networkProviderService,
+        logger: this.log,
       });
 
-      await this.eventStore.save([...batches, indexerModel]);
+      await this.eventStore.save(indexerModel);
 
       this.balancesIndexerModelFactory.updateCache(indexerModel);
 
-      for (const batch of batches) {
-        await batch.commit();
-      }
-
-      // NOTE: This event is not currently being processed
       await indexerModel.commit();
-
-      this.log.info(
-        'Balances successfull indexed',
-        { blockHeight: height, blockHash: hash, batches: batches.length, txLength: tx.length },
-        this.constructor.name
-      );
     } catch (error) {
       this.log.error('execute()', error, this.constructor.name);
       this.balancesIndexerModelFactory.clearCache();
       throw error;
     }
-  }
-
-  private getSizeInBytes<T extends object>(object: T) {
-    return Buffer.byteLength(JSON.stringify(object), 'utf8');
-  }
-
-  private splitTransactionsIntoSlices(transactions: any[], maxBatchSize: number) {
-    let currentBatchSize = 0;
-    let transactionSlice = [];
-    const slices = [];
-
-    for (let i = 0; i < transactions.length; i++) {
-      const transaction = transactions[i];
-      const transactionSize = this.getSizeInBytes(transaction);
-
-      // Check if adding this transaction exceeds the slice size limit
-      if (currentBatchSize + transactionSize > maxBatchSize) {
-        slices.push(transactionSlice);
-
-        // Reset for next batch
-        currentBatchSize = 0;
-        transactionSlice = [];
-      }
-
-      // Add the current transaction to the current batch
-      transactionSlice.push(transaction);
-      currentBatchSize += transactionSize;
-    }
-
-    // Handle the final batch if it exists
-    if (transactionSlice.length > 0) {
-      slices.push(transactionSlice);
-    }
-
-    return slices;
   }
 }

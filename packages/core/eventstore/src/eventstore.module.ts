@@ -56,6 +56,17 @@ export class EventStoreModule {
             const dataSource = new DataSource(options);
             await dataSource.initialize();
 
+            // TODO: move its somewhere
+            // Apply PRAGMA settings (for improve writing) for SQLite
+            if (restOptions.type === 'sqlite') {
+              await dataSource.query('PRAGMA journal_mode = WAL;');
+              await dataSource.query('PRAGMA synchronous = NORMAL;');
+              await dataSource.query('PRAGMA cache_size = 10000;');
+              await dataSource.query('PRAGMA temp_store = MEMORY;');
+              await dataSource.query('PRAGMA locking_mode = EXCLUSIVE;');
+              await dataSource.query('PRAGMA mmap_size = 268435456;');
+            }
+
             // Add a DataSource with a unique name
             // IMPORTANT: name use in @Transactional() decorator
             addTransactionalDataSource({

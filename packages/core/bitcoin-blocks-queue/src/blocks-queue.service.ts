@@ -62,7 +62,8 @@ export class BlocksQueueService {
     this.log.info('Queue was clear to height: ', { newStartHeight }, this.constructor.name);
   }
 
-  public async confirmIndexBlock(blockHash: string): Promise<void> {
+  // Rename method to dequeueBlock
+  public async confirmIndexBlock(blockHash: string): Promise<Block | undefined> {
     // IMPORTANT: This method must be idenpotent.
     // To do this, we added a check and remove only the required block from the queue,
     // BUT if there is no such block, then we will skip it, without an error!
@@ -70,7 +71,8 @@ export class BlocksQueueService {
     const block = this._blockQueue.firstBlock;
 
     if (block && block.hash === blockHash) {
-      this._blockQueue.dequeue();
+      this.blocksQueueIterator.resolveNextBlock();
+      return this._blockQueue.dequeue();
     }
 
     this.blocksQueueIterator.resolveNextBlock();

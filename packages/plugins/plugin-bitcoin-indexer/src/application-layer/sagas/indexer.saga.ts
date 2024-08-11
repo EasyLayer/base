@@ -5,7 +5,7 @@ import { Saga, ICommand, executeWithRetry } from '@easylayer/core/cqrs';
 import { BlocksQueueService } from '@easylayer/core/bitcoin-blocks-queue';
 import {
   BitcoinIndexerInitializedEvent,
-  BitcoinIndexerBlockIndexedEvent,
+  // BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerReorganisationStartedEvent,
   BitcoinIndexerReorganisationFinishedEvent,
 } from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
@@ -51,16 +51,6 @@ export class IndexerSaga {
             // since the reorganisation event is triggered automatically recursively.
             requestId: uuidv4(),
           }),
-      })
-    );
-  }
-
-  @Saga()
-  onBitcoinIndexerBlockIndexedEvent(events$: Observable<any>): Observable<ICommand> {
-    return events$.pipe(
-      executeWithRetry({
-        event: BitcoinIndexerBlockIndexedEvent,
-        command: ({ payload }) => this.blocksQueueService.confirmIndexBlock(payload.block.hash),
       })
     );
   }

@@ -58,11 +58,11 @@ export class BitcoinNetworkProviderService {
     }
   }
 
-  public async getOneBlockByHash(hash: string | Hash): Promise<any> {
+  public async getOneBlockByHash(hash: string | Hash, verbosity?: number): Promise<any> {
     try {
       const provider = await this._connectionManager.getActiveProvider();
       // TODO: add method transform into Hash
-      return await provider.getOneBlockByHash(hash as Hash);
+      return await provider.getOneBlockByHash(hash as Hash, verbosity);
     } catch (error) {
       this.log.error('getOneBlockByHash()', error, this.constructor.name);
       throw error;

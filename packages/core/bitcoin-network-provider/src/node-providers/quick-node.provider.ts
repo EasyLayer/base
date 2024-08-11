@@ -184,11 +184,11 @@ export class QuickNodeProvider extends BaseNodeProvider<QuickNodeProviderOptions
     }
   }
 
-  async getManyTransactionsByHashes(hashes: Hash[]): Promise<any> {
+  async getManyTransactionsByHashes(hashes: Hash[], verbosity?: number): Promise<any> {
     const transactions = [];
 
     for (const hash of hashes) {
-      const tx = await this.getOneBlockByHash(hash);
+      const tx = await this.getOneBlockByHash(hash, verbosity);
       transactions.push(tx);
     }
 

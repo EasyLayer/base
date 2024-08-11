@@ -1,8 +1,10 @@
 import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
 import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
-import { Transactional } from '@easylayer/core/read-database';
+import { Transactional, QueryFailedError } from '@easylayer/core/read-database';
 import { BitcoinBalancesIndexerTransactionsBatchSuspendedEvent } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
 import { OutputsReadService } from '../services';
+
+// TODO: refactor this class
 
 @EventsHandler(BitcoinBalancesIndexerTransactionsBatchSuspendedEvent)
 export class BitcoinBalancesIndexerTransactionsBatchSuspendedEventHandler
@@ -27,7 +29,16 @@ export class BitcoinBalancesIndexerTransactionsBatchSuspendedEventHandler
       // NOTE: At the moment we do not delete reorganized outputs, but flag outputs as suspended
       await this.outputsReadService.updateWithBuilder({ txid: txids }, { is_suspended: true });
     } catch (error) {
-      this.log.error('handle()', error, this.constructor.name);
+      if (error instanceof QueryFailedError) {
+        const driverError = error.driverError;
+        if (driverError.code === 'SQLITE_CONSTRAINT') {
+          throw new Error(driverError.message);
+        }
+        if (driverError.code === '23505') {
+          throw new Error(driverError.detail);
+        }
+      }
+
       throw error;
     }
   }
