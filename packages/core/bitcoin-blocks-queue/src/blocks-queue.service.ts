@@ -37,15 +37,9 @@ export class BlocksQueueService {
     return this.blocksCollectorService;
   }
 
-  async start(indexedHeight: string | number) {
-    try {
-      await Promise.allSettled([
-        this.blocksQueueLoader.startBlocksLoading(Number(indexedHeight), this._blockQueue),
-        this.blocksQueueIterator.startQueueIterating(this._blockQueue),
-      ]);
-    } catch (error) {
-      this.log.error('Erorr', error, this.constructor.name);
-    }
+  start(indexedHeight: string | number) {
+    this.blocksQueueLoader.startBlocksLoading(Number(indexedHeight), this._blockQueue);
+    this.blocksQueueIterator.startQueueIterating(this._blockQueue);
   }
 
   public async reorganizeBlocks(newStartHeight: string | number): Promise<void> {
@@ -63,7 +57,7 @@ export class BlocksQueueService {
   }
 
   // Rename method to dequeueBlock
-  public async confirmIndexBlock(blockHash: string): Promise<Block | undefined> {
+  public async confirmIndexBlock(blockHash: string): Promise<Block> {
     // IMPORTANT: This method must be idenpotent.
     // To do this, we added a check and remove only the required block from the queue,
     // BUT if there is no such block, then we will skip it, without an error!
@@ -71,10 +65,16 @@ export class BlocksQueueService {
     const block = this._blockQueue.firstBlock;
 
     if (block && block.hash === blockHash) {
+      const b = this._blockQueue.dequeue();
+
+      if (!b) {
+        throw new Error(`Block is not found: ${blockHash}`);
+      }
+
       this.blocksQueueIterator.resolveNextBlock();
-      return this._blockQueue.dequeue();
+      return b;
     }
 
-    this.blocksQueueIterator.resolveNextBlock();
+    throw new Error(`Block is not found: ${blockHash}`);
   }
 }

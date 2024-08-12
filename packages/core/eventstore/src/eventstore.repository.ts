@@ -30,6 +30,8 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
       order: { version: 'ASC' }, // TODO: think can we sort by "id" here?
     });
 
+    // TODO: we can fetch state from snapshots
+
     await model.loadFromHistory(eventRaws.map(EventDataModel.deserialize));
     return model;
   }

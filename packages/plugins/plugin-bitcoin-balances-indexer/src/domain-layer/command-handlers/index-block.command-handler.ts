@@ -16,21 +16,16 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-write' })
-  @RuntimeTracker({ showMemory: true })
+  @RuntimeTracker({ showMemory: false })
   async execute({ payload }: IndexBlockCommand) {
     try {
       const { batch, requestId } = payload;
 
       const indexerModel: BalancesIndexer = await this.balancesIndexerModelFactory.initModel();
 
-      const blocks = batch.map((block: any) => ({
-        ...block,
-        tx: block.tx.map((t: any) => t.txid),
-      }));
-
       await indexerModel.addBlocks({
         requestId,
-        blocks,
+        blocks: batch,
         service: this.networkProviderService,
         logger: this.log,
       });

@@ -27,8 +27,7 @@ export class BalancesIndexerService implements OnModuleInit {
       await this.indexerCommandFactory.init({
         requestId: uuidv4(),
         startHeight: this.businessConfig.BITCOIN_BALANCES_INDEXER_START_BLOCK_HEIGHT,
-        restoreFromHeight:
-          lastOutput?.block_height && lastOutput.block_height > 0 ? lastOutput.block_height - 1 : undefined,
+        restoreFromHeight: lastOutput?.block_height && lastOutput.block_height > 0 ? lastOutput.block_height - 1 : -1,
       });
     } catch (error) {
       this.log.error('initialization()', error, this.constructor.name);

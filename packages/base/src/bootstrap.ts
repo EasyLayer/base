@@ -85,6 +85,8 @@ function gracefulShutdown(app: INestApplication, logger: NestLogger) {
   setTimeout(async () => {
     try {
       logger.log('Closing application...');
+      // TODO: add close databases separatly (in sqlite case clear wal journal)
+      // const eventstore = app.get(EventStore);
       await app.close();
     } catch (error) {
       logger.error('Error during shutdown');

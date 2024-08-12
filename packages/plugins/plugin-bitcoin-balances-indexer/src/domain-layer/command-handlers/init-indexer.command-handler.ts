@@ -24,12 +24,11 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
 
       const indexerModel: BalancesIndexer = await this.indexerModelFactory.initModel();
 
-      if (indexerModel.status === 'awaiting' && restoreFromHeight) {
+      if (indexerModel.status === 'awaiting') {
         const restoreBlocksCount = indexerModel.chain.lastBlockHeight - restoreFromHeight;
         const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount);
         // For restore block in read state we publish indexer with blocks hashes
         blocks.forEach((item) => restoreBlocks.push(item.hash));
-        console.log(indexerModel.chain.lastBlockHeight, restoreFromHeight);
       }
 
       if (indexerModel.status === 'reorganisation') {

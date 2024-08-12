@@ -47,21 +47,18 @@ export class BitcoinBalancesIndexerModule {
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
-          enableWAL: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
 
           // Now, when attempting to perform an operation that encountered a block,
           // SQLite will attempt to retry the operation for the specified time before returning an error.
           // busyTimeout: 1000
         }),
         ReadDatabaseModule.forRoot({
-          type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
-          name: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
+          type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_TYPE,
+          name: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_NAME,
           // database: '',
-          synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
+          synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
-          enableWAL: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
           entities: [OutputViewModel, InputViewModel],
-          extra: {},
         }),
         BlocksQueueModule.forRootAsync({
           blocksCommandExecutor: BlocksCommandFactoryService,

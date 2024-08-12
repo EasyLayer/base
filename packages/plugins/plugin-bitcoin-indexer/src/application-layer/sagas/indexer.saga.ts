@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { Saga, ICommand, executeWithRetry } from '@easylayer/core/cqrs';
 import { BlocksQueueService } from '@easylayer/core/bitcoin-blocks-queue';
 import {
-  BitcoinIndexerInitializedEvent,
+  // BitcoinIndexerInitializedEvent,
   // BitcoinIndexerBlockIndexedEvent,
   BitcoinIndexerReorganisationStartedEvent,
   BitcoinIndexerReorganisationFinishedEvent,
@@ -18,15 +18,15 @@ export class IndexerSaga {
     @Inject('BlocksQueueService') private readonly blocksQueueService: BlocksQueueService
   ) {}
 
-  @Saga()
-  onBitcoinIndexerInitializedEvent(events$: Observable<any>): Observable<ICommand> {
-    return events$.pipe(
-      executeWithRetry({
-        event: BitcoinIndexerInitializedEvent,
-        command: ({ payload }: BitcoinIndexerInitializedEvent) => this.blocksQueueService.start(payload.indexedHeight),
-      })
-    );
-  }
+  // @Saga()
+  // onBitcoinIndexerInitializedEvent(events$: Observable<any>): Observable<ICommand> {
+  //   return events$.pipe(
+  //     executeWithRetry({
+  //       event: BitcoinIndexerInitializedEvent,
+  //       command: ({ payload }: BitcoinIndexerInitializedEvent) => this.blocksQueueService.start(payload.indexedHeight),
+  //     })
+  //   );
+  // }
 
   @Saga()
   onBitcoinIndexerReorganisationFinishedEvent(events$: Observable<any>): Observable<ICommand> {

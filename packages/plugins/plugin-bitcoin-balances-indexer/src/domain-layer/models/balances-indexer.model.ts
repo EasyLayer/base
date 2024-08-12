@@ -477,6 +477,10 @@ export class BalancesIndexer extends AggregateRoot {
         blocksHeight: blocks[blocks.length - 1].height,
         blocksLength: blocks.length,
         txLength: blocks.reduce((result: number, item: any) => result + item.tx.length, 0),
+        outputsLength: blocks.reduce(
+          (result: number, item: any) => result + item.tx.reduce((r: number, i: any) => r + i.vout.length, 0),
+          0
+        ),
       },
       this.constructor.name
     );
@@ -486,7 +490,10 @@ export class BalancesIndexer extends AggregateRoot {
         aggregateId: this.aggregateId,
         requestId,
         status: IndexerStatuses.AWAITING,
-        blocks,
+        blocks: blocks.map((block: any) => ({
+          ...block,
+          tx: block.tx.map((t: any) => t.txid),
+        })),
       })
     );
   }

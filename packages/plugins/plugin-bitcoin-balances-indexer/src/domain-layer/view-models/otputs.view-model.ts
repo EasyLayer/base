@@ -1,8 +1,8 @@
-import { Entity, Column, Unique, Index, PrimaryColumn } from '@easylayer/core/read-database';
+import { Entity, Column, Unique, PrimaryColumn } from '@easylayer/core/read-database';
 
 @Entity('outputs')
 @Unique('UQ__txid__n', ['txid', 'n'])
-@Index('IDX_address', ['address'], { where: 'address IS NOT NULL' })
+// @Index('IDX_address', ['address'], { where: 'address IS NOT NULL' })
 export class OutputViewModel {
   @Column({ type: 'varchar', nullable: true })
   public address!: string; // null for coinbase outputs

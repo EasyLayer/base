@@ -29,24 +29,126 @@ export class OutputsReadService {
       );
     }
 
-    const { raw } = await this.readDb
-      .createQueryBuilder()
-      .insert()
-      .into(OutputViewModel)
-      .values(valuesToInsert)
-      // IMPORTANT: At the current stage this ensures idempotency
-      .orIgnore()
-      // .orUpdate(
-      //   ['output_txid', 'output_n'],
-      //   ['txid']
-      // )
-      // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
-      // (without select after insert)
-      .updateEntity(false)
-      .execute();
+    const batches = this.prepareBatches(valuesToInsert);
 
-    return raw;
+    // if (batches.length > 1) {
+    //   // Удаляем индексы перед вставкой
+    //   await this.removeIndexes();
+    // }
+
+    const rawResults = [];
+
+    for (const batch of batches) {
+      const { raw } = await this.readDb
+        .createQueryBuilder()
+        .insert()
+        .into(OutputViewModel)
+        .values(batch)
+        // IMPORTANT: At the current stage this ensures idempotency
+        .orIgnore()
+        // .orUpdate(
+        //   ['output_txid', 'output_n'],
+        //   ['txid']
+        // )
+        // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+        // (without select after insert)
+        .updateEntity(false)
+        .execute();
+
+      rawResults.push(raw);
+    }
+
+    // if (batches.length > 1) {
+    //   // Пересоздаем индексы после вставки
+    //   await this.recreateIndexes();
+    // }
+
+    return rawResults.flat();
   }
+
+  async createIndexes(tableName: string, columns: string[]) {
+    const connectionType = this.readDb.manager.connection.options.type;
+
+    const columnsList = columns.join(', ');
+
+    switch (connectionType) {
+      case 'sqlite':
+        await this.readDb.query(
+          `CREATE INDEX IF NOT EXISTS IDX_${columns.join('_')} ON ${tableName} (${columnsList});`
+        );
+        break;
+      case 'postgres':
+        await this.readDb.query(
+          `CREATE INDEX IF NOT EXISTS IDX_${columns.join('_')} ON ${tableName} USING BTREE (${columnsList});`
+        );
+        break;
+      default:
+        throw new Error(`Not support databse type: ${connectionType}`);
+    }
+  }
+
+  // Метод для подготовки батчей
+  private prepareBatches(valuesToInsert: any[]): any[][] {
+    const isSQLite = this.readDb.manager.connection.options.type === 'sqlite';
+
+    if (!isSQLite) {
+      // Если это не SQLite, возвращаем весь массив как один батч
+      return [valuesToInsert];
+    }
+
+    const maxVariables = 999; // Максимальное количество переменных для SQLite
+    const batchSize = Math.floor(maxVariables / Object.keys(valuesToInsert[0]).length);
+
+    // Если данных больше чем batchSize, разбиваем на батчи
+    if (valuesToInsert.length > batchSize) {
+      return this.chunkArray(valuesToInsert, batchSize);
+    }
+
+    return [valuesToInsert]; // Если данных меньше batchSize, возвращаем их в одном батче
+  }
+
+  // Метод для разбивания массива на чанки (батчи)
+  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
+    const results: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      results.push(array.slice(i, i + chunkSize));
+    }
+    return results;
+  }
+
+  // async createMany(processedOutputs: Map<number, any[]>): Promise<OutputViewModel[]> {
+  //   const valuesToInsert = [];
+
+  //   for (const [blockHeight, outputs] of processedOutputs) {
+  //     valuesToInsert.push(
+  //       ...outputs.map((output) => ({
+  //         ...output,
+  //         block_height: blockHeight,
+  //         value: output.value.toString(),
+  //         n: Number(output.n),
+  //         is_suspended: false,
+  //       }))
+  //     );
+  //   }
+
+  //   const { raw } = await this.readDb
+  //     .createQueryBuilder()
+  //     .insert()
+  //     .into(OutputViewModel)
+  //     .values(valuesToInsert)
+  //     // IMPORTANT: At the current stage this ensures idempotency
+  //     .orIgnore()
+  //     // .orUpdate(
+  //     //   ['output_txid', 'output_n'],
+  //     //   ['txid']
+  //     // )
+  //     // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+  //     // (without select after insert)
+  //     .updateEntity(false)
+  //     .execute();
+
+  //   return raw;
+  // }
 
   async updateWithBuilder(criteria: any, dto: any): Promise<any> {
     const queryBuilder = this.readDb.createQueryBuilder().update(OutputViewModel).set(dto);

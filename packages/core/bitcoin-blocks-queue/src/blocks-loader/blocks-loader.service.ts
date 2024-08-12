@@ -41,56 +41,64 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   public async startBlocksLoading(indexedHeight: number | string, queue: BlocksQueue<Block>): Promise<void> {
-    this.log.info('Setup blocks loading from height', { indexedHeight }, this.constructor.name);
+    try {
+      this.log.info('Setup blocks loading from height', { indexedHeight }, this.constructor.name);
 
-    // NOTE: We use this to make sure that
-    // method startQueueIterating() is executed only once in its entire life.
-    if (this._isLoading) {
-      return;
-    }
-
-    this._isLoading = true;
-
-    // TODO: think where put this
-    this._queue = queue;
-
-    // INPORTANT: Here we indicate the height that was actually the last processed
-    // (NOT the next one)
-    this._queue.lastHeight = Number(indexedHeight);
-
-    await exponentialIntervalAsync(
-      async (resetInterval) => {
-        if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
-          this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
-          return;
-        }
-
-        // Setup the strategy
-        await this.setupStrategy();
-
-        try {
-          await this._loadingStrategy?.load(this._currentNetworkHeight);
-        } catch (error) {
-          this.log.error('Load blocks strategy error', error, this.constructor.name);
-
-          resetInterval();
-
-          // IMPORTANT: In case of an error, we are obliged to restart the strategy
-          await this.destroyStrategy();
-        }
-
-        this.log.info(
-          'Load blocks waiting...',
-          { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
-          this.constructor.name
-        );
-      },
-      {
-        interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
-        maxInterval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
-        multiplier: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+      // NOTE: We use this to make sure that
+      // method startQueueIterating() is executed only once in its entire life.
+      if (this._isLoading) {
+        return;
       }
-    );
+
+      this._isLoading = true;
+
+      // TODO: think where put this
+      this._queue = queue;
+
+      // INPORTANT: Here we indicate the height that was actually the last processed
+      // (NOT the next one)
+      this._queue.lastHeight = Number(indexedHeight);
+
+      await exponentialIntervalAsync(
+        async (resetInterval) => {
+          if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
+            this.log.info(
+              'Reached max block height',
+              { lastQueueHeight: this._queue.lastHeight },
+              this.constructor.name
+            );
+            return;
+          }
+
+          // Setup the strategy
+          await this.setupStrategy();
+
+          try {
+            await this._loadingStrategy?.load(this._currentNetworkHeight);
+          } catch (error) {
+            this.log.error('Load blocks strategy error', error, this.constructor.name);
+
+            resetInterval();
+
+            // IMPORTANT: In case of an error, we are obliged to restart the strategy
+            await this.destroyStrategy();
+          }
+
+          this.log.info(
+            'Load blocks waiting...',
+            { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
+            this.constructor.name
+          );
+        },
+        {
+          interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
+          maxInterval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
+          multiplier: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+        }
+      );
+    } catch (error) {
+      this.log.error('Erorr', error, this.constructor.name);
+    }
   }
 
   public async handleBlockFromStream(block: Block): Promise<void> {

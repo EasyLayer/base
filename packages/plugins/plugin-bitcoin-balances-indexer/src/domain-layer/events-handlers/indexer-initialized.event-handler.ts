@@ -1,6 +1,6 @@
 import { Inject } from '@nestjs/common';
 import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
-import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
+import { RuntimeTracker } from '@easylayer/components/logger';
 import { Currency, Money } from '@easylayer/components/arithmetic';
 import { Transactional, QueryFailedError } from '@easylayer/core/read-database';
 import { BlocksQueueService } from '@easylayer/core/bitcoin-blocks-queue';
@@ -14,7 +14,6 @@ export class BitcoinBalancesIndexerInitializedEventHandler
   implements IEventHandler<BitcoinBalancesIndexerInitializedEvent>
 {
   constructor(
-    private readonly log: AppLogger,
     private readonly businessConfig: BusinessConfig,
     private readonly outputsReadService: OutputsReadService,
     private readonly inputsReadService: InputsReadService,
@@ -107,6 +106,16 @@ export class BitcoinBalancesIndexerInitializedEventHandler
           }
         }
       }
+      // console.log('indexedHeight', indexedHeight);
+      // console.log('restoreBlocks', restoreBlocks);
+      // const processedOutputsKeyIterator = processedOutputs.keys();
+      // processedOutputsKeyIterator.next(); // Пропускаем первый ключ
+      // const secondKey = processedOutputsKeyIterator.next().value; // Получаем второй ключ
+      // console.log('processedOutputs length (second key):', processedOutputs.get(secondKey)?.length);
+      // const processedKeyIterator = processedInputs.keys();
+      // processedKeyIterator.next(); // Пропускаем первый ключ
+      // const secondKey2 = processedKeyIterator.next().value; // Получаем второй ключ
+      // console.log('processedInputs length (second key):', processedInputs.get(secondKey2)?.length);
 
       if (processedOutputs.size > 0) {
         await this.outputsReadService.createMany(processedOutputs);
@@ -117,7 +126,8 @@ export class BitcoinBalancesIndexerInitializedEventHandler
       }
 
       // IMPORTANT: We will only start loading to the blocks queue after the restoration of the Read State
-      await this.blocksQueueService.start(indexedHeight);
+      // TODO: move it from here
+      this.blocksQueueService.start(indexedHeight);
     } catch (error) {
       if (error instanceof QueryFailedError) {
         const driverError = error.driverError;

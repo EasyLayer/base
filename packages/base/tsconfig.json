@@ -4,7 +4,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "sourceMap": true,
-    "declarationMap": true,
+    "declarationMap": true
   },
   "references": [
     {"path": "../core/cqrs/tsconfig.json"},
@@ -17,6 +17,6 @@
     "dist",
     "node_modules",
     "**/*.test.ts",
-    "**/__tests__",
-  ],
+    "**/__tests__"
+  ]
 }

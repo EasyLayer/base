@@ -33,34 +33,38 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
    * Starts iterating over the block queue and processing blocks.
    */
   public async startQueueIterating(queue: BlocksQueue<Block>): Promise<void> {
-    this.log.info('Setup blocks iterating', {}, this.constructor.name);
+    try {
+      this.log.info('Setup blocks iterating', {}, this.constructor.name);
 
-    // NOTE: We use this to make sure that
-    // method startQueueIterating() is executed only once in its entire life.
-    if (this._isIterating) {
-      // Iterating Blocks already started
-      return;
-    }
-
-    this._isIterating = true;
-
-    // TODO: think where put this
-    this._queue = queue;
-
-    this.initBlockProcessedPromise();
-
-    while (this.isIterating) {
-      if (this._queue.length > 0) {
-        const block = await this.peekFirstBlock();
-        if (block) {
-          await this.processBlock(block);
-        }
-      } else {
-        // TODO: add description about why we use setTimeout() here
-        // await new Promise(resolve => setImmediate(resolve));
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        this.log.debug('Queue is empty', {}, this.constructor.name);
+      // NOTE: We use this to make sure that
+      // method startQueueIterating() is executed only once in its entire life.
+      if (this._isIterating) {
+        // Iterating Blocks already started
+        return;
       }
+
+      this._isIterating = true;
+
+      // TODO: think where put this
+      this._queue = queue;
+
+      this.initBlockProcessedPromise();
+
+      while (this.isIterating) {
+        if (this._queue.length > 0) {
+          const block = await this.peekFirstBlock();
+          if (block) {
+            await this.processBlock(block);
+          }
+        } else {
+          // TODO: add description about why we use setTimeout() here
+          // await new Promise(resolve => setImmediate(resolve));
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          this.log.debug('Queue is empty', {}, this.constructor.name);
+        }
+      }
+    } catch (error) {
+      this.log.error('Erorr', error, this.constructor.name);
     }
   }
 

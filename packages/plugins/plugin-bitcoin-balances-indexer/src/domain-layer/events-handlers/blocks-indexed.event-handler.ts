@@ -1,6 +1,6 @@
 import { Inject } from '@nestjs/common';
 import { EventsHandler, IEventHandler } from '@easylayer/core/cqrs';
-import { AppLogger, RuntimeTracker } from '@easylayer/components/logger';
+import { RuntimeTracker } from '@easylayer/components/logger';
 import { Currency, Money } from '@easylayer/components/arithmetic';
 import { Transactional, QueryFailedError } from '@easylayer/core/read-database';
 import { BitcoinCryptoUtilsService } from '@easylayer/core/bitcoin-network-provider';
@@ -14,7 +14,6 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
   implements IEventHandler<BitcoinBalancesIndexerBlocksAddedEvent>
 {
   constructor(
-    private readonly log: AppLogger,
     private readonly businessConfig: BusinessConfig,
     private readonly outputsReadService: OutputsReadService,
     private readonly inputsReadService: InputsReadService,
@@ -23,7 +22,7 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-read' })
-  @RuntimeTracker({ showMemory: true })
+  @RuntimeTracker({ showMemory: false })
   async handle({ payload }: BitcoinBalancesIndexerBlocksAddedEvent) {
     try {
       const { blocks } = payload;
@@ -39,7 +38,6 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
       for (const b of blocks) {
         const { height, hash } = b;
 
-        // Подтверждаем блок
         const block = await this.blocksQueueService.confirmIndexBlock(hash);
 
         if (!block || block.hash !== hash) {
