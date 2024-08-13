@@ -4,7 +4,6 @@ import { BitcoinNetworkProviderService } from '../bitcoin-network-provider.servi
 import { ConnectionManager } from '../connection-manager';
 import { BitcoinCryptoUtilsService } from '../crypto-utils.service';
 import { BitcoinWebhookStreamService } from '../bitcoin-webhook-stream.service';
-import { ProvidersConfig } from '../config';
 
 describe('BitcoinNetworkProviderModule', () => {
   let module: TestingModule;
@@ -12,6 +11,7 @@ describe('BitcoinNetworkProviderModule', () => {
 
   const moduleOptions: BitcoinNetworkProviderModuleOptions = {
     isGlobal: false,
+    selfNodesUrl: 'http://localhost',
   };
 
   beforeEach(async () => {
@@ -47,12 +47,6 @@ describe('BitcoinNetworkProviderModule', () => {
     const webhookStreamService = module.get<BitcoinWebhookStreamService>(BitcoinWebhookStreamService);
     expect(webhookStreamService).toBeDefined();
     expect(webhookStreamService).toBeInstanceOf(BitcoinWebhookStreamService);
-  });
-
-  it('should have ProvidersConfig', () => {
-    const providersConfig = module.get<ProvidersConfig>(ProvidersConfig);
-    expect(providersConfig).toBeDefined();
-    expect(providersConfig).toBeInstanceOf(ProvidersConfig);
   });
 
   // Add more tests for specific methods of the services if needed

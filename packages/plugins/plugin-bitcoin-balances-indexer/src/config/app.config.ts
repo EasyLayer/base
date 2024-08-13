@@ -14,7 +14,7 @@ export class AppConfig {
 
   @Transform(({ value }) => (value !== undefined ? Number(value) : 10 * 1000 * 1024))
   @IsNumber()
-  BITCOIN_BALANCES_INDEXER_MAX_TRANSACTIONS_BATCH_SIZE: number = 10 * 1000 * 1024; // 1000 KB;
+  BITCOIN_BALANCES_INDEXER_MAX_BLOCKS_BATCH_SIZE: number = 10 * 1000 * 1024; // 1000 KB;
 
   isPRODUCTION(): boolean {
     return process.env.NODE_ENV === 'production';

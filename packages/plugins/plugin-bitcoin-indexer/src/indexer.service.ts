@@ -27,7 +27,7 @@ export class IndexerService implements OnModuleInit {
       await this.indexerCommandFactory.init({
         requestId: uuidv4(),
         startHeight: this.businessConfig.BITCOIN_INDEXER_START_BLOCK_HEIGHT,
-        restoreFromHeight: lastBlock?.height && lastBlock.height > 0 ? lastBlock.height - 1 : undefined,
+        ...(lastBlock?.height > -1 ? { lastReadStateHeight: lastBlock?.height } : {}),
       });
     } catch (error) {
       this.log.error('initialization()', error, this.constructor.name);

@@ -11,7 +11,6 @@ import {
   BlocksLoadingStrategy,
   StrategyNames,
 } from './load-strategies';
-import { BlocksQueueConfig } from '../config/blocks-queue.config';
 
 @Injectable()
 export class BlocksQueueLoaderService implements OnModuleDestroy {
@@ -23,12 +22,11 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
   constructor(
     private readonly log: AppLogger,
-    private readonly blocksQueueConfig: BlocksQueueConfig,
     private readonly networkProviderService: BitcoinNetworkProviderService,
     private readonly webhookStreamService: BitcoinWebhookStreamService,
-    private readonly options: any
+    private readonly config: any
   ) {
-    this._isTransportMode = this.options.isTransportMode;
+    this._isTransportMode = this.config.isTransportMode;
   }
 
   get isLoading(): boolean {
@@ -41,58 +39,64 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   public async startBlocksLoading(indexedHeight: number | string, queue: BlocksQueue<Block>): Promise<void> {
-    this.log.info('Setup blocks loading from height', { indexedHeight }, this.constructor.name);
+    try {
+      this.log.info('Setup blocks loading from height', { indexedHeight }, this.constructor.name);
 
-    // NOTE: We use this to make sure that
-    // method startQueueIterating() is executed only once in its entire life.
-    if (this._isLoading) {
-      return;
-    }
-
-    this._isLoading = true;
-
-    // TODO: think where put this
-    this._queue = queue;
-
-    // INPORTANT: Here we indicate the height that was actually the last processed
-    // (NOT the next one)
-    this._queue.lastHeight = Number(indexedHeight);
-
-    await exponentialIntervalAsync(
-      async (resetInterval) => {
-        this.log.info('Loading blocks...', null, this.constructor.name);
-
-        if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
-          this.log.info('Reached max block height', { lastQueueHeight: this._queue.lastHeight }, this.constructor.name);
-          return;
-        }
-
-        // Setup the strategy
-        await this.setupStrategy();
-
-        try {
-          await this._loadingStrategy?.load(this._currentNetworkHeight);
-        } catch (error) {
-          this.log.error('Load blocks strategy error', error, this.constructor.name);
-
-          resetInterval();
-
-          // IMPORTANT: In case of an error, we are obliged to restart the strategy
-          await this.destroyStrategy();
-        }
-
-        this.log.info(
-          'Load blocks waiting...',
-          { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
-          this.constructor.name
-        );
-      },
-      {
-        interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
-        maxInterval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
-        multiplier: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+      // NOTE: We use this to make sure that
+      // method startQueueIterating() is executed only once in its entire life.
+      if (this._isLoading) {
+        return;
       }
-    );
+
+      this._isLoading = true;
+
+      // TODO: think where put this
+      this._queue = queue;
+
+      // INPORTANT: Here we indicate the height that was actually the last processed
+      // (NOT the next one)
+      this._queue.lastHeight = Number(indexedHeight);
+
+      await exponentialIntervalAsync(
+        async (resetInterval) => {
+          if (this._queue.lastHeight >= this._queue.maxBlockHeight) {
+            this.log.info(
+              'Reached max block height',
+              { lastQueueHeight: this._queue.lastHeight },
+              this.constructor.name
+            );
+            return;
+          }
+
+          // Setup the strategy
+          await this.setupStrategy();
+
+          try {
+            await this._loadingStrategy?.load(this._currentNetworkHeight);
+          } catch (error) {
+            this.log.error('Load blocks strategy error', error, this.constructor.name);
+
+            resetInterval();
+
+            // IMPORTANT: In case of an error, we are obliged to restart the strategy
+            await this.destroyStrategy();
+          }
+
+          this.log.info(
+            'Load blocks waiting...',
+            { queueHeight: this._queue.lastHeight, queueLegth: this._queue.length },
+            this.constructor.name
+          );
+        },
+        {
+          interval: this.config.queueLoaderIntervalMs,
+          maxInterval: this.config.queueLoaderMaxIntervalMs,
+          multiplier: this.config.queueLoaderMaxIntervalMultiplier,
+        }
+      );
+    } catch (error) {
+      this.log.error('Erorr', error, this.constructor.name);
+    }
   }
 
   public async handleBlockFromStream(block: Block): Promise<void> {
@@ -130,19 +134,19 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   private createStrategy(): BlocksLoadingStrategy {
-    const name = this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_STRATEGY_NAME;
+    const name = this.config.queueLoaderStrategyName;
 
     switch (name) {
       case StrategyNames.WEBHOOK_STREAM:
         return new WebhookStreamStrategy(this.webhookStreamService, this._queue);
       case StrategyNames.PULL_NETWORL_PROVIDER_BY_WORKERS:
         return new PullNetworkProviderByWorkersStrategy(this.networkProviderService, this._queue, {
-          minThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
-          maxThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
+          minThreads: this.config.queueWorkersNum,
+          maxThreads: this.config.queueWorkersNum,
         });
       case StrategyNames.PULL_NETWORK_PROVIDER_BY_BATCHES:
         return new PullNetworkProviderByBatchesStrategy(this.networkProviderService, this._queue, {
-          batchLength: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_NETWORK_PROVIDER_BATCHES_LENGTH,
+          batchLength: this.config.queueLoaderNetworkProviderBatchesLength,
         });
       // case StrategyNames.PULL_BLOCKS_BY_NETWORK_TRANSPORT:
       //   return new PullNetworkProviderStrategy({}, this._queue, options);

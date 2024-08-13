@@ -107,6 +107,12 @@ if [ ! -z "$PLUGIN_NAMES" ]; then
   done
 fi
 
+# TODO: Here we need to get all the plugins .env.example files and also add their envs to the main .env file.
+
+# We specify the .bin folder from node_modules to enable the ability to run packages via the command line.
+# TODO: We must implement the logic here to specifically indicate that we can ONLY launch our plugins this way.
+ENV PATH /node_modules/.bin:$PATH
+
 # Run the bootstrap method from the specified package
 echo "Running bootstrap method..."
 node -e "

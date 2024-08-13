@@ -15,15 +15,17 @@ import {
   ReadStateExceptionHandlerService,
   BlocksCommandFactoryService,
 } from './application-layer/services';
-import {
-  BalancesIndexerModelFactoryService,
-  TransactionsBatchModelFactoryService,
-  OutputsReadService,
-  InputsReadService,
-} from './domain-layer/services';
+import { BalancesIndexerModelFactoryService, OutputsReadService, InputsReadService } from './domain-layer/services';
 import { CommandHandlers } from './domain-layer/command-handlers';
 import { EventsHandlers } from './domain-layer/events-handlers';
-import { AppConfig, EventStoreConfig, ReadDatabaseConfig, BusinessConfig } from './config';
+import {
+  AppConfig,
+  EventStoreConfig,
+  ReadDatabaseConfig,
+  BusinessConfig,
+  BlocksQueueConfig,
+  ProvidersConfig,
+} from './config';
 
 @Module({})
 export class BitcoinBalancesIndexerModule {
@@ -40,41 +42,52 @@ export class BitcoinBalancesIndexerModule {
     const businessConfig = await transformAndValidate(BusinessConfig, process.env, {
       validator: { whitelist: true },
     });
+    const blocksQueueConfig = await transformAndValidate(BlocksQueueConfig, process.env, {
+      validator: { whitelist: true },
+    });
+    const providersConfig = await transformAndValidate(ProvidersConfig, process.env, {
+      validator: { whitelist: true },
+    });
 
     return {
       module: BitcoinBalancesIndexerModule,
       controllers: [BalancesIndexerController],
       imports: [
         LoggerModule.forRoot({ componentName: 'BitcoinBalancesIndexerPlugin' }),
+        // IMPORTANT: BitcoinNetworkProviderModule must be global inside one plugin
+        BitcoinNetworkProviderModule.forRootAsync({
+          isGlobal: true,
+          quickNodesUrls: providersConfig.BITCOIN_BALANCES_INDEXER_NETWORK_PROVIDER_QUICK_NODE_URLS,
+          selfNodesUrl: providersConfig.BITCOIN_BALANCES_INDEXER_NETWORK_PROVIDER_SELF_NODE_URL,
+        }),
         EventStoreModule.forRoot({
           type: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
           name: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
-          // enableWAL: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
-
-          // Now, when attempting to perform an operation that encountered a block,
-          // SQLite will attempt to retry the operation for the specified time before returning an error.
-          // busyTimeout: 1000
         }),
         ReadDatabaseModule.forRoot({
-          type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
-          name: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
+          type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_TYPE,
+          name: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_NAME,
           // database: '',
-          synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
+          synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
-          enableWAL: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_IS_WAL,
           entities: [OutputViewModel, InputViewModel],
         }),
         BlocksQueueModule.forRootAsync({
           blocksCommandExecutor: BlocksCommandFactoryService,
           isTransportMode: appConfig.BITCOIN_BALANCES_INDEXER_IS_TRANSPORT_MODE,
           maxBlockHeight: businessConfig.BITCOIN_BALANCES_INDEXER_MAX_BLOCK_HEIGHT,
-        }),
-        // IMPORTANT: BitcoinNetworkProviderModule must be global inside one plugin
-        BitcoinNetworkProviderModule.forRootAsync({
-          isGlobal: true,
+          queueWorkersNum: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_WORKERS_NUM,
+          maxQueueLength: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_MAX_LENGTH,
+          queueLoaderStrategyName: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_STRATEGY_NAME,
+          queueLoaderNetworkProviderBatchesLength:
+            blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_NETWORK_PROVIDER_BATCHES_LENGTH,
+          queueLoaderIntervalMs: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
+          queueLoaderMaxIntervalMs: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
+          queueLoaderMaxIntervalMultiplier:
+            blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
         }),
       ],
       providers: [
@@ -103,7 +116,6 @@ export class BitcoinBalancesIndexerModule {
         IndexerSaga,
         BalancesIndexerCommandFactoryService,
         ReadStateExceptionHandlerService,
-        TransactionsBatchModelFactoryService,
         ...CommandHandlers,
         ...EventsHandlers,
       ],

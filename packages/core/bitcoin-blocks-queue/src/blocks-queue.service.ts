@@ -5,8 +5,6 @@ import { Block } from './interfaces';
 import { BlocksQueueIteratorService } from './blocks-iterator';
 import { BlocksQueueLoaderService } from './blocks-loader';
 import { BlocksQueueCollectorService } from './blocks-collector';
-import { BlocksQueueConfig } from './config/blocks-queue.config';
-
 @Injectable()
 export class BlocksQueueService {
   private _blockQueue = new BlocksQueue<Block>();
@@ -15,9 +13,8 @@ export class BlocksQueueService {
     private readonly log: AppLogger,
     private readonly blocksQueueIterator: BlocksQueueIteratorService,
     private readonly blocksQueueLoader: BlocksQueueLoaderService,
-    private readonly blocksQueueConfig: BlocksQueueConfig,
     private readonly blocksCollectorService: BlocksQueueCollectorService,
-    private readonly options: any
+    private readonly config: any
   ) {
     // IMPORTANT: We init the collector in the constructor to be sure
     // that it is immediately operational;
@@ -25,8 +22,8 @@ export class BlocksQueueService {
     // and can be used directly by other components.
     this.blocksCollectorService.init(this._blockQueue);
 
-    this._blockQueue.maxQueueLength = this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_MAX_LENGTH;
-    this._blockQueue.maxBlockHeight = this.options.maxBlockHeight;
+    this._blockQueue.maxQueueLength = this.config.maxQueueLength;
+    this._blockQueue.maxBlockHeight = this.config.maxBlockHeight;
   }
 
   get queue(): BlocksQueue<Block> {
@@ -37,15 +34,9 @@ export class BlocksQueueService {
     return this.blocksCollectorService;
   }
 
-  async start(indexedHeight: string | number) {
-    try {
-      await Promise.allSettled([
-        this.blocksQueueLoader.startBlocksLoading(Number(indexedHeight), this._blockQueue),
-        this.blocksQueueIterator.startQueueIterating(this._blockQueue),
-      ]);
-    } catch (error) {
-      this.log.error('Erorr', error, this.constructor.name);
-    }
+  start(indexedHeight: string | number) {
+    this.blocksQueueLoader.startBlocksLoading(Number(indexedHeight), this._blockQueue);
+    this.blocksQueueIterator.startQueueIterating(this._blockQueue);
   }
 
   public async reorganizeBlocks(newStartHeight: string | number): Promise<void> {
@@ -62,7 +53,8 @@ export class BlocksQueueService {
     this.log.info('Queue was clear to height: ', { newStartHeight }, this.constructor.name);
   }
 
-  public async confirmIndexBlock(blockHash: string): Promise<void> {
+  // Rename method to dequeueBlock
+  public async confirmIndexBlock(blockHash: string): Promise<Block> {
     // IMPORTANT: This method must be idenpotent.
     // To do this, we added a check and remove only the required block from the queue,
     // BUT if there is no such block, then we will skip it, without an error!
@@ -70,9 +62,16 @@ export class BlocksQueueService {
     const block = this._blockQueue.firstBlock;
 
     if (block && block.hash === blockHash) {
-      this._blockQueue.dequeue();
+      const b = this._blockQueue.dequeue();
+
+      if (!b) {
+        throw new Error(`Block is not found: ${blockHash}`);
+      }
+
+      this.blocksQueueIterator.resolveNextBlock();
+      return b;
     }
 
-    this.blocksQueueIterator.resolveNextBlock();
+    throw new Error(`Block is not found: ${blockHash}`);
   }
 }

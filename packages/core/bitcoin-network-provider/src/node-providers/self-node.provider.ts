@@ -3,7 +3,7 @@ import { BaseNodeProvider, BaseNodeProviderOptions } from './base-node-provider'
 import { NodeProviderTypes, Hash } from './interfaces';
 
 export interface SelfNodeProviderOptions extends BaseNodeProviderOptions {
-  url: string;
+  baseUrl: string;
 }
 
 export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNodeProvider => {
@@ -13,24 +13,24 @@ export const createSelfNodeProvider = (options: SelfNodeProviderOptions): SelfNo
 export class SelfNodeProvider extends BaseNodeProvider<SelfNodeProviderOptions> {
   readonly type: NodeProviderTypes = 'selfnode';
   private _httpClient: any;
-  url: string;
+  baseUrl: string;
 
   constructor(options: SelfNodeProviderOptions) {
     super(options);
-    this.url = options.url;
+    this.baseUrl = options.baseUrl;
   }
 
   get connectionOptions() {
     return {
       type: this.type,
       uniqName: this.uniqName,
-      url: this.url,
+      baseUrl: this.baseUrl,
     };
   }
 
   public async connect() {
     this._httpClient = axios.create({
-      baseURL: this.url,
+      baseURL: this.baseUrl,
       headers: {
         'Content-Type': 'application/json',
       },

@@ -107,7 +107,7 @@ describe('BlocksQueueIteratorService', () => {
       const blockMock = new TestBlock(0);
       await service['processBlock'](blockMock);
 
-      expect(mockBlocksCommandExecutor.indexBlock).toHaveBeenCalledWith({ block: blockMock, requestId: 'mock-uuid' });
+      expect(mockBlocksCommandExecutor.indexBlock).toHaveBeenCalledWith({ batch: [blockMock], requestId: 'mock-uuid' });
     });
 
     it('should log an error if blocksCommandExecutor.processBlock throws an error', async () => {

@@ -19,7 +19,8 @@
     ]
   },
   "references": [
-    { "path": "../cqrs/tsconfig.json" }
+    { "path": "../cqrs/tsconfig.json" },
+    { "path": "../../components/logger/tsconfig.json" }
   ],
   "include": ["src"],
   "exclude": [

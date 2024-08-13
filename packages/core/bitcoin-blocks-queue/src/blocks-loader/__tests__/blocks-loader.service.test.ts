@@ -5,7 +5,6 @@ import { AppLogger } from '@easylayer/components/logger';
 import { BlocksQueueLoaderService } from '../blocks-loader.service';
 import { BlocksQueue } from '../../blocks-queue';
 import { Block } from '../../interfaces';
-import { BlocksQueueConfig } from '../../config/blocks-queue.config';
 import { StrategyNames } from '../load-strategies';
 
 // TODO: fix a problem with mock @easylayer/components/exponential-interval-async
@@ -21,7 +20,6 @@ describe('BlocksQueueLoaderService', () => {
   let mockLogger: AppLogger;
   let mockNetworkProviderService: jest.Mocked<BitcoinNetworkProviderService>;
   let mockWebhookStreamService: jest.Mocked<BitcoinWebhookStreamService>;
-  let mockBlocksQueueConfig: jest.Mocked<BlocksQueueConfig>;
   let mockQueue: jest.Mocked<BlocksQueue<Block>>;
   let options: any;
 
@@ -39,11 +37,6 @@ describe('BlocksQueueLoaderService', () => {
     mockWebhookStreamService = {
       subscribe: jest.fn(),
       unsubscribe: jest.fn(),
-    } as any;
-
-    mockBlocksQueueConfig = {
-      BITCOIN_BLOCKS_QUEUE_MAX_LENGTH: 5,
-      BITCOIN_BLOCKS_QUEUE_MAX_BLOCK_HEIGHT: 10,
     } as any;
 
     mockQueue = {
@@ -76,20 +69,10 @@ describe('BlocksQueueLoaderService', () => {
           useValue: mockWebhookStreamService,
         },
         {
-          provide: BlocksQueueConfig,
-          useValue: mockBlocksQueueConfig,
-        },
-        {
           provide: BlocksQueueLoaderService,
-          useFactory: (logger, blocksQueueConfig, networkProviderService, webhookStreamService) =>
-            new BlocksQueueLoaderService(
-              logger,
-              blocksQueueConfig,
-              networkProviderService,
-              webhookStreamService,
-              options
-            ),
-          inject: [AppLogger, BlocksQueueConfig, BitcoinNetworkProviderService, BitcoinWebhookStreamService],
+          useFactory: (logger, networkProviderService, webhookStreamService) =>
+            new BlocksQueueLoaderService(logger, networkProviderService, webhookStreamService, options),
+          inject: [AppLogger, BitcoinNetworkProviderService, BitcoinWebhookStreamService],
         },
       ],
     }).compile();

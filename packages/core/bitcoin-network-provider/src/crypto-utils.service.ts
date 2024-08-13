@@ -1,23 +1,8 @@
 import * as bitcoin from 'bitcoinjs-lib';
 import { ECPairFactory } from 'ecpair';
 import * as bip39 from 'bip39';
-import { BIP32Factory } from 'bip32';
+// import { BIP32Factory } from 'bip32';
 import { Injectable } from '@nestjs/common';
-
-export class BitcoinWallet {
-  address: any;
-  mnemonic: any;
-  seed: any;
-  masterPrivateKey: any;
-  publicKey: any;
-  privateKey: any;
-}
-
-export interface UTXO {
-  n: number;
-  scriptPubKey: string;
-  value: number;
-}
 
 @Injectable()
 export class BitcoinCryptoUtilsService {
@@ -43,49 +28,49 @@ export class BitcoinCryptoUtilsService {
     return mnemonic;
   }
 
-  public async generateWallet(network: bitcoin.Network): Promise<BitcoinWallet> {
-    const mnemonic = this.generateMnemonic();
-    return this.walletFromMnemonic(mnemonic, network);
-  }
+  // public async generateWallet(network: bitcoin.Network): Promise<BitcoinWallet> {
+  //   const mnemonic = this.generateMnemonic();
+  //   return this.walletFromMnemonic(mnemonic, network);
+  // }
 
-  public async walletFromMnemonic(mnemonic: string, network: bitcoin.Network) {
-    await this.initEccLib();
-    const seed = bip39.mnemonicToSeedSync(mnemonic);
+  // public async walletFromMnemonic(mnemonic: string, network: bitcoin.Network) {
+  //   await this.initEccLib();
+  //   const seed = bip39.mnemonicToSeedSync(mnemonic);
 
-    const BIP32 = BIP32Factory(this.ecc);
+  //   const BIP32 = BIP32Factory(this.ecc);
 
-    // The network parameter in the line BIP32.fromSeed(seed, bitcoin.networks.bitcoin)
-    // in the context of Bitcoin and the bitcoinjs-lib library indicates that
-    // in which network the created wallet will be used.
-    // This is important because different networks use different address formats and other parameters,
-    // such as prefixes for addresses.
-    const root = BIP32.fromSeed(seed, network);
+  //   // The network parameter in the line BIP32.fromSeed(seed, bitcoin.networks.bitcoin)
+  //   // in the context of Bitcoin and the bitcoinjs-lib library indicates that
+  //   // in which network the created wallet will be used.
+  //   // This is important because different networks use different address formats and other parameters,
+  //   // such as prefixes for addresses.
+  //   const root = BIP32.fromSeed(seed, network);
 
-    // we use "!" to tell TypeScript we're sure it's non-null
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const masterPrivateKey: string = root.privateKey!.toString('hex');
+  //   // we use "!" to tell TypeScript we're sure it's non-null
+  //   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  //   const masterPrivateKey: string = root.privateKey!.toString('hex');
 
-    // Select the appropriate path. For example, for BIP44:
-    const path = "m/44'/0'/0'/0/0"; // This is an example for the first Bitcoin address
+  //   // Select the appropriate path. For example, for BIP44:
+  //   const path = "m/44'/0'/0'/0/0"; // This is an example for the first Bitcoin address
 
-    const child = root.derivePath(path);
-    const privateKey = child.privateKey;
-    const publicKey = child.publicKey;
-    const { address } = bitcoin.payments.p2pkh({ pubkey: publicKey });
+  //   const child = root.derivePath(path);
+  //   const privateKey = child.privateKey;
+  //   const publicKey = child.publicKey;
+  //   const { address } = bitcoin.payments.p2pkh({ pubkey: publicKey });
 
-    if (!privateKey) {
-      throw new Error('Cant create Private Key');
-    }
+  //   if (!privateKey) {
+  //     throw new Error('Cant create Private Key');
+  //   }
 
-    return {
-      address,
-      mnemonic,
-      seed,
-      masterPrivateKey,
-      publicKey,
-      privateKey,
-    } as BitcoinWallet;
-  }
+  //   return {
+  //     address,
+  //     mnemonic,
+  //     seed,
+  //     masterPrivateKey,
+  //     publicKey,
+  //     privateKey,
+  //   } as BitcoinWallet;
+  // }
 
   public addressFromPublicKeyBuffer(publicKey: Buffer, network: bitcoin.Network): string {
     const { address } = bitcoin.payments.p2pkh({ pubkey: publicKey, network });

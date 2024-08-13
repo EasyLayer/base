@@ -1,7 +1,9 @@
 import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository, FindOneOptions, FindOptionsOrder } from '@easylayer/core/read-database';
+import { AppLogger } from '@easylayer/components/logger';
 import { OutputViewModel, InputViewModel } from '../view-models';
+import { ReadDatabaseConfig } from '../../config';
 
 export const COINBASE_OUTPUT_VALUE = '0';
 export const COINBASE_OUTPUT_N = -1;
@@ -11,35 +13,103 @@ export class OutputsReadService {
   constructor(
     // IMPORTANT: 'balances-indexer-read' name have to be the same as name in module connection
     @InjectRepository(OutputViewModel, 'balances-indexer-read')
-    private readDb: Repository<OutputViewModel>
+    private readonly readDb: Repository<OutputViewModel>,
+    private readonly config: ReadDatabaseConfig,
+    private readonly log: AppLogger
   ) {}
 
-  async createMany({ outputs, blockHeight }: { outputs: any; blockHeight: string }): Promise<OutputViewModel[]> {
-    const { raw } = await this.readDb
-      .createQueryBuilder()
-      .insert()
-      .into(OutputViewModel)
-      .values(
-        outputs.map((item: any) => ({
-          ...item,
-          value: item.value.toString(),
-          n: Number(item.n),
-          block_height: Number(blockHeight),
+  async createMany(processedOutputs: Map<number, any[]>): Promise<OutputViewModel[]> {
+    const valuesToInsert = [];
+
+    for (const [blockHeight, outputs] of processedOutputs) {
+      valuesToInsert.push(
+        ...outputs.map((output) => ({
+          ...output,
+          block_height: blockHeight,
+          value: output.value.toString(),
+          n: Number(output.n),
           is_suspended: false,
         }))
-      )
-      // IMPORTANT: At the current stage this ensures idempotency
-      .orIgnore()
-      // .orUpdate(
-      //   ['txid', 'n'],
-      //   ['value']
-      // )
-      // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
-      // (without select after insert)
-      .updateEntity(false)
-      .execute();
+      );
+    }
 
-    return raw;
+    const batches = this.prepareBatches(valuesToInsert);
+
+    const rawResults = [];
+
+    for (const batch of batches) {
+      const { raw } = await this.readDb
+        .createQueryBuilder()
+        .insert()
+        .into(OutputViewModel)
+        .values(batch)
+        // IMPORTANT: At the current stage this ensures idempotency
+        .orIgnore()
+        // .orUpdate(
+        //   ['output_txid', 'output_n'],
+        //   ['txid']
+        // )
+        // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
+        // (without select after insert)
+        .updateEntity(false)
+        .execute();
+
+      rawResults.push(raw);
+    }
+
+    return rawResults.flat();
+  }
+
+  async createIndexes(tableName: string, columns: string[]) {
+    const connectionType = this.readDb.manager.connection.options.type;
+
+    const columnsList = columns.join(', ');
+
+    switch (connectionType) {
+      case 'sqlite':
+        await this.readDb.query(
+          `CREATE INDEX IF NOT EXISTS IDX_${columns.join('_')} ON ${tableName} (${columnsList});`
+        );
+        break;
+      case 'postgres':
+        await this.readDb.query(
+          `CREATE INDEX IF NOT EXISTS IDX_${columns.join('_')} ON ${tableName} USING BTREE (${columnsList});`
+        );
+        break;
+      default:
+        throw new Error(`Not support databse type: ${connectionType}`);
+    }
+  }
+
+  private prepareBatches(valuesToInsert: any[]): any[][] {
+    const isSQLite = this.readDb.manager.connection.options.type === 'sqlite';
+
+    if (!isSQLite) {
+      // If it's not SQLite, return the entire array as one batch
+      return [valuesToInsert];
+    }
+
+    const batchSize = Math.floor(
+      this.config.BITCOIN_BALANCES_INDEXER_READ_DB_SQLITE_MAX_VARIABLES / Object.keys(valuesToInsert[0]).length
+    );
+
+    // If there is more data than batchSize, we split it into batches
+    if (valuesToInsert.length > batchSize) {
+      this.log.debug('Read State batches', { batchSize }, this.constructor.name);
+      return this.chunkArray(valuesToInsert, batchSize);
+    }
+
+    // If the data is less than batchSize, return it in one batch
+    return [valuesToInsert];
+  }
+
+  // Method for splitting an array into chunks (batches)
+  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
+    const results: T[][] = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+      results.push(array.slice(i, i + chunkSize));
+    }
+    return results;
   }
 
   async updateWithBuilder(criteria: any, dto: any): Promise<any> {

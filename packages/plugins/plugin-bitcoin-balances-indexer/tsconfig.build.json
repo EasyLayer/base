@@ -3,7 +3,7 @@
   "compilerOptions": {
     "removeComments": true,
     "sourceMap": false,
-    "declarationMap": false,
+    "declarationMap": false
   },
   "references": [
     {"path": "../../core/cqrs/tsconfig.json"},
@@ -21,6 +21,6 @@
     "dist",
     "node_modules",
     "**/*.test.ts",
-    "**/__tests__",
-  ],
+    "**/__tests__"
+  ]
 }

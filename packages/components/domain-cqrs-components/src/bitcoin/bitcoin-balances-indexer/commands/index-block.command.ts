@@ -1,5 +1,5 @@
 export interface IIndexBlockCommand {
-  block: any;
+  batch: any;
   requestId: string;
 }
 

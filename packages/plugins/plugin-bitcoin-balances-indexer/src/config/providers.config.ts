@@ -7,10 +7,10 @@ export class ProvidersConfig {
   @Transform(({ value }) => (value ? value : ''))
   @IsString()
   @IsOptional()
-  BITCOIN_NETWORK_PROVIDER_SELF_NODE_URL?: string;
+  BITCOIN_BALANCES_INDEXER_NETWORK_PROVIDER_SELF_NODE_URL?: string;
 
   @Transform(({ value }) => (value ? value.split('|') : []))
   @IsArray()
   @IsOptional()
-  BITCOIN_NETWORK_PROVIDER_QUICK_NODE_URLS?: string[];
+  BITCOIN_BALANCES_INDEXER_NETWORK_PROVIDER_QUICK_NODE_URLS?: string[];
 }

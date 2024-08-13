@@ -1,12 +1,14 @@
 import { BasicEvent } from '../../../base.event';
 
-interface BitcoinBalancesIndexerBlockAddedEventPayload {
+interface BitcoinBalancesIndexerBlocksAddedEventPayload {
   aggregateId: string;
   requestId: string;
-  block: any;
   status: string;
+  blocks: any;
 }
 
-export class BitcoinBalancesIndexerBlockAddedEvent implements BasicEvent<BitcoinBalancesIndexerBlockAddedEventPayload> {
-  constructor(public readonly payload: BitcoinBalancesIndexerBlockAddedEventPayload) {}
+export class BitcoinBalancesIndexerBlocksAddedEvent
+  implements BasicEvent<BitcoinBalancesIndexerBlocksAddedEventPayload>
+{
+  constructor(public readonly payload: BitcoinBalancesIndexerBlocksAddedEventPayload) {}
 }

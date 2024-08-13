@@ -4,8 +4,10 @@
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": "bin/index.js",
   "files": [
     "dist",
+    "bin",
     ".env.example"
   ],
   "scripts": {
@@ -32,12 +34,14 @@
     "class-transformer": "0.5.1",
     "class-transformer-validator": "0.9.1",
     "class-validator": "0.14.0",
+    "commander": "11.1.0",
     "reflect-metadata": "0.1.14",
     "rxjs": "7.8.1",
     "uuid": "9.0.1"
   },
   "devDependencies": {
     "@nestjs/testing": "10.2.10",
+    "@types/commander": "2.12.2",
     "@types/jest": "29.5.11",
     "@types/node": "20.10.4",
     "@types/uuid": "9.0.7",

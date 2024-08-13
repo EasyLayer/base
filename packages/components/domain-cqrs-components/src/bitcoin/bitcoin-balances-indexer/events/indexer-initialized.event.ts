@@ -5,6 +5,7 @@ interface BitcoinBalancesIndexerInitializedEventPayload {
   requestId: string;
   status: string;
   indexedHeight: string;
+  restoreBlocks: string[];
 }
 
 export class BitcoinBalancesIndexerInitializedEvent
