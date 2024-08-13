@@ -3,12 +3,15 @@
   "compilerOptions": {
     "removeComments": true,
     "sourceMap": false,
-    "declarationMap": false,
+    "declarationMap": false
   },
+  "references": [
+    { "path": "../../components/logger/tsconfig.json" }
+  ],
   "include": ["src"],
   "exclude": [
     "dist",
     "**/*.test.ts",
-    "**/__tests__",
-  ],
+    "**/__tests__"
+  ]
 }
