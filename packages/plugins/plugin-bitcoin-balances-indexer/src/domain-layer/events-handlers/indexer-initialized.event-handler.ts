@@ -23,7 +23,7 @@ export class BitcoinBalancesIndexerInitializedEventHandler
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-read' })
-  @RuntimeTracker({ showMemory: true })
+  @RuntimeTracker({ showMemory: false })
   async handle({ payload }: BitcoinBalancesIndexerInitializedEvent) {
     try {
       const { restoreBlocks, indexedHeight } = payload;
@@ -49,7 +49,6 @@ export class BitcoinBalancesIndexerInitializedEventHandler
         for (const t of tx) {
           const txid = t.txid;
 
-          // Обработка выходов (outputs)
           for (const vout of t.vout) {
             const address = this.cryptoUtilsService.getAddressFromScriptPubKey(vout.scriptPubKey);
             const value = Money.fromDecimal(vout.value, currency).toCents();
@@ -66,10 +65,9 @@ export class BitcoinBalancesIndexerInitializedEventHandler
             });
           }
 
-          // Обработка входов (inputs)
           for (const vin of t.vin) {
             if (vin.coinbase) {
-              // Обработка coinbase транзакции
+              // Processing coinbase transaction
               if (!processedOutputs.has(height)) {
                 processedOutputs.set(height, []);
               }
@@ -92,7 +90,7 @@ export class BitcoinBalancesIndexerInitializedEventHandler
                 outputN: COINBASE_OUTPUT_N,
               });
             } else {
-              // Обычный вход
+              // Normal input
               if (!processedInputs.has(height)) {
                 processedInputs.set(height, []);
               }
@@ -106,23 +104,13 @@ export class BitcoinBalancesIndexerInitializedEventHandler
           }
         }
       }
-      // console.log('indexedHeight', indexedHeight);
-      // console.log('restoreBlocks', restoreBlocks);
-      // const processedOutputsKeyIterator = processedOutputs.keys();
-      // processedOutputsKeyIterator.next(); // Пропускаем первый ключ
-      // const secondKey = processedOutputsKeyIterator.next().value; // Получаем второй ключ
-      // console.log('processedOutputs length (second key):', processedOutputs.get(secondKey)?.length);
-      // const processedKeyIterator = processedInputs.keys();
-      // processedKeyIterator.next(); // Пропускаем первый ключ
-      // const secondKey2 = processedKeyIterator.next().value; // Получаем второй ключ
-      // console.log('processedInputs length (second key):', processedInputs.get(secondKey2)?.length);
 
       if (processedOutputs.size > 0) {
         await this.outputsReadService.createMany(processedOutputs);
-      }
 
-      if (processedInputs.size > 0) {
-        await this.inputsReadService.createMany(processedInputs);
+        if (processedInputs.size > 0) {
+          await this.inputsReadService.createMany(processedInputs);
+        }
       }
 
       // IMPORTANT: We will only start loading to the blocks queue after the restoration of the Read State

@@ -53,7 +53,6 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
         for (const t of tx) {
           const txid = t.txid;
 
-          // Обработка выходов (outputs)
           for (const vout of t.vout) {
             const address = this.cryptoUtilsService.getAddressFromScriptPubKey(vout.scriptPubKey);
             const value = Money.fromDecimal(vout.value, currency).toCents();
@@ -70,10 +69,9 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
             });
           }
 
-          // Обработка входов (inputs)
           for (const vin of t.vin) {
             if (vin.coinbase) {
-              // Обработка coinbase транзакции
+              // Processing coinbase transaction
               if (!processedOutputs.has(height)) {
                 processedOutputs.set(height, []);
               }
@@ -96,7 +94,7 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
                 outputN: COINBASE_OUTPUT_N,
               });
             } else {
-              // Обычный вход
+              // Normal input
               if (!processedInputs.has(height)) {
                 processedInputs.set(height, []);
               }
@@ -111,7 +109,6 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
         }
       }
 
-      // Вызов методов массовой вставки
       await this.outputsReadService.createMany(processedOutputs);
       await this.inputsReadService.createMany(processedInputs);
     } catch (error) {

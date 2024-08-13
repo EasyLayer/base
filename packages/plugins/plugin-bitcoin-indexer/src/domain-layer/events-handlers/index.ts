@@ -1,11 +1,9 @@
-import { BitcoinIndexerBlockIndexedEventHandler } from './block-indexed.event-handler';
-import { BitcoinIndexerBlockSuspendedEventHandler } from './block-suspended.event-handler';
-import { BitcoinIndexerTransactionsBatchIndexedEventHandler } from './transactions-create-with-indexing.event-handler';
-import { BitcoinIndexerTransactionsBatchSuspendedEventhandler } from './transactions-suspended.event-handler';
+import { BitcoinIndexerBlocksAddedEventHandler } from './blocks-indexed.event-handler';
+import { BitcoinIndexerReorganisationProcessedEventHandler } from './reorganisation-processed.event-handler';
+import { BitcoinIndexerInitializedEventHandler } from './indexer-initialized.event-handler';
 
 export const EventsHandlers = [
-  BitcoinIndexerBlockIndexedEventHandler,
-  BitcoinIndexerBlockSuspendedEventHandler,
-  BitcoinIndexerTransactionsBatchIndexedEventHandler,
-  BitcoinIndexerTransactionsBatchSuspendedEventhandler,
+  BitcoinIndexerBlocksAddedEventHandler,
+  BitcoinIndexerReorganisationProcessedEventHandler,
+  BitcoinIndexerInitializedEventHandler,
 ];

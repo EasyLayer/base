@@ -1,9 +1,11 @@
-import { Entity, PrimaryColumn, Column, JoinColumn, OneToMany, ManyToOne } from '@easylayer/core/read-database';
+import { Entity, Column, JoinColumn, OneToMany, ManyToOne, PrimaryColumn } from '@easylayer/core/read-database';
 import { TransactionViewModel } from './transaction.view-model';
 
 @Entity('blocks')
 export class BlockViewModel {
-  // NOTE: hash uniq and index
+  // TODO: The autoinerment type must be passed from variables, since SQLite does not support bigint.
+  // OR remove autoinerment and put some uuid
+
   @PrimaryColumn({ type: 'varchar' })
   public hash!: string;
 
@@ -13,8 +15,8 @@ export class BlockViewModel {
   @Column({ type: 'varchar', nullable: true })
   public previousblockhash!: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  public status!: string;
+  @Column({ type: 'boolean', default: false })
+  public is_suspended!: boolean;
 
   @ManyToOne(() => BlockViewModel, (block) => block.nextBlocks)
   @JoinColumn({ name: 'previousblockhash', referencedColumnName: 'hash' })

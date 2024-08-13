@@ -115,9 +115,10 @@ export class BalancesIndexer extends AggregateRoot {
       throw new Error('Wrong block height');
     }
 
-    // Проверяем сайз блоков и смотрим будем ли мы разбивать на несколько событий
+    // We check the block size and see if we will split it into several events
     if (blocks.length > 100) {
-      // Тут мы типо отберем часть блоков
+      // TODO: Add logic for creating several events here at once in case there are many blocks
+
       const blocksToProcessed = blocks;
 
       logger.info(
@@ -240,8 +241,8 @@ export class BalancesIndexer extends AggregateRoot {
     this.status = status as IndexerStatuses;
   }
 
-  // Тут мы полностью по выстое обреаем сразу все
-  // Этот метод иденпотентный
+  // Here we cut full at once in height
+  // This method is idempotent
   private onBitcoinBalancesIndexerReorganisationFinishedEvent({
     payload,
   }: BitcoinBalancesIndexerReorganisationFinishedEvent) {
@@ -250,8 +251,8 @@ export class BalancesIndexer extends AggregateRoot {
     this.chain.truncateToBlock(Number(height));
   }
 
-  // Тут мы обрежем только несколько блоков
-  // Этот метод иденпотентный
+  // Here we will only cut a few blocks
+  // This method is idempotent
   private onBitcoinBalancesIndexerReorganisationProcessedEvent({
     payload,
   }: BitcoinBalancesIndexerReorganisationProcessedEvent) {

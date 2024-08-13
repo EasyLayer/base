@@ -1,7 +1,7 @@
 export interface IInitIndexerCommand {
   requestId: string;
   startHeight: string | number;
-  restoreFromHeight: number;
+  lastReadStateHeight?: number;
 }
 
 export class InitIndexerCommand {
