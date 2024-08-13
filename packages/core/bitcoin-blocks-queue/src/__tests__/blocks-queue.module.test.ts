@@ -8,7 +8,6 @@ import { BlocksQueueService } from '../blocks-queue.service';
 import { BlocksQueueIteratorService } from '../blocks-iterator';
 import { BlocksQueueLoaderService } from '../blocks-loader';
 import { BlocksQueueCollectorService } from '../blocks-collector';
-import { BlocksQueueConfig } from '../config/blocks-queue.config';
 import { BlocksCommandExecutor } from '../interfaces';
 
 describe('BlocksQueueModule', () => {
@@ -21,13 +20,20 @@ describe('BlocksQueueModule', () => {
     blocksCommandExecutor: mockBlocksCommandExecutor,
     isTransportMode: false,
     maxBlockHeight: 1,
+    queueWorkersNum: 1,
+    maxQueueLength: 2,
+    queueLoaderStrategyName: 'pull-network-provider-by-batches',
+    queueLoaderNetworkProviderBatchesLength: 1,
+    queueLoaderIntervalMs: 500,
+    queueLoaderMaxIntervalMs: 10 * 60 * 1000,
+    queueLoaderMaxIntervalMultiplier: 10,
   };
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
       imports: [
         // IMPORTANT: We are explicitly importing the BitcoinNetworkProviderModule for testing
-        BitcoinNetworkProviderModule.forRootAsync({ isGlobal: true }),
+        BitcoinNetworkProviderModule.forRootAsync({ isGlobal: true, selfNodesUrl: 'http://localhost' }),
         BlocksQueueModule.forRootAsync(moduleOptions),
       ],
     }).compile();
@@ -42,6 +48,5 @@ describe('BlocksQueueModule', () => {
     expect(module.get(BlocksQueueLoaderService)).toBeInstanceOf(BlocksQueueLoaderService);
     expect(module.get(BlocksQueueCollectorService)).toBeInstanceOf(BlocksQueueCollectorService);
     expect(module.get(LoggerModule)).toBeDefined();
-    expect(module.get(BlocksQueueConfig)).toBeInstanceOf(BlocksQueueConfig);
   });
 });

@@ -107,7 +107,7 @@ describe('Blockchain', () => {
         height: 0,
         hash: 'hash0',
         prevHash: 'prevHash0',
-        batches: [],
+        tx: [],
       });
     });
   });
@@ -140,7 +140,7 @@ describe('Blockchain', () => {
         height: 0,
         hash: 'hash0',
         prevHash: 'prevHash0',
-        batches: [],
+        tx: [],
       });
       expect(blockchain.size).toBe(1);
       expect(blockchain.firstBlockHash).toBe('hash1');
@@ -162,7 +162,7 @@ describe('Blockchain', () => {
         height: 1,
         hash: 'hash1',
         prevHash: 'hash0',
-        batches: [],
+        tx: [],
       });
     });
 
