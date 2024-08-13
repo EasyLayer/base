@@ -4,6 +4,7 @@ import { TypeOrmModule, getDataSourceToken, TypeOrmModuleOptions } from '@nestjs
 import { addTransactionalDataSource, initializeTransactionalContext } from 'typeorm-transactional';
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { EventDataModel } from './event-data.model';
+import { SnapshotsModel } from './snapshots.model';
 import { EventStoreRepository } from './eventstore.repository';
 import { EventStoreService } from './eventstore.service';
 
@@ -25,15 +26,6 @@ export class EventStoreModule {
 
     // TODO: remove from here
     const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'easylayer/data', `${name}.db`) : name;
-
-    // // Dynamically add index to EventDataModel if useAggregateIdIndex is true
-    // const dynamicEntities: EntityTarget<any>[] = [EventDataModel];
-    // if (useAggregateIdIndex) {
-    //   // Modify EventDataModel to add the index
-    //   class EventDataModelWithIndex extends EventDataModel {}
-    //   Index()(EventDataModelWithIndex.prototype, 'aggregateId');
-    //   dynamicEntities[0] = EventDataModelWithIndex;
-    // }
 
     return {
       module: EventStoreModule,
@@ -94,6 +86,11 @@ export class EventStoreModule {
         {
           provide: 'EVENT_DATA_MODEL_REPOSITORY',
           useFactory: async (dataSource: DataSource) => dataSource.getRepository(EventDataModel),
+          inject: [getDataSourceToken(name)],
+        },
+        {
+          provide: 'SNAPSHOTS_MODEL_REPOSITORY',
+          useFactory: async (dataSource: DataSource) => dataSource.getRepository(SnapshotsModel),
           inject: [getDataSourceToken(name)],
         },
       ],

@@ -3,12 +3,17 @@ import { Injectable, Inject } from '@nestjs/common';
 import { Repository, QueryFailedError, In } from 'typeorm';
 import { AggregateRoot, IEvent } from '@easylayer/core/cqrs';
 import { EventDataModel, BasicEvent } from './event-data.model';
+// import { SnapshotsModel } from './snapshots.model';
+
+type AggregateWithId = AggregateRoot & { aggregateId: string };
 
 @Injectable()
-export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
+export class EventStoreRepository<T extends AggregateWithId = AggregateWithId> {
   constructor(
     @Inject('EVENT_DATA_MODEL_REPOSITORY')
-    private eventStore: Repository<EventDataModel>
+    private eventsRepository: Repository<EventDataModel>
+    // @Inject('SNAPSHOTS_MODEL_REPOSITORY')
+    // private snapshotsRepository: Repository<SnapshotsModel>
   ) {}
 
   public async save(models: T | T[]): Promise<void> {
@@ -17,7 +22,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
     await Promise.all(aggregates.map((aggregate: T) => this.storeEvent(aggregate)));
   }
 
-  public async getOne(model: T & { aggregateId: string }): Promise<T> {
+  public async getOne(model: T): Promise<T> {
     // IMPORTANT: We have to go over the model of the unit here even if it is empty
     const { aggregateId } = model;
 
@@ -25,23 +30,23 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
       return model;
     }
 
-    const eventRaws = await this.eventStore.find({
+    // TODO: add snapshot logic
+
+    const eventRaws = await this.eventsRepository.find({
       where: { aggregateId },
       order: { version: 'ASC' }, // TODO: think can we sort by "id" here?
     });
-
-    // TODO: we can fetch state from snapshots
 
     await model.loadFromHistory(eventRaws.map(EventDataModel.deserialize));
     return model;
   }
 
-  public async getMany(models: (T & { aggregateId: string })[]): Promise<T[]> {
+  public async getMany(models: T[]): Promise<T[]> {
     // Extract all aggregateIds from the models
     const aggregateIds = models.map((model) => model.aggregateId);
 
     // Query all events for the given aggregateIds
-    const eventRaws = await this.eventStore.find({
+    const eventRaws = await this.eventsRepository.find({
       where: { aggregateId: In(aggregateIds) },
       order: { version: 'ASC' },
     });
@@ -73,7 +78,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
     return models;
   }
 
-  public async fetchLastEvent(model: T & { aggregateId: string }): Promise<BasicEvent<IEvent> | undefined> {
+  public async fetchLastEvent(model: T): Promise<BasicEvent<IEvent> | undefined> {
     const { aggregateId } = model;
 
     if (!aggregateId) {
@@ -81,7 +86,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
     }
 
     // Find last event raw
-    const eventRaw = await this.eventStore.findOne({
+    const eventRaw = await this.eventsRepository.findOne({
       where: { aggregateId },
       order: { version: 'DESC' },
     });
@@ -103,7 +108,7 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
 
     //We do NOT need aggregateId here, because we get events by extra
 
-    const eventRaws = await this.eventStore.find({
+    const eventRaws = await this.eventsRepository.find({
       where: { extra },
       order: { version: 'ASC' },
     });
@@ -125,10 +130,27 @@ export class EventStoreRepository<T extends AggregateRoot = AggregateRoot> {
         return EventDataModel.serialize(event, aggregate.version);
       });
 
+      // TODO
+      // if (aggregate.version % 100 === 0) {
+      //   const snapshot = SnapshotsModel.serialize(aggregate);
+
+      //   await this.snapshotsRepository
+      //     .createQueryBuilder()
+      //     .insert()
+      //     .into(SnapshotsModel)
+      //     .values(snapshot)
+      //     .orUpdate(
+      //       Object.keys(snapshot), // Columns that we update
+      //       ['aggregateId']
+      //     )
+      //     .updateEntity(false)
+      //     .execute()
+      // }
+
       // IMPORTANT: We use createQueryBuilder with "updateEntity = false" option to ensure there is only one query
       // (without select after insert)
       // https://github.com/typeorm/typeorm/issues/4651
-      await this.eventStore.createQueryBuilder().insert().values(events).updateEntity(false).execute();
+      await this.eventsRepository.createQueryBuilder().insert().values(events).updateEntity(false).execute();
     } catch (error) {
       this.handleDatabaseError(error);
     }
