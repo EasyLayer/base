@@ -1,4 +1,4 @@
-import { Blockchain } from '../balances-indexer.model';
+import { Blockchain } from '../blockchain.structure';
 
 describe('Blockchain', () => {
   let blockchain: Blockchain;

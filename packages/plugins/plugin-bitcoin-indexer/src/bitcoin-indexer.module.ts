@@ -72,6 +72,7 @@ export class BitcoinIndexerModule {
           blocksCommandExecutor: BlocksCommandFactoryService,
           isTransportMode: false,
           maxBlockHeight: businessConfig.BITCOIN_INDEXER_MAX_BLOCK_HEIGHT,
+          ...({} as any),
         }),
         BitcoinNetworkProviderModule.forRootAsync({
           isGlobal: true,

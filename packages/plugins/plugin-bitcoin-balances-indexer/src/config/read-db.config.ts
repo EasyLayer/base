@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { IsString, IsBoolean } from 'class-validator';
+import { IsString, IsBoolean, IsNumber } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 type DatabaseTypes = 'sqlite' | 'postgres';
 
@@ -14,6 +15,10 @@ export class ReadDatabaseConfig {
   // TODO
   @IsBoolean()
   BITCOIN_BALANCES_INDEXER_READ_DB_SYNCHRONIZE: boolean = true;
+
+  @Transform(({ value }) => (value ? Number(value) : 60000))
+  @IsNumber()
+  BITCOIN_BALANCES_INDEXER_READ_DB_SQLITE_MAX_VARIABLES: number = 60000;
 
   isLogging(): boolean {
     return process.env.DB_DEBUG === '1';

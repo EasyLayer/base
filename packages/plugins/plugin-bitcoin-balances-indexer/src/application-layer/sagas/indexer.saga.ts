@@ -8,10 +8,10 @@ import {
   BitcoinBalancesIndexerReorganisationFinishedEvent,
   BitcoinBalancesIndexerReorganisationProcessedEvent,
 } from '@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer';
-import {
-  BitcoinIndexerTransactionsBatchIndexedEvent,
-  BitcoinIndexerBlockIndexedEvent,
-} from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
+// import {
+//   BitcoinIndexerTransactionsBatchIndexedEvent,
+//   BitcoinIndexerBlockIndexedEvent,
+// } from '@easylayer/components/domain-cqrs-components/bitcoin-indexer';
 import { BalancesIndexerCommandFactoryService } from '../services';
 
 @Injectable()
@@ -66,33 +66,33 @@ export class IndexerSaga {
     );
   }
 
-  @Saga()
-  onBitcoinIndexerTransactionsBatchIndexedEvent(events$: Observable<any>): Observable<ICommand> {
-    return events$.pipe(
-      executeWithRetry({
-        event: BitcoinIndexerTransactionsBatchIndexedEvent,
-        command: ({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) => {
-          return new Promise<void>((resolve) => {
-            this.blocksQueueService.blocksCollector.addTransactions(payload.batch);
-            resolve();
-          });
-        },
-      })
-    );
-  }
+  // @Saga()
+  // onBitcoinIndexerTransactionsBatchIndexedEvent(events$: Observable<any>): Observable<ICommand> {
+  //   return events$.pipe(
+  //     executeWithRetry({
+  //       event: BitcoinIndexerTransactionsBatchIndexedEvent,
+  //       command: ({ payload }: BitcoinIndexerTransactionsBatchIndexedEvent) => {
+  //         return new Promise<void>((resolve) => {
+  //           this.blocksQueueService.blocksCollector.addTransactions(payload.batch);
+  //           resolve();
+  //         });
+  //       },
+  //     })
+  //   );
+  // }
 
-  @Saga()
-  onBitcoinIndexerBlockIndexedEvent(events$: Observable<any>): Observable<ICommand> {
-    return events$.pipe(
-      executeWithRetry({
-        event: BitcoinIndexerBlockIndexedEvent,
-        command: ({ payload }: BitcoinIndexerBlockIndexedEvent) => {
-          return new Promise<void>((resolve) => {
-            this.blocksQueueService.blocksCollector.addBlock(payload.block, payload.txCount);
-            resolve();
-          });
-        },
-      })
-    );
-  }
+  // @Saga()
+  // onBitcoinIndexerBlockIndexedEvent(events$: Observable<any>): Observable<ICommand> {
+  //   return events$.pipe(
+  //     executeWithRetry({
+  //       event: BitcoinIndexerBlockIndexedEvent,
+  //       command: ({ payload }: BitcoinIndexerBlockIndexedEvent) => {
+  //         return new Promise<void>((resolve) => {
+  //           this.blocksQueueService.blocksCollector.addBlock(payload.block, payload.txCount);
+  //           resolve();
+  //         });
+  //       },
+  //     })
+  //   );
+  // }
 }

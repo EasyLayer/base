@@ -5,8 +5,6 @@ import { Block } from './interfaces';
 import { BlocksQueueIteratorService } from './blocks-iterator';
 import { BlocksQueueLoaderService } from './blocks-loader';
 import { BlocksQueueCollectorService } from './blocks-collector';
-import { BlocksQueueConfig } from './config/blocks-queue.config';
-
 @Injectable()
 export class BlocksQueueService {
   private _blockQueue = new BlocksQueue<Block>();
@@ -15,9 +13,8 @@ export class BlocksQueueService {
     private readonly log: AppLogger,
     private readonly blocksQueueIterator: BlocksQueueIteratorService,
     private readonly blocksQueueLoader: BlocksQueueLoaderService,
-    private readonly blocksQueueConfig: BlocksQueueConfig,
     private readonly blocksCollectorService: BlocksQueueCollectorService,
-    private readonly options: any
+    private readonly config: any
   ) {
     // IMPORTANT: We init the collector in the constructor to be sure
     // that it is immediately operational;
@@ -25,8 +22,8 @@ export class BlocksQueueService {
     // and can be used directly by other components.
     this.blocksCollectorService.init(this._blockQueue);
 
-    this._blockQueue.maxQueueLength = this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_MAX_LENGTH;
-    this._blockQueue.maxBlockHeight = this.options.maxBlockHeight;
+    this._blockQueue.maxQueueLength = this.config.maxQueueLength;
+    this._blockQueue.maxBlockHeight = this.config.maxBlockHeight;
   }
 
   get queue(): BlocksQueue<Block> {

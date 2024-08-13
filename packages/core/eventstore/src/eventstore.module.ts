@@ -3,6 +3,7 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { TypeOrmModule, getDataSourceToken, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { addTransactionalDataSource, initializeTransactionalContext } from 'typeorm-transactional';
 import { DataSource, DataSourceOptions } from 'typeorm';
+import { LoggerModule, AppLogger } from '@easylayer/components/logger';
 import { EventDataModel } from './event-data.model';
 import { SnapshotsModel } from './snapshots.model';
 import { EventStoreRepository } from './eventstore.repository';
@@ -33,18 +34,26 @@ export class EventStoreModule {
         // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same
         // so as not to get confused. It must be unique to the one module connection.
         TypeOrmModule.forRootAsync({
+          imports: [LoggerModule.forRoot({ componentName: 'BitcoinEventStoreComponent' })],
           name,
-          useFactory: () => ({
+          useFactory: (log: AppLogger) => ({
             ...restOptions,
             name,
             database,
             // entities: dynamicEntities,
             entities: [EventDataModel],
+            log,
           }),
-          dataSourceFactory: async (options?: DataSourceOptions) => {
+          inject: [AppLogger],
+          dataSourceFactory: async (options?: DataSourceOptions & { log?: AppLogger }) => {
             if (!options) {
               throw new Error('Invalid options passed');
             }
+
+            if (options && options.log) {
+              options.log.info(`Connecting to eventstore...`, {}, this.constructor.name);
+            }
+
             const dataSource = new DataSource(options);
             await dataSource.initialize();
 
@@ -69,6 +78,10 @@ export class EventStoreModule {
               name,
               dataSource,
             });
+
+            if (options && options.log) {
+              options.log.info(`Successfully connected to eventstore.`, {}, this.constructor.name);
+            }
 
             return dataSource;
           },

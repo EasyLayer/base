@@ -11,7 +11,6 @@ import {
   BlocksLoadingStrategy,
   StrategyNames,
 } from './load-strategies';
-import { BlocksQueueConfig } from '../config/blocks-queue.config';
 
 @Injectable()
 export class BlocksQueueLoaderService implements OnModuleDestroy {
@@ -23,12 +22,11 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
 
   constructor(
     private readonly log: AppLogger,
-    private readonly blocksQueueConfig: BlocksQueueConfig,
     private readonly networkProviderService: BitcoinNetworkProviderService,
     private readonly webhookStreamService: BitcoinWebhookStreamService,
-    private readonly options: any
+    private readonly config: any
   ) {
-    this._isTransportMode = this.options.isTransportMode;
+    this._isTransportMode = this.config.isTransportMode;
   }
 
   get isLoading(): boolean {
@@ -91,9 +89,9 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
           );
         },
         {
-          interval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_INTERVAL_MS,
-          maxInterval: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
-          multiplier: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+          interval: this.config.queueLoaderIntervalMs,
+          maxInterval: this.config.queueLoaderMaxIntervalMs,
+          multiplier: this.config.queueLoaderMaxIntervalMultiplier,
         }
       );
     } catch (error) {
@@ -136,19 +134,19 @@ export class BlocksQueueLoaderService implements OnModuleDestroy {
   }
 
   private createStrategy(): BlocksLoadingStrategy {
-    const name = this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_STRATEGY_NAME;
+    const name = this.config.queueLoaderStrategyName;
 
     switch (name) {
       case StrategyNames.WEBHOOK_STREAM:
         return new WebhookStreamStrategy(this.webhookStreamService, this._queue);
       case StrategyNames.PULL_NETWORL_PROVIDER_BY_WORKERS:
         return new PullNetworkProviderByWorkersStrategy(this.networkProviderService, this._queue, {
-          minThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
-          maxThreads: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_WORKERS_NUM,
+          minThreads: this.config.queueWorkersNum,
+          maxThreads: this.config.queueWorkersNum,
         });
       case StrategyNames.PULL_NETWORK_PROVIDER_BY_BATCHES:
         return new PullNetworkProviderByBatchesStrategy(this.networkProviderService, this._queue, {
-          batchLength: this.blocksQueueConfig.BITCOIN_BLOCKS_QUEUE_LOADER_NETWORK_PROVIDER_BATCHES_LENGTH,
+          batchLength: this.config.queueLoaderNetworkProviderBatchesLength,
         });
       // case StrategyNames.PULL_BLOCKS_BY_NETWORK_TRANSPORT:
       //   return new PullNetworkProviderStrategy({}, this._queue, options);

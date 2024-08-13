@@ -8,10 +8,6 @@ export class BusinessConfig {
   @IsNumber()
   BITCOIN_BALANCES_INDEXER_MAX_BLOCK_HEIGHT: number = Number.MAX_SAFE_INTEGER;
 
-  @Transform(({ value }) => (value !== undefined ? Number(value) : 0))
-  @IsNumber()
-  BITCOIN_BALANCES_INDEXER_START_BLOCK_HEIGHT: number = 0;
-
   @Transform(({ value }) => (value !== undefined ? value : 'BTC'))
   @IsString()
   BITCOIN_BALANCES_INDEXER_CURRENCY_TICKER: string = 'BTC';

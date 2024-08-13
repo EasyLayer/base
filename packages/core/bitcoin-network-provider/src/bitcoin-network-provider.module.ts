@@ -1,32 +1,28 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Module, DynamicModule } from '@nestjs/common';
-import { transformAndValidate } from 'class-transformer-validator';
 import { LoggerModule, AppLogger } from '@easylayer/components/logger';
 import { BitcoinNetworkProviderService } from './bitcoin-network-provider.service';
 import { ConnectionManager } from './connection-manager';
 import { BitcoinCryptoUtilsService } from './crypto-utils.service';
 import { BitcoinWebhookStreamService } from './bitcoin-webhook-stream.service';
 import { createProvider, ProviderOptions, QuickNodeProvider, SelfNodeProvider } from './node-providers';
-import { ProvidersConfig } from './config';
 
 export interface BitcoinNetworkProviderModuleOptions {
   providers?: ProviderOptions[];
   isGlobal?: boolean;
+  quickNodesUrls?: string[];
+  selfNodesUrl?: string;
 }
 
 @Module({})
 export class BitcoinNetworkProviderModule {
   static async forRootAsync(options: BitcoinNetworkProviderModuleOptions): Promise<DynamicModule> {
-    const { providers, isGlobal } = options;
-
-    const providersConfig = await transformAndValidate(ProvidersConfig, process.env, {
-      validator: { whitelist: true },
-    });
+    const { providers, isGlobal, quickNodesUrls, selfNodesUrl } = options;
 
     // Create QuickNode providers
     const quickNodeProviders: ProviderOptions[] = [];
-    if (providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_URLS) {
-      for (const quickNodeProviderOption of providersConfig.BITCOIN_NETWORK_PROVIDER_QUICK_NODE_URLS) {
+    if (quickNodesUrls) {
+      for (const quickNodeProviderOption of quickNodesUrls) {
         quickNodeProviders.push({
           useFactory: () =>
             new QuickNodeProvider({
@@ -39,17 +35,21 @@ export class BitcoinNetworkProviderModule {
 
     // Create SelfNode providers
     const selfNodeProviders: ProviderOptions[] = [];
-    if (providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_URL) {
+    if (selfNodesUrl) {
       selfNodeProviders.push({
         useFactory: () =>
           new SelfNodeProvider({
             uniqName: uuidv4(),
-            url: providersConfig.BITCOIN_NETWORK_PROVIDER_SELF_NODE_URL!,
+            baseUrl: selfNodesUrl,
           }),
       });
     }
 
     const providersToConnect: ProviderOptions[] = [...quickNodeProviders, ...selfNodeProviders, ...(providers || [])];
+
+    if (providersToConnect.length === 0) {
+      throw new Error('Provider configuration is invalid.');
+    }
 
     const providersInstance = providersToConnect.map(async (providerOptions) => {
       if (providerOptions.useFactory) {
@@ -74,12 +74,8 @@ export class BitcoinNetworkProviderModule {
     return {
       module: BitcoinNetworkProviderModule,
       global: isGlobal || false,
-      imports: [LoggerModule.forRoot({ componentName: 'BitcoinNetworkProviderModule' })],
+      imports: [LoggerModule.forRoot({ componentName: 'BitcoinNetworkProviderComponent' })],
       providers: [
-        {
-          provide: ProvidersConfig,
-          useValue: providersConfig,
-        },
         BitcoinNetworkProviderService,
         BitcoinWebhookStreamService,
         connectionManager,

@@ -16,29 +16,39 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
   @Transactional({ connectionName: 'balances-indexer-write' })
   async execute({ payload }: InitIndexerCommand) {
     try {
-      this.log.debug('execute()', payload, this.constructor.name);
-
-      const { requestId, startHeight, restoreFromHeight } = payload;
+      const { requestId, lastReadStateHeight } = payload;
 
       const restoreBlocks: string[] = [];
 
+      this.log.info('Init BalancesIndexer Aggregate...', {}, this.constructor.name);
+
       const indexerModel: BalancesIndexer = await this.indexerModelFactory.initModel();
 
-      if (indexerModel.status === 'awaiting') {
-        const restoreBlocksCount = indexerModel.chain.lastBlockHeight - restoreFromHeight;
-        const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount);
+      this.log.info('BalancesIndexer Aggregate successfully initialized.', {}, this.constructor.name);
+
+      if (indexerModel.status === 'awaiting' && lastReadStateHeight !== undefined) {
+        const restoreBlocksCount = indexerModel.chain.lastBlockHeight - lastReadStateHeight;
+        // NOTE: We want to restore events one block more than the difference between write and read state.
+        const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount + 1);
+
+        this.log.info(
+          'Synchronization of blocks between write and read states...',
+          { blocksLength: blocks.length },
+          this.constructor.name
+        );
+
         // For restore block in read state we publish indexer with blocks hashes
         blocks.forEach((item) => restoreBlocks.push(item.hash));
       }
 
       if (indexerModel.status === 'reorganisation') {
+        this.log.info('Reorganisation of blocks...', {}, this.constructor.name);
         // Publish last indexer event to process reorganisation
         await this.indexerModelFactory.publishLastEvent();
       }
 
       await indexerModel.init({
         requestId,
-        startHeight,
         restoreBlocks,
       });
 
