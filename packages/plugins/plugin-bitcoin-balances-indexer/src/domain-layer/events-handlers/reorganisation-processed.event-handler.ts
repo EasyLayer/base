@@ -10,7 +10,7 @@ export class BitcoinBalancesIndexerReorganisationProcessedEventHandler
 {
   constructor(private readonly outputsReadService: OutputsReadService) {}
 
-  @Transactional({ connectionName: 'balances-indexer-read' })
+  @Transactional({ connectionName: process.env.BITCOIN_BALANCES_INDEXER_READ_DB_NAME })
   @RuntimeTracker({ showMemory: false })
   async handle({ payload }: BitcoinBalancesIndexerReorganisationProcessedEvent) {
     try {

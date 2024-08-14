@@ -1,13 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { Transform } from 'class-transformer';
 import { IsString, IsBoolean } from 'class-validator';
 
 type DatabaseTypes = 'sqlite' | 'postgres';
 
 @Injectable()
 export class EventStoreConfig {
+  @Transform(({ value }) => (value ? value : 'sqlite'))
   @IsString()
   BITCOIN_INDEXER_EVENTSTORE_DB_TYPE: DatabaseTypes = 'sqlite';
 
+  @Transform(({ value }) => (value ? value : 'indexer-write'))
   @IsString()
   BITCOIN_INDEXER_EVENTSTORE_DB_NAME: string = 'indexer-write';
 

@@ -21,7 +21,7 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
     private readonly cryptoUtilsService: BitcoinCryptoUtilsService
   ) {}
 
-  @Transactional({ connectionName: 'balances-indexer-read' })
+  @Transactional({ connectionName: process.env.BITCOIN_BALANCES_INDEXER_READ_DB_NAME })
   @RuntimeTracker({ showMemory: false })
   async handle({ payload }: BitcoinBalancesIndexerBlocksAddedEvent) {
     try {

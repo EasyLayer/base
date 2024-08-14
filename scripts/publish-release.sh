@@ -18,7 +18,7 @@ echo "Building multi-platform Docker image"
 docker buildx build \
   --platform linux/amd64 \
   --build-arg PUBLISH_VERSION=$version \
-  -t easylayer/base:$version -t easylayer/base:latest ./packages/base/ \
+  -t easylayer/base:$version -t easylayer/base:latest . \
   --load
 
 # Publish packages with default "latest" tag
