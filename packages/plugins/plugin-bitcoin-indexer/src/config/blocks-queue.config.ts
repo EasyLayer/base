@@ -8,9 +8,9 @@ export class BlocksQueueConfig {
   @IsNumber()
   BITCOIN_INDEXER_BLOCKS_QUEUE_WORKERS_NUM: number = 1;
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 100))
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 3000))
   @IsNumber()
-  BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_LENGTH: number = 100;
+  BITCOIN_INDEXER_BLOCKS_QUEUE_MAX_LENGTH: number = 3000;
 
   @Transform(({ value }) => (value !== undefined ? value : 'pull-network-provider-by-batches'))
   @IsString()
@@ -20,15 +20,15 @@ export class BlocksQueueConfig {
   @IsNumber()
   BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_NETWORK_PROVIDER_BATCHES_LENGTH: number = 8;
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 1000))
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 500))
   @IsNumber()
-  BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_INTERVAL_MS: number = 1000;
+  BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_INTERVAL_MS: number = 500;
 
   @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 10 * 60 * 1000))
   @IsNumber()
   BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS: number = 10 * 60 * 1000; // Bitcoin block time
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 10))
+  @Transform(({ value }) => (value !== undefined ? parseInt(value, 10) : 1))
   @IsNumber()
-  BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER: number = 10;
+  BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER: number = 1;
 }
