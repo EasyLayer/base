@@ -37,7 +37,7 @@ echo "Building multi-platform Docker image"
 docker buildx build \
   --platform linux/amd64 \
   --build-arg PUBLISH_VERSION=$publishVersion \
-  -t easylayer/base:$publishVersion ./packages/base/ \
+  -t easylayer/base:$publishVersion . \
   --load
 
 # Publish packages with the suffix as a tag

@@ -13,18 +13,23 @@ RUN set -x && \
     python3 \
     py3-pip \
     py3-setuptools \
-    sqlite
+    sqlite \
+    git
     
 # Set the working directory to the root directory
-WORKDIR /
+WORKDIR /app
 
-COPY .env.example /.env.example
+# Copy the Yarn configuration files
+COPY .yarn .yarn/
+COPY .yarnrc.yml .yarnrc.yml
+
+COPY packages/base/.env.example .env.example
 
 # Copy the entry point script to the container
-COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
+COPY scripts/docker-entrypoint.sh docker-entrypoint.sh
 
 # Make the script executable
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh
 
 # Set an environment variable to store the version
 ARG PUBLISH_VERSION
@@ -34,4 +39,4 @@ ENV PUBLISH_VERSION=$PUBLISH_VERSION
 EXPOSE 3000
 
 # Use shell form for ENTRYPOINT to allow shell processing
-ENTRYPOINT ["sh", "/docker-entrypoint.sh"]
+ENTRYPOINT ["sh", "docker-entrypoint.sh"]

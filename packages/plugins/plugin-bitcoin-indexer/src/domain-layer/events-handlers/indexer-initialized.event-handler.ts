@@ -16,7 +16,7 @@ export class BitcoinIndexerInitializedEventHandler implements IEventHandler<Bitc
     @Inject('BlocksQueueService') private readonly blocksQueueService: BlocksQueueService
   ) {}
 
-  @Transactional({ connectionName: 'indexer-read' })
+  @Transactional({ connectionName: process.env.BITCOIN_INDEXER_READ_DB_NAME })
   @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinIndexerInitializedEvent) {
     try {

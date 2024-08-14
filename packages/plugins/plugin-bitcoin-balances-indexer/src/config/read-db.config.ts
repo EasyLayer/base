@@ -6,9 +6,11 @@ type DatabaseTypes = 'sqlite' | 'postgres';
 
 @Injectable()
 export class ReadDatabaseConfig {
+  @Transform(({ value }) => (value ? value : 'sqlite'))
   @IsString()
   BITCOIN_BALANCES_INDEXER_READ_DB_TYPE: DatabaseTypes = 'sqlite';
 
+  @Transform(({ value }) => (value ? value : 'balances-indexer-read'))
   @IsString()
   BITCOIN_BALANCES_INDEXER_READ_DB_NAME: string = 'balances-indexer-read';
 
