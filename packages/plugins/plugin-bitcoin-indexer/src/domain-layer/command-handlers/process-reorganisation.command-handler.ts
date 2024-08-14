@@ -13,7 +13,7 @@ export class ProcessReorganisationCommandHandler implements ICommandHandler<Proc
     private readonly eventStore: EventStoreRepository
   ) {}
 
-  @Transactional({ connectionName: process.env.BITCOIN_INDEXER_EVENTSTORE_DB_NAME })
+  @Transactional({ connectionName: 'indexer-eventstore' })
   @RuntimeTracker({ showMemory: true })
   async execute({ payload }: ProcessReorganisationCommand) {
     try {

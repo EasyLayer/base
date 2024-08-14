@@ -15,7 +15,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
     private readonly eventStore: EventStoreRepository
   ) {}
 
-  @Transactional({ connectionName: process.env.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME })
+  @Transactional({ connectionName: 'balances-indexer-eventstore' })
   @RuntimeTracker({ showMemory: false })
   async execute({ payload }: IndexBlockCommand) {
     try {

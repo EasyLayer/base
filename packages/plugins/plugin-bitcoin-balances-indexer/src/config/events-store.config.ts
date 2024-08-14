@@ -10,9 +10,9 @@ export class EventStoreConfig {
   @IsString()
   BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE: DatabaseTypes = 'sqlite';
 
-  @Transform(({ value }) => (value ? value : 'balances-indexer-write'))
-  @IsString()
-  BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME: string = 'balances-indexer-write';
+  // @Transform(({ value }) => (value ? value : 'balances-indexer-eventstore'))
+  // @IsString()
+  // BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME: string = 'balances-indexer-eventstore';
 
   @IsBoolean()
   BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE: boolean = true;

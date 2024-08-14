@@ -7,8 +7,8 @@ import { ReadDatabaseConfig } from '../../config';
 @Injectable()
 export class InputsReadService {
   constructor(
-    // IMPORTANT: 'balances-indexer-read' name have to be the same as name in module connection
-    @InjectRepository(InputViewModel, 'balances-indexer-read')
+    // IMPORTANT: 'balances-indexer-views' name have to be the same as name in module connection
+    @InjectRepository(InputViewModel, 'balances-indexer-views')
     private readonly readDb: Repository<InputViewModel>,
     private readonly config: ReadDatabaseConfig
   ) {}

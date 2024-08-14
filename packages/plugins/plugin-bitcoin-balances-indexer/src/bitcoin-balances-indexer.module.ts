@@ -62,14 +62,14 @@ export class BitcoinBalancesIndexerModule {
         }),
         EventStoreModule.forRoot({
           type: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
-          name: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
+          name: 'balances-indexer-eventstore', //eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
         }),
         ReadDatabaseModule.forRoot({
           type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_TYPE,
-          name: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_NAME,
+          name: 'balances-indexer-views', //readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_NAME,
           // database: '',
           synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
