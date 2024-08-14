@@ -11,8 +11,8 @@ export const COINBASE_OUTPUT_N = -1;
 @Injectable()
 export class OutputsReadService {
   constructor(
-    // IMPORTANT: 'balances-indexer-read' name have to be the same as name in module connection
-    @InjectRepository(OutputViewModel, 'balances-indexer-read')
+    // IMPORTANT: 'balances-indexer-views' name have to be the same as name in module connection
+    @InjectRepository(OutputViewModel, 'balances-indexer-views')
     private readonly readDb: Repository<OutputViewModel>,
     private readonly config: ReadDatabaseConfig,
     private readonly log: AppLogger

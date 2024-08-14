@@ -40,7 +40,7 @@ export class EventStoreModule {
             ...restOptions,
             name,
             database,
-            // entities: dynamicEntities,
+            // entities: custom entities,
             entities: [EventDataModel],
             log,
           }),

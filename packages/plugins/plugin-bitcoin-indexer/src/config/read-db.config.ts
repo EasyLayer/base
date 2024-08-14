@@ -10,9 +10,9 @@ export class ReadDatabaseConfig {
   @IsString()
   BITCOIN_INDEXER_READ_DB_TYPE: DatabaseTypes = 'sqlite';
 
-  @Transform(({ value }) => (value ? value : 'indexer-read'))
-  @IsString()
-  BITCOIN_INDEXER_READ_DB_NAME: string = 'indexer-read';
+  // @Transform(({ value }) => (value ? value : 'indexer-views'))
+  // @IsString()
+  // BITCOIN_INDEXER_READ_DB_NAME: string = 'indexer-views';
 
   // TODO
   @IsBoolean()

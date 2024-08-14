@@ -22,7 +22,7 @@ export class BitcoinBalancesIndexerInitializedEventHandler
     @Inject('BlocksQueueService') private readonly blocksQueueService: BlocksQueueService
   ) {}
 
-  @Transactional({ connectionName: process.env.BITCOIN_BALANCES_INDEXER_READ_DB_NAME })
+  @Transactional({ connectionName: 'balances-indexer-views' })
   @RuntimeTracker({ showMemory: false })
   async handle({ payload }: BitcoinBalancesIndexerInitializedEvent) {
     try {

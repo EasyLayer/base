@@ -13,7 +13,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
     private readonly indexerModelFactory: BalancesIndexerModelFactoryService
   ) {}
 
-  @Transactional({ connectionName: process.env.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME })
+  @Transactional({ connectionName: 'balances-indexer-eventstore' })
   async execute({ payload }: InitIndexerCommand) {
     try {
       const { requestId, lastReadStateHeight } = payload;

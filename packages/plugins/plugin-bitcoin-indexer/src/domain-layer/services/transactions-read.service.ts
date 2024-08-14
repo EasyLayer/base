@@ -8,8 +8,8 @@ import { ReadDatabaseConfig } from '../../config';
 @Injectable()
 export class TransactionsReadService {
   constructor(
-    // IMPORTANT: 'indexer-read' name have to be the same as name in module connection
-    @InjectRepository(TransactionViewModel, 'indexer-read')
+    // IMPORTANT: 'indexer-views' name have to be the same as name in module connection
+    @InjectRepository(TransactionViewModel, 'indexer-views')
     private readDb: Repository<TransactionViewModel>,
     private readonly config: ReadDatabaseConfig,
     private readonly log: AppLogger

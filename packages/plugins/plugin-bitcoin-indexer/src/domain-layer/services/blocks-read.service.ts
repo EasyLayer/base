@@ -8,8 +8,8 @@ import { ReadDatabaseConfig } from '../../config';
 @Injectable()
 export class BlocksReadService {
   constructor(
-    // IMPORTANT: 'indexer-read' name have to be the same as name in module connection
-    @InjectRepository(BlockViewModel, 'indexer-read')
+    // IMPORTANT: 'indexer-views' name have to be the same as name in module connection
+    @InjectRepository(BlockViewModel, 'indexer-views')
     private readDb: Repository<BlockViewModel>,
     private readonly config: ReadDatabaseConfig,
     private readonly log: AppLogger

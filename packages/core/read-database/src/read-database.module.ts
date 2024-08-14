@@ -36,6 +36,7 @@ export class ReadDatabaseModule {
             ...restOptions,
             name,
             database,
+            // entities: custom entities,
             entities,
             log,
           }),
