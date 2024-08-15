@@ -88,6 +88,8 @@ export class BitcoinBalancesIndexerModule {
           queueLoaderMaxIntervalMs: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
           queueLoaderMaxIntervalMultiplier:
             blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+          queueIteratorBlocksBatchSize:
+            blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_ITERATOR_BLOCKS_BATCH_SIZE,
         }),
       ],
       providers: [

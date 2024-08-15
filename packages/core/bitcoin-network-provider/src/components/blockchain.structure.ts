@@ -21,7 +21,7 @@ export class Blockchain {
   private tail: Chain | null = null;
   private _size: number = 0;
   // NOTE: _maxSize - Maximum number of blocks allowed in the blockchain at any given time.
-  private readonly _maxSize: number = 100;
+  private readonly _maxSize: number = 1000;
 
   // Gets the hash of the first block in the chain.
   // Complexity: O(1)
@@ -217,7 +217,7 @@ export class Blockchain {
 
       if (
         Number(currentBlock.height) !== Number(prevBlock.height) + 1 ||
-        currentBlock.previousblockhash !== prevBlock.hash
+        (currentBlock.previousblockhash && currentBlock.previousblockhash !== prevBlock.hash)
       ) {
         return false; // Sequence or hash mismatch within the provided blocks
       }

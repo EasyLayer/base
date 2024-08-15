@@ -24,6 +24,7 @@ export interface Transaction {
   hash: string;
   vin: any;
   vout: any;
+  hex: string;
 }
 // TODO: move to provider
 export interface Block {

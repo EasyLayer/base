@@ -35,14 +35,10 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
       const processedOutputs = new Map<number, any[]>();
       const processedInputs = new Map<number, any[]>();
 
-      for (const b of blocks) {
-        const { height, hash } = b;
+      const confirmedBlocks = await this.blocksQueueService.confirmIndexBatch(blocks.map((block: any) => block.hash));
 
-        const block = await this.blocksQueueService.confirmIndexBlock(hash);
-
-        if (!block || block.hash !== hash) {
-          throw new Error(`Wrong block ${hash}`);
-        }
+      confirmedBlocks.forEach((block: any) => {
+        const { height } = block;
 
         const { tx } = block;
 
@@ -107,7 +103,7 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
             }
           }
         }
-      }
+      });
 
       await this.outputsReadService.createMany(processedOutputs);
       await this.inputsReadService.createMany(processedInputs);
