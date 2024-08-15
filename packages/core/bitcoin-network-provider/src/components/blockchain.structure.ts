@@ -21,7 +21,11 @@ export class Blockchain {
   private tail: Chain | null = null;
   private _size: number = 0;
   // NOTE: _maxSize - Maximum number of blocks allowed in the blockchain at any given time.
-  private readonly _maxSize: number = 1000;
+  private _maxSize: number;
+
+  constructor({ maxSize = 100 }: { maxSize?: number }) {
+    this._maxSize = maxSize;
+  }
 
   // Gets the hash of the first block in the chain.
   // Complexity: O(1)

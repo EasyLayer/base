@@ -30,7 +30,7 @@ export class InitIndexerCommandHandler implements ICommandHandler<InitIndexerCom
         const restoreBlocksCount = indexerModel.chain.lastBlockHeight - lastReadStateHeight;
         // NOTE: We want to restore events one block more than the difference between write and read state.
         const blocks = indexerModel.chain.getLastNBlocks(restoreBlocksCount + 1);
-        console.log('Q', indexerModel.chain.lastBlockHeight, lastReadStateHeight, blocks.length);
+
         this.log.info(
           'Synchronization of blocks between write and read states...',
           { blocksLength: blocks.length },

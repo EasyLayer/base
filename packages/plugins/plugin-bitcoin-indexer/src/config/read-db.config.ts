@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Transform } from 'class-transformer';
-import { IsString, IsBoolean, IsNumber } from 'class-validator';
+import { IsString, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 
 type DatabaseTypes = 'sqlite' | 'postgres';
 
@@ -17,6 +17,26 @@ export class ReadDatabaseConfig {
   // TODO
   @IsBoolean()
   BITCOIN_INDEXER_READ_DB_SYNCHRONIZE: boolean = true;
+
+  @Transform(({ value }) => (value ? value : 'localhost'))
+  @IsString()
+  @IsOptional()
+  BITCOIN_INDEXER_READ_DB_HOST?: string;
+
+  @Transform(({ value }) => (value ? parseInt(value, 10) : 5432))
+  @IsNumber()
+  @IsOptional()
+  BITCOIN_INDEXER_READ_DB_PORT?: number;
+
+  @Transform(({ value }) => (value ? value : ''))
+  @IsString()
+  @IsOptional()
+  BITCOIN_INDEXER_READ_DB_USERNAME?: string;
+
+  @Transform(({ value }) => (value ? value : ''))
+  @IsString()
+  @IsOptional()
+  BITCOIN_INDEXER_READ_DB_PASSWORD?: string;
 
   @Transform(({ value }) => (value ? Number(value) : 60000))
   @IsNumber()

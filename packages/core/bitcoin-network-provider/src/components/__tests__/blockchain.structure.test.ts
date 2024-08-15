@@ -3,8 +3,10 @@ import { Blockchain } from '../blockchain.structure';
 describe('Blockchain', () => {
   let blockchain: Blockchain;
 
+  const maxSize = 100;
+
   beforeEach(() => {
-    blockchain = new Blockchain();
+    blockchain = new Blockchain({ maxSize });
   });
 
   describe('Initialization', () => {
@@ -46,11 +48,11 @@ describe('Blockchain', () => {
     });
 
     it('should remove the first block when max size is exceeded', () => {
-      for (let i = 0; i < 1001; i++) {
+      for (let i = 0; i < maxSize + 1; i++) {
         blockchain.addBlock(i, `hash${i}`, i === 0 ? 'prevHash0' : `hash${i - 1}`, []);
       }
-      expect(blockchain.size).toBe(1000);
-      expect(blockchain.lastBlockHeight).toBe(1000);
+      expect(blockchain.size).toBe(maxSize);
+      expect(blockchain.lastBlockHeight).toBe(maxSize);
       expect(blockchain.findBlockByHeight(0)).toBe(null);
     });
   });

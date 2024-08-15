@@ -12,13 +12,10 @@ import { EventStoreService } from './eventstore.service';
 type EventStoreConfig = TypeOrmModuleOptions & {
   type: 'sqlite' | 'postgres' | 'mysql';
   name: string;
-  // useAggregateIdIndex?: boolean;
 };
 
 @Module({})
 export class EventStoreModule {
-  // TODO: add sharding logic when we autocreating new connection after 100k inserts blocks
-
   static forRoot(config: EventStoreConfig): DynamicModule {
     const { name, ...restOptions } = config;
 
@@ -40,7 +37,7 @@ export class EventStoreModule {
             ...restOptions,
             name,
             database,
-            // entities: custom entities,
+            // custom entities,
             entities: [EventDataModel],
             log,
           }),
