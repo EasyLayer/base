@@ -27,6 +27,7 @@ describe('BlocksQueueModule', () => {
     queueLoaderIntervalMs: 500,
     queueLoaderMaxIntervalMs: 10 * 60 * 1000,
     queueLoaderMaxIntervalMultiplier: 10,
+    queueIteratorBlocksBatchSize: 2,
   };
 
   beforeEach(async () => {

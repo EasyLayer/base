@@ -23,15 +23,9 @@ export class BitcoinIndexerBlocksAddedEventHandler implements IEventHandler<Bitc
       const processedBlocks: any[] = [];
       const processedTx = new Map<string, any[]>();
 
-      for (const b of blocks) {
-        const { hash } = b;
+      const confirmedBlocks = await this.blocksQueueService.confirmIndexBatch(blocks.map((block: any) => block.hash));
 
-        const block = await this.blocksQueueService.confirmIndexBlock(hash);
-
-        if (!block || block.hash !== hash) {
-          throw new Error(`Wrong block ${hash}`);
-        }
-
+      confirmedBlocks.forEach((block: any) => {
         const { tx, ...blockWithoutTx } = block;
 
         if (!tx || tx.length === 0) {
@@ -39,15 +33,15 @@ export class BitcoinIndexerBlocksAddedEventHandler implements IEventHandler<Bitc
         }
 
         tx.forEach((t: any) => {
-          if (!processedTx.has(hash)) {
-            processedTx.set(hash, []);
+          if (!processedTx.has(blockWithoutTx.hash)) {
+            processedTx.set(blockWithoutTx.hash, []);
           }
 
-          processedTx.get(hash)!.push(t);
+          processedTx.get(blockWithoutTx.hash)!.push(t);
         });
 
         processedBlocks.push(blockWithoutTx);
-      }
+      });
 
       if (processedBlocks.length > 0) {
         await this.blocksReadService.createMany(processedBlocks);

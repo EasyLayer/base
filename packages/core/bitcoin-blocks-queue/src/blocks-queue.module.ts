@@ -19,6 +19,7 @@ export interface BlocksQueueModuleOptions {
   queueLoaderIntervalMs: number;
   queueLoaderMaxIntervalMs: number;
   queueLoaderMaxIntervalMultiplier: number;
+  queueIteratorBlocksBatchSize: number;
 }
 
 @Module({})
@@ -51,7 +52,11 @@ export class BlocksQueueModule {
             }),
           inject: [AppLogger, BitcoinNetworkProviderService, BitcoinWebhookStreamService],
         },
-        BlocksQueueIteratorService,
+        {
+          provide: BlocksQueueIteratorService,
+          useFactory: (logger, executor) => new BlocksQueueIteratorService(logger, executor, { ...restConfig }),
+          inject: [AppLogger, 'BlocksCommandExecutor'],
+        },
         BlocksQueueCollectorService,
       ],
       exports: ['BlocksQueueService'],

@@ -63,17 +63,41 @@ export class BitcoinBalancesIndexerModule {
         EventStoreModule.forRoot({
           type: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_TYPE,
           name: 'balances-indexer-eventstore', //eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_NAME,
-          // database: '',
           synchronize: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
+          database: 'balances-indexer-eventstore',
+          ...(eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_HOST && {
+            host: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_HOST,
+          }),
+          ...(eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_PORT && {
+            port: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_PORT,
+          }),
+          ...(eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_USERNAME && {
+            username: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_USERNAME,
+          }),
+          ...(eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_PASSWORD && {
+            password: eventstoreConfig.BITCOIN_BALANCES_INDEXER_EVENTSTORE_DB_PASSWORD,
+          }),
         }),
         ReadDatabaseModule.forRoot({
           type: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_TYPE,
           name: 'balances-indexer-views', //readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_NAME,
-          // database: '',
           synchronize: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
           entities: [OutputViewModel, InputViewModel],
+          database: 'balances-indexer-views',
+          ...(readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_HOST && {
+            host: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_HOST,
+          }),
+          ...(readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_PORT && {
+            port: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_PORT,
+          }),
+          ...(readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_USERNAME && {
+            username: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_USERNAME,
+          }),
+          ...(readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_PASSWORD && {
+            password: readdatabaseConfig.BITCOIN_BALANCES_INDEXER_READ_DB_PASSWORD,
+          }),
         }),
         BlocksQueueModule.forRootAsync({
           blocksCommandExecutor: BlocksCommandFactoryService,
@@ -88,6 +112,8 @@ export class BitcoinBalancesIndexerModule {
           queueLoaderMaxIntervalMs: blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
           queueLoaderMaxIntervalMultiplier:
             blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+          queueIteratorBlocksBatchSize:
+            blocksQueueConfig.BITCOIN_BALANCES_INDEXER_BLOCKS_QUEUE_ITERATOR_BLOCKS_BATCH_SIZE,
         }),
       ],
       providers: [

@@ -24,7 +24,7 @@ export class BalancesIndexer extends AggregateRoot {
   // so we immediately give it aggregateId by which we can find it.
   public aggregateId: string = 'balances-indexer';
   public status!: IndexerStatuses;
-  public chain: Blockchain = new Blockchain();
+  public chain: Blockchain = new Blockchain({ maxSize: 5000 });
 
   // IMPORTANT: this method doing two things:
   // 1 - create Indexer if it's first creation

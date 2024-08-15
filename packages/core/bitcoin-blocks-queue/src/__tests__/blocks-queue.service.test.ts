@@ -36,7 +36,7 @@ describe('BlocksQueueService', () => {
 
     mockBlocksIterator = {
       startQueueIterating: jest.fn(),
-      resolveNextBlock: jest.fn(),
+      resolveNextBatch: jest.fn(),
     } as any;
 
     mockBlockCollectorService = {
@@ -95,16 +95,51 @@ describe('BlocksQueueService', () => {
     service['_blockQueue'] = mockBlockQueue;
   });
 
+  describe('start', () => {
+    it('should start blocks loading and queue iterating', () => {
+      service.start(100);
+
+      expect(mockBlocksIterator.startQueueIterating).toHaveBeenCalledWith(mockBlockQueue);
+    });
+  });
+
   describe('reorganizeBlocks', () => {
     it('should clear the queue and set a new starting height', async () => {
       jest.spyOn(service['queue'], 'clear');
-      jest.spyOn(service['blocksQueueIterator'], 'resolveNextBlock');
 
       await service.reorganizeBlocks(2);
 
       expect(service['queue'].clear).toHaveBeenCalled();
       expect(service['queue'].lastHeight).toBe(2);
-      expect(service['blocksQueueIterator'].resolveNextBlock).toHaveBeenCalled();
+      expect(service['blocksQueueIterator'].resolveNextBatch).toHaveBeenCalled();
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Queue was clear to height: ',
+        { newStartHeight: 2 },
+        'BlocksQueueService'
+      );
+    });
+  });
+
+  describe('confirmIndexBatch', () => {
+    it('should throw an error if block hash does not match', async () => {
+      const blockMock = { hash: 'wrong-hash', height: 0, tx: [] } as Block;
+      mockBlockQueue.peekFirstBlock.mockReturnValueOnce(blockMock);
+
+      await expect(service.confirmIndexBatch(['test-hash'])).rejects.toThrow(
+        'Block not found or hash mismatch: test-hash'
+      );
+    });
+  });
+
+  describe('queue', () => {
+    it('should return the block queue', () => {
+      expect(service.queue).toBe(mockBlockQueue);
+    });
+  });
+
+  describe('blocksCollector', () => {
+    it('should return the block collector service', () => {
+      expect(service.blocksCollector).toBe(mockBlockCollectorService);
     });
   });
 });

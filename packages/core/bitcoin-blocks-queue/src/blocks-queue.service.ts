@@ -48,30 +48,34 @@ export class BlocksQueueService {
     // Set a new initial height for loading blocks
     this._blockQueue.lastHeight = Number(newStartHeight);
 
-    this.blocksQueueIterator.resolveNextBlock();
+    this.blocksQueueIterator.resolveNextBatch();
 
     this.log.info('Queue was clear to height: ', { newStartHeight }, this.constructor.name);
   }
 
-  // Rename method to dequeueBlock
-  public async confirmIndexBlock(blockHash: string): Promise<Block> {
-    // IMPORTANT: This method must be idenpotent.
-    // To do this, we added a check and remove only the required block from the queue,
-    // BUT if there is no such block, then we will skip it, without an error!
+  public async confirmIndexBatch(blockHashes: string[]): Promise<Block[]> {
+    const confirmedBlocks: Block[] = [];
 
-    const block = this._blockQueue.firstBlock;
+    for (const hash of blockHashes) {
+      const block = this._blockQueue.firstBlock;
 
-    if (block && block.hash === blockHash) {
-      const b = this._blockQueue.dequeue();
+      if (block && block.hash === hash) {
+        const dequeuedBlock = this._blockQueue.dequeue();
 
-      if (!b) {
-        throw new Error(`Block is not found: ${blockHash}`);
+        if (!dequeuedBlock) {
+          throw new Error(`Block not found in the queue after dequeue: ${hash}`);
+        }
+
+        confirmedBlocks.push(dequeuedBlock);
+
+        // Allow the next batch to be processed
+        this.blocksQueueIterator.resolveNextBatch();
+      } else {
+        // If the block is not found or the hash does not match, throw an error
+        throw new Error(`Block not found or hash mismatch: ${hash}`);
       }
-
-      this.blocksQueueIterator.resolveNextBlock();
-      return b;
     }
 
-    throw new Error(`Block is not found: ${blockHash}`);
+    return confirmedBlocks;
   }
 }

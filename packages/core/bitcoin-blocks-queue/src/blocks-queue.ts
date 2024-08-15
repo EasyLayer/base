@@ -1,5 +1,4 @@
 import _ from 'lodash';
-// import sizeof from 'object-sizeof';
 import { Block } from './interfaces';
 
 /**
@@ -12,7 +11,6 @@ export class BlocksQueue<T extends Block> {
   // IMPORTANT: the blockchain starts from block 0,
   // so if there are no blocks at all, we use -1
   private _lastHeight: number = -1;
-  private _size: number = 0; // NOTE: For debug only
   private _maxQueueLength: number = 100;
   private _maxBlockHeight: number = Number.MAX_SAFE_INTEGER;
 
@@ -110,11 +108,6 @@ export class BlocksQueue<T extends Block> {
     this.inStack.push(block);
     this._lastHeight = Number(block.height);
 
-    // if (process.env.DEBUG === '1') {
-    //   this._size += sizeof(block);
-    //   console.debug('BLOCKS QUEUE ENQUEUE SIZE: ', this._size);
-    // }
-
     return true;
   }
 
@@ -128,13 +121,6 @@ export class BlocksQueue<T extends Block> {
     }
 
     const block = this.outStack.pop();
-
-    // if (process.env.DEBUG === '1') {
-    //   if (block) {
-    //     this._size -= sizeof(block);
-    //     console.debug('BLOCKS QUEUE DEQUEUE SIZE: ', this._size);
-    //   }
-    // }
 
     return block;
   }
@@ -152,6 +138,20 @@ export class BlocksQueue<T extends Block> {
     // IMPORTANT: We make sure to clone the block so that modifications to the object
     // later in the process cannot affect the block in the queue.
     return this.outStack.length > 0 ? _.cloneDeep(this.outStack[this.outStack.length - 1]) : null;
+  }
+
+  /**
+   * Generator function to iterate over blocks in reverse order, without removing them.
+   * @yields {T} The previous block in the queue.
+   */
+  public *peekPrevBlock(): Generator<T, void, unknown> {
+    if (this.outStack.length === 0) {
+      this.transferItems();
+    }
+
+    for (let i = this.outStack.length - 1; i >= 0; i--) {
+      yield _.cloneDeep(this.outStack[i]);
+    }
   }
 
   /**

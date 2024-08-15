@@ -66,14 +66,39 @@ export class BitcoinIndexerModule {
           // database: '',
           synchronize: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_SYNCHRONIZE,
           logging: eventstoreConfig.isLogging(),
+          database: 'indexer-eventstore',
+          ...(eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_HOST && {
+            host: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_HOST,
+          }),
+          ...(eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_PORT && {
+            port: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_PORT,
+          }),
+          ...(eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_USERNAME && {
+            username: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_USERNAME,
+          }),
+          ...(eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_PASSWORD && {
+            password: eventstoreConfig.BITCOIN_INDEXER_EVENTSTORE_DB_PASSWORD,
+          }),
         }),
         ReadDatabaseModule.forRoot({
           type: readdatabaseConfig.BITCOIN_INDEXER_READ_DB_TYPE,
           name: 'indexer-views', //readdatabaseConfig.BITCOIN_INDEXER_READ_DB_NAME,
-          // database: '',
           synchronize: readdatabaseConfig.BITCOIN_INDEXER_READ_DB_SYNCHRONIZE,
           logging: readdatabaseConfig.isLogging(),
           entities: [BlockViewModel, TransactionViewModel],
+          database: 'indexer-views',
+          ...(readdatabaseConfig.BITCOIN_INDEXER_READ_DB_HOST && {
+            host: readdatabaseConfig.BITCOIN_INDEXER_READ_DB_HOST,
+          }),
+          ...(readdatabaseConfig.BITCOIN_INDEXER_READ_DB_PORT && {
+            port: readdatabaseConfig.BITCOIN_INDEXER_READ_DB_PORT,
+          }),
+          ...(readdatabaseConfig.BITCOIN_INDEXER_READ_DB_USERNAME && {
+            username: readdatabaseConfig.BITCOIN_INDEXER_READ_DB_USERNAME,
+          }),
+          ...(readdatabaseConfig.BITCOIN_INDEXER_READ_DB_PASSWORD && {
+            password: readdatabaseConfig.BITCOIN_INDEXER_READ_DB_PASSWORD,
+          }),
         }),
         BlocksQueueModule.forRootAsync({
           blocksCommandExecutor: BlocksCommandFactoryService,
@@ -88,6 +113,7 @@ export class BitcoinIndexerModule {
           queueLoaderMaxIntervalMs: blocksQueueConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MS,
           queueLoaderMaxIntervalMultiplier:
             blocksQueueConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_LOADER_MAX_INTERVAL_MULTIPLIER,
+          queueIteratorBlocksBatchSize: blocksQueueConfig.BITCOIN_INDEXER_BLOCKS_QUEUE_ITERATOR_BLOCKS_BATCH_SIZE,
         }),
       ],
       providers: [

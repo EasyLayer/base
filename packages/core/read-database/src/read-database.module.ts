@@ -62,7 +62,7 @@ export class ReadDatabaseModule {
               await dataSource.query('PRAGMA mmap_size = 268435456;');
 
               await dataSource.query('PRAGMA synchronous = OFF;'); // NORMAL;
-              await dataSource.query('PRAGMA journal_mode = WAL;');
+              await dataSource.query('PRAGMA journal_mode = OFF;'); // WAL
               await dataSource.query('PRAGMA journal_size_limit = 6144000;');
 
               await dataSource.query('PRAGMA wal_checkpoint(TRUNCATE);');
