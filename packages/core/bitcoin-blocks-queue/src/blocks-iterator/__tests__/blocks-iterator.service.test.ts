@@ -13,10 +13,10 @@ class TestBlock implements Block {
   hash: string;
   tx: any[];
 
-  constructor(height: number) {
+  constructor(height: number, tx: any[] = []) {
     this.height = height;
     this.hash = '';
-    this.tx = [];
+    this.tx = tx;
   }
 }
 
@@ -49,7 +49,12 @@ describe('BlocksQueueIteratorService', () => {
           provide: 'BlocksCommandExecutor',
           useValue: mockBlocksCommandExecutor,
         },
-        BlocksQueueIteratorService,
+        {
+          provide: BlocksQueueIteratorService,
+          useFactory: (logger, executor) =>
+            new BlocksQueueIteratorService(logger, executor, { queueIteratorBlocksBatchSize: 2 }),
+          inject: [AppLogger, 'BlocksCommandExecutor'],
+        },
       ],
     }).compile();
 
@@ -57,70 +62,113 @@ describe('BlocksQueueIteratorService', () => {
     service['_queue'] = mockQueue;
   });
 
-  describe('peekFirstBlock', () => {
-    it('should wait for blockProcessedPromise before returning the first block', async () => {
-      const blockMock = new TestBlock(0);
-      mockQueue.enqueue(blockMock);
-
-      service['initBlockProcessedPromise']();
-      const spy = jest.spyOn(service['_queue'], 'peekFirstBlock');
-
-      const promise = service['peekFirstBlock']();
-
-      expect(spy).not.toHaveBeenCalled();
-
-      service['resolveNextBlock']();
-
-      const result = await promise;
-
-      expect(result).toEqual(blockMock);
-      expect(service['_queue'].peekFirstBlock).toHaveBeenCalled();
-    });
-  });
-
-  describe('initBlockProcessedPromise', () => {
+  describe('initBatchProcessedPromise', () => {
     it('should create a promise and resolve it immediately if queue is empty', () => {
-      service['initBlockProcessedPromise']();
-      expect(service['blockProcessedPromise']).toBeInstanceOf(Promise);
-      expect(service['resolveNextBlock']).toBeInstanceOf(Function);
+      service['initBatchProcessedPromise']();
+      expect(service['batchProcessedPromise']).toBeInstanceOf(Promise);
+      expect(service['resolveNextBatch']).toBeInstanceOf(Function);
     });
 
     it('should create a promise that can be resolved externally', async () => {
       const blockMock = new TestBlock(0);
       mockQueue.enqueue(blockMock);
 
-      service['initBlockProcessedPromise']();
+      service['initBatchProcessedPromise']();
 
       let resolved = false;
-      service['blockProcessedPromise'].then(() => {
+      service['batchProcessedPromise'].then(() => {
         resolved = true;
       });
 
-      service['resolveNextBlock']();
-      await service['blockProcessedPromise'];
+      service['resolveNextBatch']();
+      await service['batchProcessedPromise'];
       expect(resolved).toBe(true);
     });
   });
 
-  describe('processBlock', () => {
-    it('should call blocksCommandExecutor.processBlock with correct arguments', async () => {
+  describe('processBatch', () => {
+    it('should call blocksCommandExecutor.indexBlock with correct arguments', async () => {
       const blockMock = new TestBlock(0);
-      await service['processBlock'](blockMock);
+      await service['processBatch']([blockMock]);
 
       expect(mockBlocksCommandExecutor.indexBlock).toHaveBeenCalledWith({ batch: [blockMock], requestId: 'mock-uuid' });
     });
 
-    it('should log an error if blocksCommandExecutor.processBlock throws an error', async () => {
+    it('should log an error if blocksCommandExecutor.indexBlock throws an error', async () => {
       const blockMock = new TestBlock(0);
       mockBlocksCommandExecutor.indexBlock.mockRejectedValueOnce(new Error('Test Error'));
-      service['initBlockProcessedPromise']();
-      await service['processBlock'](blockMock);
+      service['initBatchProcessedPromise']();
+      await service['processBatch']([blockMock]);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to iterate the block',
+        'Failed to process the batch',
         new Error('Test Error'),
         'BlocksQueueIteratorService'
       );
+    });
+  });
+
+  describe('calculateBlockSize', () => {
+    it('should correctly calculate the size of a block based on the hex strings of transactions', () => {
+      const tx1 = { hex: 'abcd' }; // 2 bytes
+      const tx2 = { hex: '1234567890' }; // 5 bytes
+      const blockMock = new TestBlock(0, [tx1, tx2]);
+
+      const blockSize = service['calculateBlockSize'](blockMock);
+
+      expect(blockSize).toBe(7); // 2 + 5 bytes
+    });
+
+    it('should return 0 if there are no transactions in the block', () => {
+      const blockMock = new TestBlock(0);
+
+      const blockSize = service['calculateBlockSize'](blockMock);
+
+      expect(blockSize).toBe(0);
+    });
+  });
+
+  describe('peekNextBatch', () => {
+    it('should stop adding blocks to the batch if the next block would exceed the batch size', async () => {
+      const tx1 = { hex: 'abcd' }; // 2 bytes
+      const tx2 = { hex: '1234567890' }; // 5 bytes
+      const tx3 = { hex: '12345678901234567890' }; // 10 bytes
+
+      const blockMock1 = new TestBlock(0, [tx1]);
+      const blockMock2 = new TestBlock(1, [tx2]);
+      const blockMock3 = new TestBlock(2, [tx3]);
+
+      mockQueue.enqueue(blockMock1);
+      mockQueue.enqueue(blockMock2);
+      mockQueue.enqueue(blockMock3);
+
+      service['_blocksBatchSize'] = 7; // Set batch size limit to 7 bytes
+
+      const result = await service['peekNextBatch']();
+
+      expect(result).toEqual([blockMock1, blockMock2]);
+      expect(result.length).toBe(2); // Should only include the first two blocks
+    });
+
+    it('should throw an error if a single block exceeds the batch size', async () => {
+      const tx1 = { hex: '12345678901234567890' }; // 10 bytes
+
+      const blockMock = new TestBlock(0, [tx1]);
+
+      mockQueue.enqueue(blockMock);
+
+      service['_blocksBatchSize'] = 5; // Set batch size limit to 5 bytes
+
+      await expect(service['peekNextBatch']()).rejects.toThrow('Block size exceeds the minimum for adding to a batch');
+    });
+  });
+
+  describe('resolveNextBatch', () => {
+    it('should return the resolveNextBatch function', () => {
+      service['initBatchProcessedPromise']();
+      const resolveFunction = service.resolveNextBatch;
+
+      expect(typeof resolveFunction).toBe('function');
     });
   });
 });

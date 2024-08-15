@@ -46,11 +46,11 @@ describe('Blockchain', () => {
     });
 
     it('should remove the first block when max size is exceeded', () => {
-      for (let i = 0; i < 101; i++) {
+      for (let i = 0; i < 1001; i++) {
         blockchain.addBlock(i, `hash${i}`, i === 0 ? 'prevHash0' : `hash${i - 1}`, []);
       }
-      expect(blockchain.size).toBe(100);
-      expect(blockchain.lastBlockHeight).toBe(100);
+      expect(blockchain.size).toBe(1000);
+      expect(blockchain.lastBlockHeight).toBe(1000);
       expect(blockchain.findBlockByHeight(0)).toBe(null);
     });
   });
