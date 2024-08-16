@@ -54,21 +54,23 @@ export class InputsReadService {
   }
 
   private prepareBatches(valuesToInsert: any[]): any[][] {
-    const isSQLite = this.readDb.manager.connection.options.type === 'sqlite';
+    const isSupportChunks =
+      this.readDb.manager.connection.options.type === 'sqlite' ||
+      this.readDb.manager.connection.options.type === 'postgres';
 
-    if (!isSQLite) {
-      // If it's not SQLite, return the entire array as one batch
+    if (!isSupportChunks) {
+      // If it's not support chunks, return the entire array as one batch
       return [valuesToInsert];
     }
 
-    const batchSize = Math.floor(
-      this.config.BITCOIN_BALANCES_INDEXER_READ_DB_SQLITE_MAX_VARIABLES / Object.keys(valuesToInsert[0]).length
-    );
+    const batchSize = this.config.BITCOIN_BALANCES_INDEXER_READ_DB_SQLITE_CHANKS_LIMIT;
 
     // If there is more data than batchSize, we split it into batches
     if (valuesToInsert.length > batchSize) {
       return this.chunkArray(valuesToInsert, batchSize);
     }
+
+    // this.log.debug('Read State batches', { batchSize }, this.constructor.name);
 
     // If the data is less than batchSize, return it in one batch
     return [valuesToInsert];
