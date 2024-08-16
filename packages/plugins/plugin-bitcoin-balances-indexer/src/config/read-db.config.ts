@@ -38,9 +38,9 @@ export class ReadDatabaseConfig {
   @IsOptional()
   BITCOIN_BALANCES_INDEXER_READ_DB_PASSWORD?: string;
 
-  @Transform(({ value }) => (value ? Number(value) : 60000))
+  @Transform(({ value }) => (value ? Number(value) : 10000))
   @IsNumber()
-  BITCOIN_BALANCES_INDEXER_READ_DB_SQLITE_MAX_VARIABLES: number = 60000;
+  BITCOIN_BALANCES_INDEXER_READ_DB_SQLITE_CHANKS_LIMIT: number = 10000;
 
   isLogging(): boolean {
     return process.env.DB_DEBUG === '1';
