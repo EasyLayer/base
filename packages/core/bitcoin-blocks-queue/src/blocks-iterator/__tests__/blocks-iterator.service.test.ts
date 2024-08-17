@@ -149,18 +149,6 @@ describe('BlocksQueueIteratorService', () => {
       expect(result).toEqual([blockMock1, blockMock2]);
       expect(result.length).toBe(2); // Should only include the first two blocks
     });
-
-    it('should throw an error if a single block exceeds the batch size', async () => {
-      const tx1 = { hex: '12345678901234567890' }; // 10 bytes
-
-      const blockMock = new TestBlock(0, [tx1]);
-
-      mockQueue.enqueue(blockMock);
-
-      service['_blocksBatchSize'] = 5; // Set batch size limit to 5 bytes
-
-      await expect(service['peekNextBatch']()).rejects.toThrow('Block size exceeds the minimum for adding to a batch');
-    });
   });
 
   describe('resolveNextBatch', () => {

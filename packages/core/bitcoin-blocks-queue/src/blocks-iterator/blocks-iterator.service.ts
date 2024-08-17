@@ -109,7 +109,7 @@ export class BlocksQueueIteratorService implements OnModuleDestroy {
       // Check if adding this block would exceed the maximum batch size
       if (currentBatchSize + blockSize > this._blocksBatchSize) {
         if (batch.length === 0) {
-          throw new Error('Block size exceeds the minimum for adding to a batch');
+          this.log.error('Block size exceeds the minimum for adding to a batch', {}, this.constructor.name);
         }
 
         break; // Stop adding blocks if the next one would exceed the limit

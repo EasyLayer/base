@@ -11,7 +11,7 @@ export class BitcoinBalancesIndexerReorganisationProcessedEventHandler
   constructor(private readonly outputsReadService: OutputsReadService) {}
 
   @Transactional({ connectionName: 'balances-indexer-views' })
-  @RuntimeTracker({ showMemory: false })
+  @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinBalancesIndexerReorganisationProcessedEvent) {
     try {
       const { blocks } = payload;

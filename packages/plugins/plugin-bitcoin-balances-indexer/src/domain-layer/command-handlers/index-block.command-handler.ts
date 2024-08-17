@@ -16,7 +16,7 @@ export class IndexBlockCommandHandler implements ICommandHandler<IndexBlockComma
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-eventstore' })
-  @RuntimeTracker({ showMemory: false })
+  @RuntimeTracker({ showMemory: true })
   async execute({ payload }: IndexBlockCommand) {
     try {
       const { batch, requestId } = payload;

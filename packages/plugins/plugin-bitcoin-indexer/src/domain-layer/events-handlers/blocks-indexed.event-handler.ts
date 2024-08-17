@@ -15,7 +15,7 @@ export class BitcoinIndexerBlocksAddedEventHandler implements IEventHandler<Bitc
   ) {}
 
   @Transactional({ connectionName: 'indexer-views' })
-  @RuntimeTracker({ showMemory: false })
+  @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinIndexerBlocksAddedEvent) {
     try {
       const { blocks } = payload;
