@@ -22,7 +22,7 @@ export class BitcoinBalancesIndexerBlocksAddedEventHandler
   ) {}
 
   @Transactional({ connectionName: 'balances-indexer-views' })
-  @RuntimeTracker({ showMemory: false })
+  @RuntimeTracker({ showMemory: true })
   async handle({ payload }: BitcoinBalancesIndexerBlocksAddedEvent) {
     try {
       const { blocks } = payload;
