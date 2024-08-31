@@ -165,6 +165,29 @@ export class BlocksQueue<T extends Block> {
   }
 
   /**
+   * Searches for blocks in the outStack by a set of hashes, starting from the end.
+   * @param hashSet A set of block hashes to search for.
+   * @returns An array of the found blocks.
+   */
+  public findBlocks(hashSet: Set<string>): T[] {
+    const blocks: T[] = [];
+
+    // Iterate through the outStack in reverse order, starting from the last element
+    for (let i = this.outStack.length - 1; i >= 0; i--) {
+      const block = this.outStack[i];
+      if (hashSet.has(block.hash)) {
+        blocks.push(block);
+        if (blocks.length === hashSet.size) {
+          // Break the loop if all blocks are found
+          break;
+        }
+      }
+    }
+
+    return blocks;
+  }
+
+  /**
    * Transfers items from the inStack to the outStack.
    * @complexity O(n)
    */

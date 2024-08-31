@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BitcoinNetworkProviderModule, BitcoinNetworkProviderModuleOptions } from '../bitcoin-network-provider.module';
 import { BitcoinNetworkProviderService } from '../bitcoin-network-provider.service';
 import { ConnectionManager } from '../connection-manager';
-import { BitcoinCryptoUtilsService } from '../crypto-utils.service';
+import { BitcoinCryptoUtilsService } from '../utils/key-management.service';
 import { BitcoinWebhookStreamService } from '../bitcoin-webhook-stream.service';
 
 describe('BitcoinNetworkProviderModule', () => {

@@ -5,6 +5,7 @@ import { Block } from './interfaces';
 import { BlocksQueueIteratorService } from './blocks-iterator';
 import { BlocksQueueLoaderService } from './blocks-loader';
 import { BlocksQueueCollectorService } from './blocks-collector';
+
 @Injectable()
 export class BlocksQueueService {
   private _blockQueue = new BlocksQueue<Block>();
@@ -77,5 +78,11 @@ export class BlocksQueueService {
     }
 
     return confirmedBlocks;
+  }
+
+  public getBlocksByHashes(hashes: string): Block[] {
+    const hashSet = new Set(hashes);
+
+    return this._blockQueue.findBlocks(hashSet);
   }
 }

@@ -10,20 +10,50 @@ import { EventStoreRepository } from './eventstore.repository';
 import { EventStoreService } from './eventstore.service';
 
 type EventStoreConfig = TypeOrmModuleOptions & {
+  path: string;
   type: 'sqlite' | 'postgres' | 'mysql';
   name: string;
 };
 
 @Module({})
 export class EventStoreModule {
-  static forRoot(config: EventStoreConfig): DynamicModule {
-    const { name, ...restOptions } = config;
+  static async forRoot(config: EventStoreConfig): Promise<DynamicModule> {
+    const { name, path, ...restOptions } = config;
 
     // Initialize transactional context before setting up the database connections
     initializeTransactionalContext();
 
     // TODO: remove from here
-    const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), 'easylayer/data', `${name}.db`) : name;
+    const database = restOptions.type === 'sqlite' ? resolve(process.cwd(), path, `${name}.db`) : name;
+
+    const dataSourceOptions = {
+      ...restOptions,
+      name,
+      database,
+      // custom entities,
+      entities: [EventDataModel],
+      synchronize: false, // Disable synchronization by default
+    };
+
+    const dataSource = new DataSource(dataSourceOptions);
+
+    try {
+      await dataSource.initialize();
+
+      // Checking for the presence of tables
+      const queryRunner = dataSource.createQueryRunner();
+      const hasTables = await queryRunner.hasTable(EventDataModel.constructor.name);
+
+      if (!hasTables) {
+        // If there are no tables, enable synchronization
+        dataSourceOptions.synchronize = true;
+      }
+
+      await dataSource.destroy();
+    } catch (error) {
+      console.error('Error during tables checking', error);
+      dataSourceOptions.synchronize = true;
+    }
 
     return {
       module: EventStoreModule,
@@ -31,14 +61,10 @@ export class EventStoreModule {
         // IMPORTANT: 'name' - is required everywhere and for convenience we indicate it the same
         // so as not to get confused. It must be unique to the one module connection.
         TypeOrmModule.forRootAsync({
-          imports: [LoggerModule.forRoot({ componentName: 'BitcoinEventStoreComponent' })],
+          imports: [LoggerModule.forRoot({ componentName: 'EventStoreComponent' })],
           name,
           useFactory: (log: AppLogger) => ({
-            ...restOptions,
-            name,
-            database,
-            // custom entities,
-            entities: [EventDataModel],
+            ...dataSourceOptions,
             log,
           }),
           inject: [AppLogger],

@@ -18,7 +18,21 @@
       "@easylayer/cli/*": ["packages/cli/*/src"],
       "@easylayer/core/*": ["packages/core/*/src"],
       "@easylayer/components/*": ["packages/components/*/src"],
-      "@easylayer/*": ["packages/*/src"]
+      "@easylayer/*": ["packages/*/src"],
+      "@easylayer/components/domain-cqrs-components": ["packages/components/domain-cqrs-components/dist/index"],
+      "@easylayer/components/domain-cqrs-components/*": ["packages/components//domain-cqrs-components/dist/*"],
+      "@easylayer/components/domain-cqrs-components/websocket-messages": ["packages/components//domain-cqrs-components/dist/websocket-messages/index"],
+      "@easylayer/components/domain-cqrs-components/websocket-messages/*": ["packages/components//domain-cqrs-components/dist/websocket-messages/*"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-balances-indexer/index"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-balances-indexer/*": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-balances-indexer/*"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-indexer": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-indexer/index"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-indexer/*": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-indexer/*"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-loader": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-loader/index"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-loader/*": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-loader/*"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-listener": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-listener/index"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-listener/*": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-listener/*"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-wallet": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-wallet/index"],
+      "@easylayer/components/domain-cqrs-components/bitcoin-wallet/*": ["packages/components//domain-cqrs-components/dist/bitcoin/bitcoin-wallet/*"]
     }
   }
 }

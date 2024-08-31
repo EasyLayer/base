@@ -25,6 +25,7 @@ export interface Transaction {
   vin: any;
   vout: any;
   hex: string;
+  witness?: any;
 }
 // TODO: move to provider
 export interface Block {

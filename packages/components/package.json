@@ -11,21 +11,33 @@
       "default": "./logger/dist/index.js",
       "types": "./logger/dist/index.d.ts"
     },
-    "./bitcoin-blocks-queue": {
-      "default": "./bitcoin-blocks-queue/dist/index.js",
-      "types": "./bitcoin-blocks-queue/dist/index.d.ts"
+    "./domain-cqrs-components": {
+      "default": "./domain-cqrs-components/dist/index.js",
+      "types": "./domain-cqrs-components/dist/index.d.ts"
     },
-    "./domain-cqrs-components/bitcoin-indexer": {
-      "default": "./domain-cqrs-components/dist/bitcoin/bitcoin-indexer/index.js",
-      "types": "./domain-cqrs-components/dist/bitcoin/bitcoin-indexer/index.d.ts"
+    "./domain-cqrs-components/websocket-messages": {
+      "default": "./domain-cqrs-components/dist/websocket-messages/index.js",
+      "types": "./domain-cqrs-components/dist/websocket-messages/index.d.ts"
     },
     "./domain-cqrs-components/bitcoin-balances-indexer": {
       "default": "./domain-cqrs-components/dist/bitcoin/bitcoin-balances-indexer/index.js",
       "types": "./domain-cqrs-components/dist/bitcoin/bitcoin-balances-indexer/index.d.ts"
     },
-    "./domain-cqrs-components/evm": {
-      "default": "./domain-cqrs-components/dist/evm/index.js",
-      "types": "./domain-cqrs-components/dist/evm/index.d.ts"
+    "./domain-cqrs-components/bitcoin-indexer": {
+      "default": "./domain-cqrs-components/dist/bitcoin/bitcoin-indexer/index.js",
+      "types": "./domain-cqrs-components/dist/bitcoin/bitcoin-indexer/index.d.ts"
+    },
+    "./domain-cqrs-components/bitcoin-listener": {
+      "default": "./domain-cqrs-components/dist/bitcoin/bitcoin-listener/index.js",
+      "types": "./domain-cqrs-components/dist/bitcoin/bitcoin-listener/index.d.ts"
+    },
+    "./domain-cqrs-components/bitcoin-loader": {
+      "default": "./domain-cqrs-components/dist/bitcoin/bitcoin-loader/index.js",
+      "types": "./domain-cqrs-components/dist/bitcoin/bitcoin-loader/index.d.ts"
+    },
+    "./domain-cqrs-components/bitcoin-wallet": {
+      "default": "./domain-cqrs-components/dist/bitcoin/bitcoin-wallet/index.js",
+      "types": "./domain-cqrs-components/dist/bitcoin/bitcoin-wallet/index.d.ts"
     },
     "./exponential-interval-async": {
       "default": "./exponential-interval-async/dist/index.js",
@@ -39,7 +51,6 @@
   "files": [
     "arithmetic/dist",
     "logger/dist",
-    "bitcoin-blocks-queue/dist",
     "domain-cqrs-components/dist",
     "exponential-interval-async/dist",
     "shared-interfaces/dist"

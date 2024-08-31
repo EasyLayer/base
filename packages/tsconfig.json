@@ -17,10 +17,16 @@
       "path": "./cli/create-easylayer-app/tsconfig.json"
     },
     {
-      "path": "./plugins/plugin-bitcoin-indexer/tsconfig.json"
+      "path": "./bitcoin-indexer/tsconfig.json"
     },
     {
-      "path": "./plugins/plugin-bitcoin-balances-indexer/tsconfig.json"
+      "path": "./bitcoin-loader/tsconfig.json"
+    },
+    {
+      "path": "./bitcoin-listener/tsconfig.json"
+    },
+    {
+      "path": "./bitcoin-wallet/tsconfig.json"
     }
   ]
 }

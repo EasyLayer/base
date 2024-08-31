@@ -3,9 +3,7 @@ import { EventBus, CustomEventBus } from '@easylayer/core/cqrs';
 import { Publisher } from './publisher';
 import { Subscriber } from './subscriber';
 
-@Module({
-  providers: [Publisher, Subscriber],
-})
+@Module({})
 export class CqrsTransportModule implements OnModuleInit {
   static forRoot(parameters: any): DynamicModule {
     return {

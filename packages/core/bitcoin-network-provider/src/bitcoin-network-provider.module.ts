@@ -3,7 +3,7 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { LoggerModule, AppLogger } from '@easylayer/components/logger';
 import { BitcoinNetworkProviderService } from './bitcoin-network-provider.service';
 import { ConnectionManager } from './connection-manager';
-import { BitcoinCryptoUtilsService } from './crypto-utils.service';
+import { KeyManagementService, ScriptUtilService, WalletService, TransactionService } from './utils';
 import { BitcoinWebhookStreamService } from './bitcoin-webhook-stream.service';
 import { createProvider, ProviderOptions, QuickNodeProvider, SelfNodeProvider } from './node-providers';
 
@@ -48,7 +48,7 @@ export class BitcoinNetworkProviderModule {
     const providersToConnect: ProviderOptions[] = [...quickNodeProviders, ...selfNodeProviders, ...(providers || [])];
 
     if (providersToConnect.length === 0) {
-      throw new Error('Provider configuration is invalid.');
+      throw new Error('Any Network Provider is not found.');
     }
 
     const providersInstance = providersToConnect.map(async (providerOptions) => {
@@ -79,13 +79,19 @@ export class BitcoinNetworkProviderModule {
         BitcoinNetworkProviderService,
         BitcoinWebhookStreamService,
         connectionManager,
-        BitcoinCryptoUtilsService,
+        KeyManagementService,
+        ScriptUtilService,
+        WalletService,
+        TransactionService,
       ],
       exports: [
         BitcoinNetworkProviderService,
         BitcoinWebhookStreamService,
         ConnectionManager,
-        BitcoinCryptoUtilsService,
+        KeyManagementService,
+        ScriptUtilService,
+        WalletService,
+        TransactionService,
       ],
     };
   }
